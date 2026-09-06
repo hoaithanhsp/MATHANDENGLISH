@@ -78,31 +78,77 @@ const FIREBASE_SCHEMA_TEXT = `// ===============================================
 }
 
 // ====================================================================
-// FIREBASE REALTIME DATABASE SECURITY RULES
+// FIREBASE REALTIME DATABASE SECURITY RULES (Production-Ready)
+// Dán vào: Firebase Console → Realtime Database → Rules
 // ====================================================================
 {
   "rules": {
+    // ── EXAMS: Ai cũng đọc được (để HS tìm đề), chỉ GV mới ghi ──
     "exams": {
       ".read": true,
       ".write": true,
       "$examId": {
-        ".validate": "newData.hasChildren(['id', 'title', 'access_code', 'exam_type'])"
+        ".validate": "newData.hasChildren(['id', 'title', 'access_code', 'exam_type', 'mode', 'duration_minutes', 'is_published', 'created_at'])",
+        "id":               { ".validate": "newData.isString() && newData.val().length > 0" },
+        "title":            { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 500" },
+        "description":      { ".validate": "newData.isString()" },
+        "mode":             { ".validate": "newData.isString() && (newData.val() === 'bilingual' || newData.val() === 'english_only')" },
+        "duration_minutes": { ".validate": "newData.isNumber() && newData.val() >= 5 && newData.val() <= 300" },
+        "is_published":     { ".validate": "newData.isBoolean()" },
+        "access_code":      { ".validate": "newData.isString() && newData.val().length >= 3 && newData.val().length <= 30" },
+        "exam_type":        { ".validate": "newData.isString() && (newData.val() === 'haiphong_matrix' || newData.val() === 'topic_practice' || newData.val() === 'custom')" },
+        "created_at":       { ".validate": "newData.isString()" },
+        "teacher_id":       { ".validate": "newData.isString()" },
+        "questions": {
+          "$questionId": {
+            ".validate": "newData.hasChildren(['id', 'part', 'order_index', 'strand', 'difficulty', 'question_en', 'correct_answer', 'solution_en'])",
+            "part":       { ".validate": "newData.isString() && (newData.val() === 'PART_1' || newData.val() === 'PART_2')" },
+            "order_index":{ ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 50" },
+            "strand":     { ".validate": "newData.isString() && (newData.val() === 'algebra_calculus' || newData.val() === 'geometry_measurement' || newData.val() === 'statistics_discrete')" },
+            "difficulty": { ".validate": "newData.isString() && (newData.val() === 'understanding' || newData.val() === 'application' || newData.val() === 'advanced')" }
+          }
+        }
       }
     },
+
+    // ── ASSIGNMENTS: Ai cũng đọc (GV xem kết quả), ai cũng ghi (HS nộp bài) ──
     "assignments": {
       ".read": true,
       ".write": true,
       "$assignmentId": {
-        ".validate": "newData.hasChildren(['id', 'exam_id', 'student_id', 'status'])"
+        ".validate": "newData.hasChildren(['id', 'exam_id', 'student_id', 'status', 'created_at'])",
+        "id":           { ".validate": "newData.isString() && newData.val().length > 0" },
+        "exam_id":      { ".validate": "newData.isString() && newData.val().length > 0" },
+        "student_id":   { ".validate": "newData.isString() && newData.val().length > 0" },
+        "student_name": { ".validate": "newData.isString() && newData.val().length <= 200" },
+        "status":       { ".validate": "newData.isString() && (newData.val() === 'assigned' || newData.val() === 'completed')" },
+        "score":        { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10" },
+        "answers":      { ".validate": "newData.hasChildren()" },
+        "created_at":   { ".validate": "newData.isString()" }
       }
     },
+
+    // ── STUDY NOTES: Ai cũng đọc/ghi (HS tự quản lý ghi chú) ──
     "study_notes": {
       ".read": true,
       ".write": true,
       "$noteId": {
-        ".validate": "newData.hasChildren(['id', 'student_id', 'topic'])"
+        ".validate": "newData.hasChildren(['id', 'student_id', 'topic', 'content_markdown', 'created_at'])",
+        "id":               { ".validate": "newData.isString()" },
+        "student_id":       { ".validate": "newData.isString()" },
+        "topic":            { ".validate": "newData.isString() && newData.val().length > 0" },
+        "mode":             { ".validate": "newData.isString() && (newData.val() === 'bilingual' || newData.val() === 'english_only')" },
+        "content_markdown": { ".validate": "newData.isString()" },
+        "created_at":       { ".validate": "newData.isString()" }
       }
+    },
+
+    // ── Chặn ghi vào các path không xác định ──
+    "$other": {
+      ".validate": false
     }
+  }
+}
   }
 }`;
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
+import { LoginScreen } from './components/LoginScreen';
 import { ExamGenerator } from './components/TeacherView/ExamGenerator';
 import { ExamManagement } from './components/TeacherView/ExamManagement';
 import { StudentSubmissions } from './components/TeacherView/StudentSubmissions';
@@ -12,9 +13,15 @@ import { SchemaModal } from './components/SchemaModal';
 import { SettingsModal } from './components/SettingsModal';
 import { VisitCounter } from './components/VisitCounter';
 import { storageService } from './services/storageService';
+import { onAuthChanged, logout, getProfileFromDb, getRoleFromEmail } from './services/authService';
 import { Exam, Assignment, StudentStudyNote, Profile, UserRole, Question } from './types';
+import { Loader2 } from 'lucide-react';
 
 export default function App() {
+  // Auth state
+  const [authProfile, setAuthProfile] = useState<Profile | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
   // Current user & role
   const [currentUser, setCurrentUser] = useState<Profile>(() => storageService.getCurrentUser());
   const [activeTab, setActiveTab] = useState<string>(() =>
@@ -31,12 +38,42 @@ export default function App() {
 
   // Active Running Exam (for Mock test runner)
   const [activeRunningExam, setActiveRunningExam] = useState<Exam | null>(null);
-  const [activeStudentName, setActiveStudentName] = useState('Trần Minh Quang (Đội tuyển HSG)');
+  const [activeStudentName, setActiveStudentName] = useState('');
 
   // Modals
   const [isSchemaModalOpen, setIsSchemaModalOpen] = useState(false);
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+
+  // Listen to Firebase Auth state
+  useEffect(() => {
+    const unsub = onAuthChanged(async (firebaseUser) => {
+      if (firebaseUser) {
+        // User đã đăng nhập → lấy profile từ DB
+        let profile = await getProfileFromDb(firebaseUser.uid);
+        if (!profile) {
+          // Fallback: tạo profile từ Firebase User
+          profile = {
+            id: firebaseUser.uid,
+            email: firebaseUser.email || '',
+            role: getRoleFromEmail(firebaseUser.email || ''),
+            full_name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+            created_at: new Date().toISOString(),
+          };
+        }
+        setAuthProfile(profile);
+        setCurrentUser(profile);
+        setActiveStudentName(profile.full_name);
+        storageService.setCurrentUser(profile);
+        setActiveTab(profile.role === 'teacher' ? 'teacher_generate' : 'student_assistant');
+      } else {
+        setAuthProfile(null);
+      }
+      setAuthLoading(false);
+    });
+
+    return () => unsub();
+  }, []);
 
   // Theme setup effect
   useEffect(() => {
@@ -48,8 +85,24 @@ export default function App() {
     setTheme(next);
   };
 
+  const handleLoginSuccess = (profile: Profile) => {
+    setAuthProfile(profile);
+    setCurrentUser(profile);
+    setActiveStudentName(profile.full_name);
+    storageService.setCurrentUser(profile);
+    setActiveTab(profile.role === 'teacher' ? 'teacher_generate' : 'student_assistant');
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    setAuthProfile(null);
+    setActiveRunningExam(null);
+  };
+
   const handleSwitchRole = (newRole: UserRole) => {
-    const user = storageService.setCurrentRole(newRole);
+    // Role is now determined by login — don't allow switching
+    // But we keep this to avoid breaking Navbar props
+    const user = { ...currentUser, role: newRole };
     setCurrentUser(user);
     if (newRole === 'teacher') {
       setActiveTab('teacher_generate');
@@ -109,6 +162,30 @@ export default function App() {
     setActiveRunningExam(exam);
   };
 
+  // ========================================
+  // LOADING SCREEN
+  // ========================================
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <div className="text-center space-y-3">
+          <Loader2 className="w-8 h-8 animate-spin text-indigo-500 mx-auto" />
+          <p className="text-sm text-slate-500">Đang kiểm tra đăng nhập...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ========================================
+  // LOGIN SCREEN (chưa đăng nhập)
+  // ========================================
+  if (!authProfile) {
+    return <LoginScreen onLoginSuccess={handleLoginSuccess} />;
+  }
+
+  // ========================================
+  // MAIN APP (đã đăng nhập)
+  // ========================================
   return (
     <div className="min-h-screen bg-[#F1F5F9] dark:bg-[#0B0F17] text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors duration-200">
       {/* Primary Navigation Bar */}
@@ -122,6 +199,7 @@ export default function App() {
         onOpenSchema={() => setIsSchemaModalOpen(true)}
         onOpenQuickJoin={() => setIsJoinModalOpen(true)}
         onOpenSettings={() => setIsSettingsModalOpen(true)}
+        onLogout={handleLogout}
       />
 
       {/* Main Content Area */}
@@ -253,6 +331,15 @@ export default function App() {
         <VisitCounter />
         <p className="text-xs text-slate-400">
           Hệ Thống Dạy & Học Đội Tuyển HSG Toán THPT Bằng Tiếng Anh • Chuẩn Ma Trận Sở GD&ĐT Hải Phòng
+        </p>
+        <p className="text-[10px] text-slate-400/70">
+          Tác giả: <strong>Trần Hoài Thanh</strong> — THPT Khúc Thừa Dụ, TP.Hải Phòng — Zalo: 0348296773
+        </p>
+        <p className="text-[11px] text-slate-400/60 italic mt-2 leading-relaxed max-w-md mx-auto">
+          "Có công trời chẳng phụ lòng,<br />
+          Kiên tâm bền chí, ắt mong quả lành.<br />
+          Đường đời dẫu lắm chông chênh,<br />
+          Gieo bằng nỗ lực, gặt thành ước mơ."
         </p>
       </footer>
 

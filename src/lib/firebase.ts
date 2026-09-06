@@ -1,19 +1,70 @@
 /**
- * Firebase Configuration — Realtime Database
- * Theo hướng dẫn firebase_setup_guide.md:
- * - User dán firebaseConfig từ Firebase Console
- * - Dùng Realtime Database (Singapore region)
- * - Test mode cho 30 ngày đầu
+ * Firebase Configuration — Realtime Database + Authentication
+ * Project: hai-phong-math-olympiad
+ * Region: asia-southeast1 (Singapore)
  */
 
 import { initializeApp, FirebaseApp, getApps } from 'firebase/app';
 import { getDatabase, Database, ref, set, get, push, remove, onValue, off, DataSnapshot } from 'firebase/database';
+import {
+  getAuth,
+  Auth,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  User,
+  updateProfile,
+} from 'firebase/auth';
 
 // ============================================================
-// FIREBASE CONFIG STORAGE
+// FIREBASE CONFIG — HARDCODED (từ config.txt)
 // ============================================================
-const FB_CONFIG_KEY = 'hp_math_firebase_config';
+const firebaseConfig = {
+  apiKey: "AIzaSyC6X-coi_FVXedNEYROQpxhCDfLRBiXr1g",
+  authDomain: "hai-phong-math-olympiad.firebaseapp.com",
+  databaseURL: "https://hai-phong-math-olympiad-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "hai-phong-math-olympiad",
+  storageBucket: "hai-phong-math-olympiad.firebasestorage.app",
+  messagingSenderId: "226482259543",
+  appId: "1:226482259543:web:757a34192400ed6cb1c512"
+};
 
+// ============================================================
+// FIREBASE INITIALIZATION
+// ============================================================
+let _app: FirebaseApp | null = null;
+let _db: Database | null = null;
+let _auth: Auth | null = null;
+
+export const getFirebaseApp = (): FirebaseApp => {
+  if (_app) return _app;
+
+  const existingApps = getApps();
+  if (existingApps.length > 0) {
+    _app = existingApps[0];
+  } else {
+    _app = initializeApp(firebaseConfig);
+  }
+  return _app;
+};
+
+export const getFirebaseDb = (): Database => {
+  if (_db) return _db;
+  _db = getDatabase(getFirebaseApp());
+  return _db;
+};
+
+export const getFirebaseAuth = (): Auth => {
+  if (_auth) return _auth;
+  _auth = getAuth(getFirebaseApp());
+  return _auth;
+};
+
+// Always configured now (hardcoded)
+export const isFirebaseConfigured = (): boolean => true;
+
+// Legacy compat — no longer needed but keep for SettingsModal
 export interface FirebaseConfig {
   apiKey: string;
   authDomain: string;
@@ -24,70 +75,44 @@ export interface FirebaseConfig {
   appId: string;
 }
 
-// Save Firebase config to localStorage
-export const saveFirebaseConfig = (config: FirebaseConfig): void => {
-  localStorage.setItem(FB_CONFIG_KEY, JSON.stringify(config));
-  // Re-initialize when config changes
-  _app = null;
-  _db = null;
+export const saveFirebaseConfig = (_config: FirebaseConfig): void => {
+  // Config is hardcoded, no-op
 };
 
-// Get stored Firebase config
-export const getFirebaseConfig = (): FirebaseConfig | null => {
-  const stored = localStorage.getItem(FB_CONFIG_KEY);
-  if (!stored) return null;
-  try {
-    return JSON.parse(stored);
-  } catch {
-    return null;
-  }
-};
-
-// Check if Firebase is configured
-export const isFirebaseConfigured = (): boolean => {
-  const config = getFirebaseConfig();
-  return !!(config && config.apiKey && config.databaseURL && config.projectId);
+export const getFirebaseConfig = (): FirebaseConfig => {
+  return firebaseConfig;
 };
 
 // ============================================================
-// FIREBASE INITIALIZATION
+// FIREBASE AUTH HELPERS
 // ============================================================
-let _app: FirebaseApp | null = null;
-let _db: Database | null = null;
 
-export const getFirebaseApp = (): FirebaseApp | null => {
-  if (_app) return _app;
-
-  const config = getFirebaseConfig();
-  if (!config) return null;
-
-  try {
-    const existingApps = getApps();
-    if (existingApps.length > 0) {
-      _app = existingApps[0];
-    } else {
-      _app = initializeApp(config);
-    }
-    return _app;
-  } catch (error) {
-    console.error('Firebase initialization error:', error);
-    return null;
-  }
+export const fbSignIn = async (email: string, password: string): Promise<User> => {
+  const auth = getFirebaseAuth();
+  const result = await signInWithEmailAndPassword(auth, email, password);
+  return result.user;
 };
 
-export const getFirebaseDb = (): Database | null => {
-  if (_db) return _db;
+export const fbSignUp = async (email: string, password: string, displayName: string): Promise<User> => {
+  const auth = getFirebaseAuth();
+  const result = await createUserWithEmailAndPassword(auth, email, password);
+  await updateProfile(result.user, { displayName });
+  return result.user;
+};
 
-  const app = getFirebaseApp();
-  if (!app) return null;
+export const fbSignOut = async (): Promise<void> => {
+  const auth = getFirebaseAuth();
+  await signOut(auth);
+};
 
-  try {
-    _db = getDatabase(app);
-    return _db;
-  } catch (error) {
-    console.error('Firebase Database error:', error);
-    return null;
-  }
+export const fbOnAuthChanged = (callback: (user: User | null) => void): (() => void) => {
+  const auth = getFirebaseAuth();
+  return onAuthStateChanged(auth, callback);
+};
+
+export const getCurrentUser = (): User | null => {
+  const auth = getFirebaseAuth();
+  return auth.currentUser;
 };
 
 // ============================================================
@@ -97,7 +122,6 @@ export const getFirebaseDb = (): Database | null => {
 /** Write data to a path */
 export const fbSet = async (path: string, data: any): Promise<boolean> => {
   const db = getFirebaseDb();
-  if (!db) return false;
   try {
     await set(ref(db, path), data);
     return true;
@@ -110,7 +134,6 @@ export const fbSet = async (path: string, data: any): Promise<boolean> => {
 /** Push a new child to a path */
 export const fbPush = async (path: string, data: any): Promise<string | null> => {
   const db = getFirebaseDb();
-  if (!db) return null;
   try {
     const newRef = push(ref(db, path));
     await set(newRef, data);
@@ -124,7 +147,6 @@ export const fbPush = async (path: string, data: any): Promise<string | null> =>
 /** Read data from a path */
 export const fbGet = async <T = any>(path: string): Promise<T | null> => {
   const db = getFirebaseDb();
-  if (!db) return null;
   try {
     const snapshot: DataSnapshot = await get(ref(db, path));
     if (snapshot.exists()) {
@@ -140,7 +162,6 @@ export const fbGet = async <T = any>(path: string): Promise<T | null> => {
 /** Delete data at a path */
 export const fbRemove = async (path: string): Promise<boolean> => {
   const db = getFirebaseDb();
-  if (!db) return false;
   try {
     await remove(ref(db, path));
     return true;
@@ -156,8 +177,6 @@ export const fbOnValue = (
   callback: (data: any) => void,
 ): (() => void) => {
   const db = getFirebaseDb();
-  if (!db) return () => {};
-
   const dbRef = ref(db, path);
   const handler = (snapshot: DataSnapshot) => {
     callback(snapshot.exists() ? snapshot.val() : null);

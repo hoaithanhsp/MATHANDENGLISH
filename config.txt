@@ -1,0 +1,18 @@
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyC6X-coi_FVXedNEYROQpxhCDfLRBiXr1g",
+  authDomain: "hai-phong-math-olympiad.firebaseapp.com",
+  databaseURL: "https://hai-phong-math-olympiad-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "hai-phong-math-olympiad",
+  storageBucket: "hai-phong-math-olympiad.firebasestorage.app",
+  messagingSenderId: "226482259543",
+  appId: "1:226482259543:web:757a34192400ed6cb1c512"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);

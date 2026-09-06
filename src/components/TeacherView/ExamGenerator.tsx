@@ -158,7 +158,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({ onSaveExam, onNavi
       <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-4">
         <div>
           <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mb-1">
-            Chào mừng trở lại, TS. Nguyễn Văn Nam • Tổ Chuyên Môn Toán Hải Phòng
+            Chào mừng trở lại, Thầy Trần Hoài Thanh • THPT Khúc Thừa Dụ, TP.Hải Phòng
           </p>
           <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
             Teacher Dashboard & AI Generator

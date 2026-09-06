@@ -12,7 +12,8 @@ import {
   UserCheck,
   Award,
   Layers,
-  Settings
+  Settings,
+  LogOut,
 } from 'lucide-react';
 import { Profile, UserRole } from '../types';
 
@@ -26,6 +27,7 @@ interface NavbarProps {
   onOpenSchema: () => void;
   onOpenQuickJoin: () => void;
   onOpenSettings: () => void;
+  onLogout?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -38,6 +40,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenSchema,
   onOpenQuickJoin,
   onOpenSettings,
+  onLogout,
 }) => {
   const isTeacher = currentUser.role === 'teacher';
 
@@ -155,36 +158,24 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
           </nav>
 
-          {/* Controls: Segmented role switcher, Firebase schema, Theme, Avatar */}
-          <div className="flex items-center gap-3">
-            {/* Segmented Control Role Switcher from Design */}
-            <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg border border-slate-200/80 dark:border-slate-700/80">
-              <button
-                onClick={() => {
-                  onSwitchRole('teacher');
-                  setActiveTab('teacher_generate');
-                }}
-                className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
-                  isTeacher
-                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs font-semibold'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-                }`}
+          {/* Controls: User info, Firebase schema, Theme, Logout */}
+          <div className="flex items-center gap-2">
+            {/* User badge */}
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80">
+              <div
+                className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
+                style={{ backgroundColor: isTeacher ? '#4F46E5' : '#059669' }}
               >
-                Teacher
-              </button>
-              <button
-                onClick={() => {
-                  onSwitchRole('student');
-                  setActiveTab('student_assistant');
-                }}
-                className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
-                  !isTeacher
-                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs font-semibold'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-                }`}
-              >
-                Student
-              </button>
+                {currentUser.full_name?.charAt(0) || (isTeacher ? 'T' : 'S')}
+              </div>
+              <div className="text-xs leading-tight">
+                <div className="font-semibold text-slate-800 dark:text-slate-200 truncate max-w-[140px]">
+                  {currentUser.full_name}
+                </div>
+                <div className={`text-[10px] font-bold ${isTeacher ? 'text-indigo-600 dark:text-indigo-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                  {isTeacher ? 'Giáo viên' : 'Học sinh'}
+                </div>
+              </div>
             </div>
 
             {/* Schema Modal Button */}
@@ -214,13 +205,16 @@ export const Navbar: React.FC<NavbarProps> = ({
               {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4" />}
             </button>
 
-            {/* Clean minimalist avatar circle from Design */}
-            <div
-              className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 border-2 border-white dark:border-slate-800 shadow-xs flex items-center justify-center text-xs font-bold text-slate-600 dark:text-slate-200 shrink-0"
-              title={currentUser.full_name}
-            >
-              {currentUser.full_name?.charAt(0) || (isTeacher ? 'T' : 'S')}
-            </div>
+            {/* Logout Button */}
+            {onLogout && (
+              <button
+                onClick={onLogout}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition"
+                title="Đăng xuất"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
 

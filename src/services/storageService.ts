@@ -25,9 +25,9 @@ const STORAGE_KEYS = {
 
 const DEFAULT_TEACHER: Profile = {
   id: 'teacher-hp-01',
-  email: 'teacher.math@chuyenhaiphong.edu.vn',
+  email: 'giaovien@hpmath.edu.vn',
   role: 'teacher',
-  full_name: 'ThS. Nguyễn Văn Hải (Tổ Toán - THPT Chuyên Trần Phú)',
+  full_name: 'Trần Hoài Thanh (THPT Khúc Thừa Dụ, TP.Hải Phòng)',
   created_at: new Date().toISOString(),
 };
 
@@ -69,6 +69,10 @@ export const storageService = {
     const user = role === 'teacher' ? DEFAULT_TEACHER : DEFAULT_STUDENT;
     writeLocal(STORAGE_KEYS.CURRENT_USER, user);
     return user;
+  },
+
+  setCurrentUser(profile: Profile): void {
+    writeLocal(STORAGE_KEYS.CURRENT_USER, profile);
   },
 
   // ========================================

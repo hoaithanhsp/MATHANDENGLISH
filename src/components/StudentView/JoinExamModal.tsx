@@ -81,7 +81,7 @@ export const JoinExamModal: React.FC<JoinExamModalProps> = ({
               value={studentName}
               onChange={(e) => setStudentName(e.target.value)}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              placeholder="VD: Trần Minh Quang - THPT Chuyên Trần Phú"
+              placeholder="VD: Nguyễn Văn A - THPT Khúc Thừa Dụ"
             />
           </div>
 
