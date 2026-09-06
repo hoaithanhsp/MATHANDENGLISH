@@ -27,12 +27,22 @@ interface StudyAssistantProps {
 }
 
 const POPULAR_TOPICS = [
-  'Pigeonhole Principle in Combinatorics (Nguyên lý Dirichlet)',
-  'Invariance Principle & Monovariants (Nguyên lý bất biến)',
-  'Limits and Continuity of Functions (Giới hạn & Hàm liên tục)',
-  'Conic Sections: Ellipse, Hyperbola, Parabola (3 đường Conic)',
-  'Sequences and Second-order Recurrences (Dãy số & Truy hồi)',
-  'Perpendicularity in Space (Quan hệ vuông góc trong không gian)',
+  // Algebra & Calculus (6 topics)
+  'Trigonometry & Trigonometric Equations',
+  'Sequences, Progressions & Recurrences',
+  'Limits & Continuous Functions',
+  'Exponential & Logarithmic Functions',
+  'Quadratic Functions & Inequalities',
+  'Derivatives & Applications',
+  // Geometry & Measurement (4 topics)
+  'Conic Sections: Ellipse, Hyperbola, Parabola',
+  'Perpendicularity & Parallelism in 3D Space',
+  'Coordinate Geometry & Vectors in Plane',
+  'Distances & Angles in Space',
+  // Statistics, Probability & Discrete (3 topics)
+  'Probability & Statistics',
+  'Pigeonhole Principle & Combinatorics',
+  'Invariance Principle & Monovariants',
 ];
 
 export const StudyAssistant: React.FC<StudyAssistantProps> = ({
@@ -112,39 +122,7 @@ export const StudyAssistant: React.FC<StudyAssistantProps> = ({
 
       onStartPracticeQuiz(currentNote.topic, questions);
     } catch (err: any) {
-      // Create instant fallback topical questions
-      const fallbackQuestions: Question[] = [
-        {
-          id: `quiz-fallback-1`,
-          exam_id: `practice-fallback`,
-          part: 'PART_1',
-          order_index: 1,
-          strand: 'statistics_discrete',
-          topic: currentNote.topic,
-          difficulty: 'application',
-          question_en: 'A bag contains 10 red, 8 blue, and 6 green marbles. What is the minimum number of marbles drawn at random without replacement to guarantee at least 4 of the same color?',
-          question_vi: 'Một túi chứa 10 viên bi đỏ, 8 viên bi xanh dương, và 6 viên bi xanh lá. Cần lấy ngẫu nhiên ít nhất bao nhiêu viên bi để chắc chắn có ít nhất 4 viên cùng màu?',
-          options_en: ['A. 10', 'B. 12', 'C. 13', 'D. 15'],
-          options_vi: ['A. 10', 'B. 12', 'C. 13', 'D. 15'],
-          correct_answer: 'A',
-          solution_en: 'Worst-case scenario: draw 3 red + 3 blue + 3 green = 9 marbles. The 10th marble must give 4 of one color. Thus minimum is 10.',
-          solution_vi: 'Trường hợp xấu nhất: lấy 3 đỏ + 3 xanh dương + 3 xanh lá = 9 viên. Viên thứ 10 chắc chắn tạo ra 4 viên cùng màu. Vậy cần 10 viên.'
-        },
-        {
-          id: `quiz-fallback-2`,
-          exam_id: `practice-fallback`,
-          part: 'PART_2',
-          order_index: 2,
-          strand: 'statistics_discrete',
-          topic: currentNote.topic,
-          difficulty: 'advanced',
-          question_en: 'Ten points are placed inside an equilateral triangle of area 1. Prove that some three points form a triangle of area at most $A$. Find the value of $A$ as an irreducible fraction.',
-          question_vi: 'Cho 10 điểm nằm trong tam giác đều diện tích 1. Chứng minh tồn tại 3 điểm tạo thành tam giác có diện tích không quá $A$. Tìm giá trị $A$ dưới dạng phân số tối giản.',
-          correct_answer: '1/9',
-          solution_en: 'Divide the triangle into 9 smaller equilateral triangles of area 1/9. By Pigeonhole Principle, among 10 points and 9 triangles, at least one triangle contains at least $\\lceil 10/9 \\rceil = 2$ points, or subdivision gives area bound $1/9$.',
-          solution_vi: 'Chia tam giác đều thành 9 tam giác đều nhỏ bằng nhau có diện tích 1/9. Theo nguyên lý Dirichlet, tồn tại tam giác nhỏ chứa ít nhất 2 điểm. Diện tích tam giác tạo bởi 3 điểm nhỏ hơn hoặc bằng 1/9.'
-        }
-      ];
+      const fallbackQuestions = getTopicFallbackQuestions(currentNote.topic);
       onStartPracticeQuiz(currentNote.topic, fallbackQuestions);
     } finally {
       setIsGeneratingQuiz(false);
@@ -425,3 +403,163 @@ export const StudyAssistant: React.FC<StudyAssistantProps> = ({
     </div>
   );
 };
+
+// ================================================
+// Fallback questions mapped to HSG exam topics
+// Bám sát 13 chuyên đề theo cấu trúc đề thi HSG Toán Hải Phòng
+// ================================================
+function getTopicFallbackQuestions(topic: string): Question[] {
+  const t = topic.toLowerCase();
+  const ts = Date.now();
+
+  // Trigonometry
+  if (t.includes('trig') || t.includes('luong giac') || t.includes('sin') || t.includes('cos')) {
+    return [
+      { id: `fb-${ts}-1`, exam_id: `practice-fb`, part: 'PART_1', order_index: 1, strand: 'algebra_calculus', topic, difficulty: 'understanding',
+        question_en: 'Find the maximum value of $f(x) = 3\\sin(2x) - 4\\cos(2x) + 5$.',
+        question_vi: 'Tim gia tri lon nhat cua ham so $f(x) = 3\\sin(2x) - 4\\cos(2x) + 5$.',
+        options_en: ['A. 5', 'B. 10', 'C. 12', 'D. 7'], correct_answer: 'B',
+        solution_en: '$3\\sin(2x) - 4\\cos(2x) \\le \\sqrt{9+16} = 5$. Max $= 5+5 = 10$.', solution_vi: 'Ap dung $a\\sin u + b\\cos u \\le \\sqrt{a^2+b^2}$, max = 10.' },
+      { id: `fb-${ts}-2`, exam_id: `practice-fb`, part: 'PART_1', order_index: 2, strand: 'algebra_calculus', topic, difficulty: 'application',
+        question_en: 'Solve $2\\sin^2 x - 3\\sin x + 1 = 0$ for $x \\in [0, 2\\pi]$. How many solutions?',
+        question_vi: 'Giai phuong trinh $2\\sin^2 x - 3\\sin x + 1 = 0$ voi $x \\in [0, 2\\pi]$. Bao nhieu nghiem?',
+        options_en: ['A. 2', 'B. 3', 'C. 4', 'D. 5'], correct_answer: 'B',
+        solution_en: 'Let $t = \\sin x$. $2t^2-3t+1=0 \\Rightarrow t=1$ or $t=1/2$. $\\sin x = 1$: 1 solution. $\\sin x = 1/2$: 2 solutions. Total = 3.', solution_vi: 'Dat $t = \\sin x$, giai ra $t=1$ (1 nghiem) va $t=1/2$ (2 nghiem). Tong 3.' },
+    ];
+  }
+
+  // Sequences / Progressions
+  if (t.includes('sequence') || t.includes('recur') || t.includes('day so') || t.includes('cap so') || t.includes('progression')) {
+    return [
+      { id: `fb-${ts}-1`, exam_id: `practice-fb`, part: 'PART_1', order_index: 1, strand: 'algebra_calculus', topic, difficulty: 'understanding',
+        question_en: 'An arithmetic progression has $u_1 = 3$ and common difference $d = 4$. What is $u_{20}$?',
+        question_vi: 'Cap so cong co $u_1 = 3$ va cong sai $d = 4$. Tim $u_{20}$.',
+        options_en: ['A. 79', 'B. 83', 'C. 75', 'D. 80'], correct_answer: 'A',
+        solution_en: '$u_{20} = u_1 + 19d = 3 + 19 \\times 4 = 79$.', solution_vi: '$u_{20} = 3 + 19 \\times 4 = 79$.' },
+      { id: `fb-${ts}-2`, exam_id: `practice-fb`, part: 'PART_2', order_index: 2, strand: 'algebra_calculus', topic, difficulty: 'application',
+        question_en: 'A geometric sequence has $u_1 = 2$ and ratio $q = 3$. Find $S_5$.',
+        question_vi: 'Cap so nhan co $u_1 = 2$ va cong boi $q = 3$. Tim $S_5$.',
+        correct_answer: '242',
+        solution_en: '$S_5 = u_1 \\cdot \\frac{q^5-1}{q-1} = 2 \\cdot \\frac{243-1}{2} = 242$.', solution_vi: '$S_5 = 2 \\cdot \\frac{3^5-1}{3-1} = 242$.' },
+    ];
+  }
+
+  // Limits
+  if (t.includes('limit') || t.includes('gioi han') || t.includes('continuous') || t.includes('lien tuc')) {
+    return [
+      { id: `fb-${ts}-1`, exam_id: `practice-fb`, part: 'PART_1', order_index: 1, strand: 'algebra_calculus', topic, difficulty: 'application',
+        question_en: 'Compute $\\lim_{x \\to 0} \\frac{\\sin(3x)}{x}$.',
+        question_vi: 'Tinh $\\lim_{x \\to 0} \\frac{\\sin(3x)}{x}$.',
+        options_en: ['A. 1', 'B. 3', 'C. 0', 'D. $\\infty$'], correct_answer: 'B',
+        solution_en: '$\\lim_{x \\to 0} \\frac{\\sin(3x)}{x} = 3 \\cdot \\lim_{x \\to 0} \\frac{\\sin(3x)}{3x} = 3 \\cdot 1 = 3$.', solution_vi: 'Nhan chia cho 3, ap dung gioi han co ban.' },
+      { id: `fb-${ts}-2`, exam_id: `practice-fb`, part: 'PART_2', order_index: 2, strand: 'algebra_calculus', topic, difficulty: 'advanced',
+        question_en: 'Find $\\lim_{x \\to 1} \\frac{x^3 - 1}{x^2 - 1}$.',
+        question_vi: 'Tim $\\lim_{x \\to 1} \\frac{x^3 - 1}{x^2 - 1}$.',
+        correct_answer: '3/2',
+        solution_en: 'Factor: $\\frac{(x-1)(x^2+x+1)}{(x-1)(x+1)} = \\frac{x^2+x+1}{x+1} \\to \\frac{3}{2}$.', solution_vi: 'Phan tich nhan tu: $\\frac{x^2+x+1}{x+1} = \\frac{3}{2}$.' },
+    ];
+  }
+
+  // Exponential & Logarithmic
+  if (t.includes('exponen') || t.includes('logarit') || t.includes('log') || t.includes('mu')) {
+    return [
+      { id: `fb-${ts}-1`, exam_id: `practice-fb`, part: 'PART_1', order_index: 1, strand: 'algebra_calculus', topic, difficulty: 'application',
+        question_en: 'Solve $\\log_2(x-1) + \\log_2(x+3) = 5$. Find the positive solution.',
+        question_vi: 'Giai $\\log_2(x-1) + \\log_2(x+3) = 5$. Tim nghiem duong.',
+        options_en: ['A. 5', 'B. 7', 'C. 3', 'D. 9'], correct_answer: 'A',
+        solution_en: '$\\log_2((x-1)(x+3)) = 5 \\Rightarrow (x-1)(x+3) = 32 \\Rightarrow x^2+2x-35=0 \\Rightarrow x=5$.', solution_vi: 'Gom log, giai PT bac 2, x = 5 thoa man.' },
+    ];
+  }
+
+  // Quadratic / Inequalities
+  if (t.includes('quadratic') || t.includes('inequalit') || t.includes('bac hai') || t.includes('bat phuong trinh')) {
+    return [
+      { id: `fb-${ts}-1`, exam_id: `practice-fb`, part: 'PART_1', order_index: 1, strand: 'algebra_calculus', topic, difficulty: 'understanding',
+        question_en: 'Find all $m$ so that $x^2 - 2mx + m + 2 > 0$ for all $x \\in \\mathbb{R}$.',
+        question_vi: 'Tim $m$ de $x^2 - 2mx + m + 2 > 0$ voi moi $x \\in \\mathbb{R}$.',
+        options_en: ['A. $-1 < m < 2$', 'B. $m > 2$', 'C. $m < -1$', 'D. $m \\in \\mathbb{R}$'], correct_answer: 'A',
+        solution_en: 'Need $\\Delta < 0$: $4m^2 - 4(m+2) < 0 \\Rightarrow m^2 - m - 2 < 0 \\Rightarrow -1 < m < 2$.', solution_vi: 'Can $\\Delta < 0$, giai BPT bac 2 theo m.' },
+    ];
+  }
+
+  // Derivatives
+  if (t.includes('derivat') || t.includes('dao ham') || t.includes('calculus') && !t.includes('trig')) {
+    return [
+      { id: `fb-${ts}-1`, exam_id: `practice-fb`, part: 'PART_1', order_index: 1, strand: 'algebra_calculus', topic, difficulty: 'application',
+        question_en: 'Find the number of critical points of $f(x) = x^3 - 3x^2 + 4$.',
+        question_vi: 'Tim so diem cuc tri cua $f(x) = x^3 - 3x^2 + 4$.',
+        options_en: ['A. 0', 'B. 1', 'C. 2', 'D. 3'], correct_answer: 'C',
+        solution_en: "$f'(x) = 3x^2 - 6x = 3x(x-2) = 0 \\Rightarrow x=0, x=2$. Two critical points.", solution_vi: "$f'(x) = 3x(x-2) = 0$, co 2 diem cuc tri." },
+    ];
+  }
+
+  // Conic Sections
+  if (t.includes('conic') || t.includes('ellips') || t.includes('hyperbol') || t.includes('parabol')) {
+    return [
+      { id: `fb-${ts}-1`, exam_id: `practice-fb`, part: 'PART_1', order_index: 1, strand: 'geometry_measurement', topic, difficulty: 'understanding',
+        question_en: 'An ellipse has equation $\\frac{x^2}{25} + \\frac{y^2}{9} = 1$. Find the eccentricity.',
+        question_vi: 'Elip co phuong trinh $\\frac{x^2}{25} + \\frac{y^2}{9} = 1$. Tim tam sai.',
+        options_en: ['A. $\\frac{3}{5}$', 'B. $\\frac{4}{5}$', 'C. $\\frac{5}{3}$', 'D. $\\frac{4}{3}$'], correct_answer: 'B',
+        solution_en: '$a^2=25, b^2=9, c^2=a^2-b^2=16, c=4$. $e = c/a = 4/5$.', solution_vi: '$c = \\sqrt{25-9} = 4$, tam sai $e = 4/5$.' },
+    ];
+  }
+
+  // Space Geometry
+  if (t.includes('space') || t.includes('perpendic') || t.includes('vuong goc') || t.includes('khong gian') || t.includes('parallel') || t.includes('song song')) {
+    return [
+      { id: `fb-${ts}-1`, exam_id: `practice-fb`, part: 'PART_1', order_index: 1, strand: 'geometry_measurement', topic, difficulty: 'understanding',
+        question_en: 'In tetrahedron $ABCD$, if $AB \\perp CD$ and $AC \\perp BD$, prove $AD \\perp BC$.',
+        question_vi: 'Trong tu dien $ABCD$, neu $AB \\perp CD$ va $AC \\perp BD$, chung minh $AD \\perp BC$.',
+        options_en: ['A. Use dot product', 'B. Use cross product', 'C. Use coordinates', 'D. All methods work'], correct_answer: 'D',
+        solution_en: 'By dot products: $\\vec{AB} \\cdot \\vec{CD} = 0$ and $\\vec{AC} \\cdot \\vec{BD} = 0$. Expanding and adding gives $\\vec{AD} \\cdot \\vec{BC} = 0$.', solution_vi: 'Dung tich vo huong, khai trien va cong 2 dieu kien.' },
+    ];
+  }
+
+  // Coordinate Geometry
+  if (t.includes('coordinate') || t.includes('vector') || t.includes('toa do') || t.includes('distance')) {
+    return [
+      { id: `fb-${ts}-1`, exam_id: `practice-fb`, part: 'PART_1', order_index: 1, strand: 'geometry_measurement', topic, difficulty: 'application',
+        question_en: 'Find the distance from point $M(3, -1)$ to line $4x - 3y + 7 = 0$.',
+        question_vi: 'Tim khoang cach tu diem $M(3, -1)$ den duong thang $4x - 3y + 7 = 0$.',
+        options_en: ['A. 2', 'B. $\\frac{22}{5}$', 'C. 4', 'D. $\\frac{18}{5}$'], correct_answer: 'B',
+        solution_en: '$d = \\frac{|4(3) - 3(-1) + 7|}{\\sqrt{16+9}} = \\frac{22}{5}$.', solution_vi: 'Ap dung CT khoang cach diem-duong thang.' },
+    ];
+  }
+
+  // Probability / Statistics
+  if (t.includes('probab') || t.includes('statistic') || t.includes('xac suat') || t.includes('thong ke')) {
+    return [
+      { id: `fb-${ts}-1`, exam_id: `practice-fb`, part: 'PART_1', order_index: 1, strand: 'statistics_discrete', topic, difficulty: 'application',
+        question_en: 'A fair die is rolled 3 times. What is the probability of getting exactly two 6s?',
+        question_vi: 'Gieo xuc xac can doi 3 lan. Xac suat de duoc dung 2 mat 6?',
+        options_en: ['A. $\\frac{5}{72}$', 'B. $\\frac{1}{36}$', 'C. $\\frac{5}{216}$', 'D. $\\frac{1}{12}$'], correct_answer: 'A',
+        solution_en: '$P = \\binom{3}{2} \\cdot (\\frac{1}{6})^2 \\cdot \\frac{5}{6} = \\frac{15}{216} = \\frac{5}{72}$.', solution_vi: 'Ap dung nhi thuc Newton: $C_3^2 \\cdot (1/6)^2 \\cdot (5/6) = 5/72$.' },
+    ];
+  }
+
+  // Pigeonhole / Combinatorics / Discrete
+  if (t.includes('pigeon') || t.includes('dirichlet') || t.includes('combinat') || t.includes('invariant') || t.includes('bat bien') || t.includes('to hop')) {
+    return [
+      { id: `fb-${ts}-1`, exam_id: `practice-fb`, part: 'PART_1', order_index: 1, strand: 'statistics_discrete', topic, difficulty: 'application',
+        question_en: 'A bag contains 10 red, 8 blue, and 6 green marbles. What is the minimum number to guarantee at least 4 of the same color?',
+        question_vi: 'Tui co 10 bi do, 8 bi xanh duong, 6 bi xanh la. Can lay it nhat bao nhieu bi de chac chan co 4 bi cung mau?',
+        options_en: ['A. 10', 'B. 12', 'C. 13', 'D. 15'], correct_answer: 'A',
+        solution_en: 'Worst case: 3 red + 3 blue + 3 green = 9. The 10th marble must give 4 of one color.', solution_vi: 'Truong hop xau nhat: 3+3+3=9. Vien thu 10 chac chan tao 4 cung mau.' },
+    ];
+  }
+
+  // Default: Algebra general
+  return [
+    { id: `fb-${ts}-1`, exam_id: `practice-fb`, part: 'PART_1', order_index: 1, strand: 'algebra_calculus', topic, difficulty: 'application',
+      question_en: 'If $a + b = 5$ and $ab = 6$, find $a^2 + b^2$.',
+      question_vi: 'Neu $a + b = 5$ va $ab = 6$, tim $a^2 + b^2$.',
+      options_en: ['A. 11', 'B. 13', 'C. 19', 'D. 25'], correct_answer: 'B',
+      solution_en: '$a^2+b^2 = (a+b)^2 - 2ab = 25 - 12 = 13$.', solution_vi: '$a^2+b^2 = (a+b)^2 - 2ab = 25 - 12 = 13$.' },
+    { id: `fb-${ts}-2`, exam_id: `practice-fb`, part: 'PART_2', order_index: 2, strand: 'algebra_calculus', topic, difficulty: 'advanced',
+      question_en: 'Find all real solutions of $x^4 - 5x^2 + 4 = 0$.',
+      question_vi: 'Tim tat ca nghiem thuc cua $x^4 - 5x^2 + 4 = 0$.',
+      correct_answer: 'x = 1, -1, 2, -2',
+      solution_en: 'Let $t = x^2$: $t^2 - 5t + 4 = 0 \\Rightarrow t = 1, 4$. So $x = \\pm 1, \\pm 2$.', solution_vi: 'Dat $t = x^2$, giai PT bac 2 theo t.' },
+  ];
+}
+

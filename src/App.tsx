@@ -81,6 +81,32 @@ export default function App() {
     storageService.setTheme(theme);
   }, [theme]);
 
+  // Sync Firebase data when authenticated + subscribe realtime
+  useEffect(() => {
+    if (!authProfile) return;
+
+    // Initial sync from Firebase
+    storageService.syncExamsFromFirebase().then((fbExams) => {
+      if (fbExams.length > 0) setExams(fbExams);
+    });
+    storageService.syncAssignmentsFromFirebase().then((fbAssignments) => {
+      if (fbAssignments.length > 0) setAssignments(fbAssignments);
+    });
+
+    // Subscribe to realtime updates
+    const unsubExams = storageService.onExamsChanged((updatedExams) => {
+      setExams(updatedExams);
+    });
+    const unsubAssignments = storageService.onAssignmentsChanged((updatedAssignments) => {
+      setAssignments(updatedAssignments);
+    });
+
+    return () => {
+      unsubExams();
+      unsubAssignments();
+    };
+  }, [authProfile]);
+
   const handleToggleTheme = () => {
     const next = theme === 'light' ? 'dark' : 'light';
     setTheme(next);

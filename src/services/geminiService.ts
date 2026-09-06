@@ -208,8 +208,12 @@ Contest Structure & Rules (MUST BE STRICTLY FOLLOWED):
    - Strand 1: Algebra & Calculus (Đại số – Giải tích): 9 questions.
    - Strand 2: Geometry & Measurement (Hình học và Đo lường): 9 questions.
    - Strand 3: Statistics, Probability, Discrete & Number Theory: 4 questions.
-5. KaTeX Math Formatting:
+5. KaTeX Math Formatting (CRITICAL):
    - All mathematical formulas MUST use standard LaTeX: '$...$' for inline formulas, '$$...$$' for display block formulas.
+   - In JSON output strings, use double backslash for LaTeX commands: "\\\\sin", "\\\\frac{a}{b}", "\\\\sqrt{x}", "\\\\lim_{x \\\\to 0}".
+   - This is because JSON requires escaping backslashes. The rendered result will show proper math.
+   - CORRECT in JSON: "$\\\\sin(x) + \\\\cos(x)$"
+   - WRONG in JSON: "$\\sin(x)$" (single backslash gets lost in JSON parsing)
 6. Language:
    - For bilingual mode: provide question_en and question_vi, options_en and options_vi (for Part 1), solution_en and solution_vi.
    - For english_only: question_en, options_en, solution_en.
@@ -329,11 +333,18 @@ export const generateTopicPractice = async (params: {
 }): Promise<any[]> => {
   const { topic, mode = 'bilingual', count = 6, onModelSwitch } = params;
 
-  const prompt = `Generate a ${count}-question topical practice test on the topic: "${topic}".
-Language mode: ${mode}.
-Include both Part 1 (MCQ) and Part 2 (Short-answer).
-Use $...$ for all LaTeX math formulas.
-Output Schema: JSON array of questions matching the standard Question interface.`;
+  const prompt = `Generate exactly ${count} practice questions STRICTLY on the topic: "${topic}".
+
+CRITICAL RULES:
+1. ALL questions MUST be directly about "${topic}". Do NOT generate questions on other topics.
+2. Language mode: ${mode} (include both question_en and question_vi).
+3. Use KaTeX-compatible LaTeX with single backslash inside $...$ delimiters. Example: $\\sin(x)$, $\\frac{a}{b}$, $\\lim_{x \\to 0}$.
+4. Do NOT use \\\\sin or \\\\frac (double backslash). Use single backslash: \\sin, \\frac, \\sqrt, \\log, etc.
+5. Include Part 1 (MCQ with 4 options) and Part 2 (Short-answer with correct_answer as a number or expression).
+6. Each question must have: id, part ("PART_1" or "PART_2"), order_index, strand, topic, difficulty, question_en, question_vi, correct_answer, solution_en, solution_vi.
+7. MCQ options format: ["A. ...", "B. ...", "C. ...", "D. ..."]
+
+Output: JSON array of ${count} question objects.`;
 
   const result = await generateContentWithFallback({
     contents: prompt,

@@ -169,6 +169,34 @@ export const storageService = {
     }
   },
 
+  // Sync assignments from Firebase (for initial load — GV side)
+  async syncAssignmentsFromFirebase(): Promise<Assignment[]> {
+    if (!isFirebaseConfigured()) return this.getAssignments();
+
+    const fbData = await fbGet<Record<string, Assignment>>('assignments');
+    if (fbData) {
+      const list = Object.values(fbData);
+      if (list.length > 0) {
+        writeLocal(STORAGE_KEYS.ASSIGNMENTS, list);
+        return list;
+      }
+    }
+    return this.getAssignments();
+  },
+
+  // Subscribe to realtime assignment updates (GV nhận bài HS nộp)
+  onAssignmentsChanged(callback: (assignments: Assignment[]) => void): () => void {
+    if (!isFirebaseConfigured()) return () => {};
+
+    return fbOnValue('assignments', (data) => {
+      if (data) {
+        const list = Object.values(data) as Assignment[];
+        writeLocal(STORAGE_KEYS.ASSIGNMENTS, list);
+        callback(list);
+      }
+    });
+  },
+
   // ========================================
   // Study Notes
   // ========================================
