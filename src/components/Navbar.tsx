@@ -14,6 +14,7 @@ import {
   Layers,
   Settings,
   LogOut,
+  Target,
 } from 'lucide-react';
 import { Profile, UserRole } from '../types';
 
@@ -124,6 +125,17 @@ export const Navbar: React.FC<NavbarProps> = ({
                 >
                   <BookOpen className="w-3.5 h-3.5" />
                   Tự Học Chuyên Đề
+                </button>
+                <button
+                  onClick={() => setActiveTab('student_review')}
+                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    activeTab === 'student_review'
+                      ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-semibold'
+                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <Target className="w-3.5 h-3.5" />
+                  Ôn Tập HSG
                 </button>
                 <button
                   onClick={() => setActiveTab('student_mock')}
@@ -274,6 +286,16 @@ export const Navbar: React.FC<NavbarProps> = ({
                 }`}
               >
                 Tự Học AI
+              </button>
+              <button
+                onClick={() => setActiveTab('student_review')}
+                className={`px-2.5 py-1 text-xs whitespace-nowrap rounded-lg ${
+                  activeTab === 'student_review'
+                    ? 'bg-emerald-600 text-white'
+                    : 'text-slate-600 dark:text-slate-300'
+                }`}
+              >
+                Ôn Tập
               </button>
               <button
                 onClick={() => setActiveTab('student_mock')}

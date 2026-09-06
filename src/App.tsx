@@ -8,6 +8,7 @@ import { MatrixGuide } from './components/TeacherView/MatrixGuide';
 import { StudyAssistant } from './components/StudentView/StudyAssistant';
 import { MockTestRunner } from './components/StudentView/MockTestRunner';
 import { StudentNotes } from './components/StudentView/StudentNotes';
+import { ReviewSection } from './components/StudentView/ReviewSection';
 import { JoinExamModal } from './components/StudentView/JoinExamModal';
 import { SchemaModal } from './components/SchemaModal';
 import { SettingsModal } from './components/SettingsModal';
@@ -249,6 +250,7 @@ export default function App() {
                     onStartPracticeQuiz={handleStartPracticeQuiz}
                   />
                 )}
+                {activeTab === 'student_review' && <ReviewSection />}
                 {activeTab === 'student_mock' && (
                   <div className="space-y-6">
                     <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">

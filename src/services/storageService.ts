@@ -7,6 +7,7 @@
 import { Exam, Assignment, StudentStudyNote, Profile, UserRole } from '../types';
 import { SAMPLE_HAIPHONG_EXAM } from '../data/sampleExam';
 import { SAMPLE_STUDY_NOTES } from '../data/sampleStudyNotes';
+import { CHAPTER_STUDY_NOTES } from '../data/chapterStudyNotes';
 import {
   isFirebaseConfigured,
   fbSet,
@@ -174,7 +175,8 @@ export const storageService = {
   getStudyNotes(): StudentStudyNote[] {
     const local = readLocal<StudentStudyNote[]>(STORAGE_KEYS.STUDY_NOTES, []);
     if (local.length > 0) return local;
-    const initial = SAMPLE_STUDY_NOTES;
+    // Nạp sẵn: sample notes + 25 chương học liệu Toán Tiếng Anh
+    const initial = [...SAMPLE_STUDY_NOTES, ...CHAPTER_STUDY_NOTES];
     writeLocal(STORAGE_KEYS.STUDY_NOTES, initial);
     return initial;
   },
