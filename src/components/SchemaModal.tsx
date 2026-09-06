@@ -1,93 +1,110 @@
 import React, { useState } from 'react';
-import { Database, Copy, Check, X, Shield, Layers, Key } from 'lucide-react';
+import { Database, Copy, Check, X, Shield, Layers, Flame } from 'lucide-react';
 
 interface SchemaModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const SUPABASE_SCHEMA_TEXT = `-- ====================================================================
--- SUPABASE POSTGRESQL SCHEMA FOR HAI PHONG MATH OLYMPIAD (THPT)
--- Conforming to Hai Phong DOET Gifted High School Exam Matrix in English
--- ====================================================================
+const FIREBASE_SCHEMA_TEXT = `// ====================================================================
+// FIREBASE REALTIME DATABASE SCHEMA
+// HAI PHONG MATH OLYMPIAD (THPT) — Đội Tuyển HSG Toán Hải Phòng
+// ====================================================================
+// Database URL: https://<PROJECT_ID>-default-rtdb.asia-southeast1.firebasedatabase.app
+// Region: asia-southeast1 (Singapore)
 
--- Enable UUID extension
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+{
+  "exams": {
+    "<exam_id>": {
+      "id": "string",
+      "teacher_id": "string | null",
+      "title": "string",
+      "description": "string | null",
+      "mode": "bilingual | english_only",
+      "duration_minutes": 90,
+      "is_published": true,
+      "access_code": "string (unique, e.g. HP-2024-001)",
+      "exam_type": "haiphong_matrix | topic_practice | custom",
+      "created_at": "ISO 8601 string",
+      "questions": {
+        "<question_id>": {
+          "id": "string",
+          "exam_id": "string",
+          "part": "PART_1 | PART_2",
+          "order_index": 1,
+          "strand": "algebra_calculus | geometry_measurement | statistics_discrete",
+          "topic": "string",
+          "difficulty": "understanding | application | advanced",
+          "question_en": "string",
+          "question_vi": "string | null",
+          "options_en": ["A. ...", "B. ...", "C. ...", "D. ..."],
+          "options_vi": ["A. ...", "B. ...", "C. ...", "D. ..."],
+          "correct_answer": "B | 3/4 | 42",
+          "acceptable_answers": ["1/2", "0.5"],
+          "solution_en": "string",
+          "solution_vi": "string | null"
+        }
+      }
+    }
+  },
 
--- 1. PROFILES TABLE (Teachers & Students)
-CREATE TABLE IF NOT EXISTS profiles (
-    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-    email TEXT NOT NULL,
-    role TEXT NOT NULL CHECK (role IN ('teacher', 'student')),
-    full_name TEXT NOT NULL,
-    avatar_url TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
-);
+  "assignments": {
+    "<assignment_id>": {
+      "id": "string",
+      "exam_id": "string",
+      "student_id": "string",
+      "student_name": "string",
+      "status": "assigned | completed",
+      "score": 8.5,
+      "answers": { "<question_id>": "student_answer" },
+      "started_at": "ISO 8601 string",
+      "submitted_at": "ISO 8601 string",
+      "created_at": "ISO 8601 string"
+    }
+  },
 
--- 2. EXAMS TABLE (22 questions / 90 minutes)
-CREATE TABLE IF NOT EXISTS exams (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    teacher_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
-    title TEXT NOT NULL,
-    description TEXT,
-    mode TEXT NOT NULL DEFAULT 'bilingual' CHECK (mode IN ('bilingual', 'english_only')),
-    duration_minutes INTEGER NOT NULL DEFAULT 90,
-    is_published BOOLEAN NOT NULL DEFAULT false,
-    access_code TEXT UNIQUE NOT NULL,
-    exam_type TEXT NOT NULL DEFAULT 'haiphong_matrix' CHECK (exam_type IN ('haiphong_matrix', 'topic_practice', 'custom')),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
-);
+  "study_notes": {
+    "<note_id>": {
+      "id": "string",
+      "student_id": "string",
+      "topic": "string",
+      "mode": "bilingual | english_only",
+      "content_markdown": "string",
+      "glossary": [{ "term_en": "...", "term_vi": "...", "definition": "...", "example": "..." }],
+      "methods": [{ "name_en": "...", "name_vi": "...", "steps": ["..."], "sample_problem": "...", "solution": "..." }],
+      "created_at": "ISO 8601 string"
+    }
+  }
+}
 
--- 3. QUESTIONS TABLE (Part 1: 12 MCQs, Part 2: 10 Short Answer)
-CREATE TABLE IF NOT EXISTS questions (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    exam_id UUID NOT NULL REFERENCES exams(id) ON DELETE CASCADE,
-    part TEXT NOT NULL CHECK (part IN ('PART_1', 'PART_2')),
-    order_index INTEGER NOT NULL,
-    strand TEXT NOT NULL CHECK (strand IN ('algebra_calculus', 'geometry_measurement', 'statistics_discrete')),
-    topic TEXT NOT NULL,
-    difficulty TEXT NOT NULL CHECK (difficulty IN ('understanding', 'application', 'advanced')),
-    question_en TEXT NOT NULL,
-    question_vi TEXT,
-    options_en JSONB,
-    options_vi JSONB,
-    correct_answer TEXT NOT NULL,
-    acceptable_answers TEXT[],
-    solution_en TEXT NOT NULL,
-    solution_vi TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-    CONSTRAINT unique_exam_order UNIQUE (exam_id, order_index)
-);
-
--- 4. ASSIGNMENTS & SUBMISSIONS TABLE
-CREATE TABLE IF NOT EXISTS assignments (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    exam_id UUID NOT NULL REFERENCES exams(id) ON DELETE CASCADE,
-    student_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-    status TEXT NOT NULL DEFAULT 'assigned' CHECK (status IN ('assigned', 'completed')),
-    score NUMERIC(5, 2),
-    answers JSONB DEFAULT '{}'::jsonb,
-    started_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
-    submitted_at TIMESTAMP WITH TIME ZONE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
-);
-
--- 5. STUDENT STUDY NOTES TABLE
-CREATE TABLE IF NOT EXISTS student_study_notes (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    student_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-    topic TEXT NOT NULL,
-    mode TEXT NOT NULL DEFAULT 'bilingual' CHECK (mode IN ('bilingual', 'english_only')),
-    content_markdown TEXT NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
-);
-
--- ROW LEVEL SECURITY (RLS) POLICIES
-ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE exams ENABLE ROW LEVEL SECURITY;
-ALTER TABLE questions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE assignments ENABLE ROW LEVEL SECURITY;
-ALTER TABLE student_study_notes ENABLE ROW LEVEL SECURITY;`;
+// ====================================================================
+// FIREBASE REALTIME DATABASE SECURITY RULES
+// ====================================================================
+{
+  "rules": {
+    "exams": {
+      ".read": true,
+      ".write": true,
+      "$examId": {
+        ".validate": "newData.hasChildren(['id', 'title', 'access_code', 'exam_type'])"
+      }
+    },
+    "assignments": {
+      ".read": true,
+      ".write": true,
+      "$assignmentId": {
+        ".validate": "newData.hasChildren(['id', 'exam_id', 'student_id', 'status'])"
+      }
+    },
+    "study_notes": {
+      ".read": true,
+      ".write": true,
+      "$noteId": {
+        ".validate": "newData.hasChildren(['id', 'student_id', 'topic'])"
+      }
+    }
+  }
+}`;
 
 export const SchemaModal: React.FC<SchemaModalProps> = ({ isOpen, onClose }) => {
   const [copied, setCopied] = useState(false);
@@ -95,7 +112,7 @@ export const SchemaModal: React.FC<SchemaModalProps> = ({ isOpen, onClose }) => 
   if (!isOpen) return null;
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(SUPABASE_SCHEMA_TEXT);
+    navigator.clipboard.writeText(FIREBASE_SCHEMA_TEXT);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -106,15 +123,15 @@ export const SchemaModal: React.FC<SchemaModalProps> = ({ isOpen, onClose }) => 
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-              <Database className="w-5 h-5" />
+            <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
+              <Flame className="w-5 h-5" />
             </div>
             <div>
               <h3 className="font-semibold text-slate-900 dark:text-white text-base">
-                Supabase SQL Schema & Row-Level Security
+                Firebase Realtime Database Schema
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Chuẩn cấu trúc 5 bảng PostgreSQL + RLS cho Đội tuyển HSG Toán Hải Phòng
+                Cấu trúc JSON + Security Rules cho Đội tuyển HSG Toán Hải Phòng
               </p>
             </div>
           </div>
@@ -127,32 +144,35 @@ export const SchemaModal: React.FC<SchemaModalProps> = ({ isOpen, onClose }) => 
         </div>
 
         {/* Feature badges */}
-        <div className="px-6 py-3 bg-indigo-50/50 dark:bg-indigo-950/20 border-b border-indigo-100 dark:border-indigo-900/30 flex flex-wrap gap-2 text-xs text-indigo-700 dark:text-indigo-300">
+        <div className="px-6 py-3 bg-amber-50/50 dark:bg-amber-950/20 border-b border-amber-100 dark:border-amber-900/30 flex flex-wrap gap-2 text-xs text-amber-700 dark:text-amber-300">
           <span className="flex items-center gap-1 font-medium">
-            <Layers className="w-3.5 h-3.5" /> 5 Bảng: profiles, exams, questions, assignments, student_study_notes
+            <Layers className="w-3.5 h-3.5" /> 3 Node: exams, assignments, study_notes
           </span>
           <span className="flex items-center gap-1 font-medium ml-3">
-            <Shield className="w-3.5 h-3.5" /> RLS RBAC: Phân quyền Teacher & Student
+            <Shield className="w-3.5 h-3.5" /> Security Rules: Validate dữ liệu tự động
+          </span>
+          <span className="flex items-center gap-1 font-medium ml-3">
+            <Database className="w-3.5 h-3.5" /> Realtime Sync: Cập nhật tức thời giữa GV & HS
           </span>
         </div>
 
         {/* Code Content */}
         <div className="p-6 overflow-y-auto font-mono text-xs text-slate-800 dark:text-slate-200 bg-slate-950 dark:bg-slate-950 text-slate-300 flex-1">
-          <pre className="whitespace-pre-wrap leading-relaxed text-emerald-400/90">{SUPABASE_SCHEMA_TEXT}</pre>
+          <pre className="whitespace-pre-wrap leading-relaxed text-amber-400/90">{FIREBASE_SCHEMA_TEXT}</pre>
         </div>
 
         {/* Footer */}
         <div className="px-6 py-3.5 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between">
           <span className="text-xs text-slate-500 dark:text-slate-400">
-            Copy đoạn mã này dán vào <strong>Supabase SQL Editor</strong> để khởi tạo cơ sở dữ liệu.
+            Dán Security Rules vào <strong>Firebase Console → Realtime Database → Rules</strong>
           </span>
           <div className="flex gap-2">
             <button
               onClick={handleCopy}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 transition shadow-sm"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-amber-600 text-white hover:bg-amber-700 transition shadow-sm"
             >
               {copied ? <Check className="w-4 h-4 text-white" /> : <Copy className="w-4 h-4" />}
-              {copied ? 'Đã sao chép SQL!' : 'Sao chép SQL Schema'}
+              {copied ? 'Đã sao chép!' : 'Sao chép Schema'}
             </button>
             <button
               onClick={onClose}

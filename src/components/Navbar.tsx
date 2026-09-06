@@ -155,7 +155,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
           </nav>
 
-          {/* Controls: Segmented role switcher, Supabase schema, Theme, Avatar */}
+          {/* Controls: Segmented role switcher, Firebase schema, Theme, Avatar */}
           <div className="flex items-center gap-3">
             {/* Segmented Control Role Switcher from Design */}
             <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg border border-slate-200/80 dark:border-slate-700/80">
