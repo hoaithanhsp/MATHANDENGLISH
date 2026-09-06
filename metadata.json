@@ -1,0 +1,6 @@
+{
+  "name": "Hai Phong Math Olympiad",
+  "description": "Nền tảng dạy & học Đội tuyển HSG Toán THPT bằng Tiếng Anh chuẩn ma trận Sở GD&ĐT Hải Phòng với AI Gemini, KaTeX, Supabase và xuất DOCX/PDF",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
