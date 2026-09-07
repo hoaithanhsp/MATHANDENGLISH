@@ -4,7 +4,7 @@
  * Khi Firebase đã config → lưu lên Firebase + cache localStorage
  */
 
-import { Exam, Assignment, StudentStudyNote, Profile, UserRole } from '../types';
+import { Exam, Assignment, StudentStudyNote, Profile, UserRole, MistakeEntry, MistakeReason, VocabWord } from '../types';
 import { CHAPTER_STUDY_NOTES } from '../data/chapterStudyNotes';
 import {
   isFirebaseConfigured,
@@ -20,6 +20,9 @@ const STORAGE_KEYS = {
   ASSIGNMENTS: 'hp_math_assignments',
   STUDY_NOTES: 'hp_math_study_notes',
   THEME: 'hp_math_theme',
+  MISTAKES: 'hp_math_mistakes',
+  VOCAB: 'hp_math_vocab',
+  AUTOSAVE_PREFIX: 'hp_exam_autosave_',
 };
 
 const DEFAULT_TEACHER: Profile = {
@@ -246,6 +249,124 @@ export const storageService = {
 
     if (isFirebaseConfigured()) {
       await fbRemove(`study_notes/${id}`);
+    }
+  },
+
+  // ========================================
+  // Auto-Save for Live Exams
+  // ========================================
+  getExamAutoSave<T = any>(examId: string, studentKey: string): T | null {
+    const key = `${STORAGE_KEYS.AUTOSAVE_PREFIX}${examId}_${studentKey}`;
+    return readLocal<T | null>(key, null);
+  },
+
+  saveExamAutoSave(examId: string, studentKey: string, data: any): void {
+    const key = `${STORAGE_KEYS.AUTOSAVE_PREFIX}${examId}_${studentKey}`;
+    writeLocal(key, data);
+  },
+
+  clearExamAutoSave(examId: string, studentKey: string): void {
+    const key = `${STORAGE_KEYS.AUTOSAVE_PREFIX}${examId}_${studentKey}`;
+    localStorage.removeItem(key);
+  },
+
+  // ========================================
+  // Smart Mistake Notebook (Sổ tay bài tập sai)
+  // ========================================
+  getMistakes(studentId?: string): MistakeEntry[] {
+    const list = readLocal<MistakeEntry[]>(STORAGE_KEYS.MISTAKES, []);
+    if (studentId) {
+      return list.filter((m) => m.student_id === studentId);
+    }
+    return list;
+  },
+
+  saveMistake(entry: MistakeEntry): void {
+    const list = this.getMistakes();
+    // Tránh trùng lặp câu hỏi sai cho cùng học sinh
+    const idx = list.findIndex(
+      (m) => m.student_id === entry.student_id && m.question.id === entry.question.id
+    );
+    if (idx >= 0) {
+      list[idx] = { ...list[idx], ...entry };
+    } else {
+      list.unshift(entry);
+    }
+    writeLocal(STORAGE_KEYS.MISTAKES, list);
+  },
+
+  saveMistakes(entries: MistakeEntry[]): void {
+    const list = this.getMistakes();
+    for (const entry of entries) {
+      const idx = list.findIndex(
+        (m) => m.student_id === entry.student_id && m.question.id === entry.question.id
+      );
+      if (idx >= 0) {
+        list[idx] = { ...list[idx], ...entry };
+      } else {
+        list.unshift(entry);
+      }
+    }
+    writeLocal(STORAGE_KEYS.MISTAKES, list);
+  },
+
+  updateMistakeReason(mistakeId: string, reason: MistakeReason, notes?: string): void {
+    const list = this.getMistakes();
+    const target = list.find((m) => m.id === mistakeId);
+    if (target) {
+      target.mistake_reason = reason;
+      if (notes !== undefined) target.notes = notes;
+      writeLocal(STORAGE_KEYS.MISTAKES, list);
+    }
+  },
+
+  toggleMistakeMastered(mistakeId: string): void {
+    const list = this.getMistakes();
+    const target = list.find((m) => m.id === mistakeId);
+    if (target) {
+      target.mastered = !target.mastered;
+      writeLocal(STORAGE_KEYS.MISTAKES, list);
+    }
+  },
+
+  deleteMistake(mistakeId: string): void {
+    const list = this.getMistakes().filter((m) => m.id !== mistakeId);
+    writeLocal(STORAGE_KEYS.MISTAKES, list);
+  },
+
+  clearMistakes(): void {
+    writeLocal(STORAGE_KEYS.MISTAKES, []);
+  },
+
+  // ========================================
+  // Vocabulary & Flashcards
+  // ========================================
+  getVocabWords(): VocabWord[] {
+    return readLocal<VocabWord[]>(STORAGE_KEYS.VOCAB, []);
+  },
+
+  saveVocabWord(word: VocabWord): void {
+    const list = this.getVocabWords();
+    const idx = list.findIndex((w) => w.id === word.id || w.term_en.toLowerCase() === word.term_en.toLowerCase());
+    if (idx >= 0) {
+      list[idx] = { ...list[idx], ...word };
+    } else {
+      list.unshift(word);
+    }
+    writeLocal(STORAGE_KEYS.VOCAB, list);
+  },
+
+  deleteVocabWord(id: string): void {
+    const list = this.getVocabWords().filter((w) => w.id !== id);
+    writeLocal(STORAGE_KEYS.VOCAB, list);
+  },
+
+  toggleVocabBookmark(id: string): void {
+    const list = this.getVocabWords();
+    const item = list.find((w) => w.id === id);
+    if (item) {
+      item.is_bookmarked = !item.is_bookmarked;
+      writeLocal(STORAGE_KEYS.VOCAB, list);
     }
   },
 

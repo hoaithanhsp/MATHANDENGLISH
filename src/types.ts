@@ -34,6 +34,7 @@ export interface Question {
   options_vi?: string[];
   correct_answer: string; // "A"|"B"|"C"|"D" or numerical / fraction string like "42", "1/3", "-5.5"
   acceptable_answers?: string[];
+  hints?: string[]; // Practice hints before revealing full solution
   solution_en: string;
   solution_vi?: string;
 }
@@ -58,11 +59,42 @@ export interface Assignment {
   student_id: string;
   student_name?: string;
   status: 'assigned' | 'completed';
-  score?: number; // scale 10.00
+  score?: number; // scale 10.00 or 20.00
   answers: Record<string, string>; // question_id -> student answer
+  tab_switch_count?: number; // Count of tab switches during live exam
   started_at?: string;
   submitted_at?: string;
   created_at: string;
+}
+
+export type MistakeReason =
+  | 'formula_error'
+  | 'language_misinterpretation'
+  | 'careless_calculation'
+  | 'concept_gap'
+  | 'other';
+
+export interface MistakeEntry {
+  id: string;
+  student_id: string;
+  question: Question;
+  exam_title: string;
+  student_answer: string;
+  mistake_reason?: MistakeReason;
+  notes?: string;
+  timestamp: string;
+  mastered?: boolean;
+}
+
+export interface VocabWord {
+  id: string;
+  term_en: string;
+  pronunciation?: string;
+  term_vi: string;
+  strand?: MathStrand;
+  definition: string;
+  example?: string;
+  is_bookmarked?: boolean;
 }
 
 export interface StudentStudyNote {

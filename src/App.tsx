@@ -9,6 +9,8 @@ import { StudyAssistant } from './components/StudentView/StudyAssistant';
 import { MockTestRunner } from './components/StudentView/MockTestRunner';
 import { StudentNotes } from './components/StudentView/StudentNotes';
 import { ReviewSection } from './components/StudentView/ReviewSection';
+import { MistakeNotebook } from './components/StudentView/MistakeNotebook';
+import { InteractiveVocabModal } from './components/StudentView/InteractiveVocabModal';
 import { JoinExamModal } from './components/StudentView/JoinExamModal';
 import { SchemaModal } from './components/SchemaModal';
 import { SettingsModal } from './components/SettingsModal';
@@ -369,6 +371,16 @@ export default function App() {
                       </div>
                     )}
                   </div>
+                )}
+                {activeTab === 'student_mistakes' && (
+                  <MistakeNotebook
+                    onPracticeMistakes={(practiceExam) => {
+                      setActiveRunningExam(practiceExam);
+                    }}
+                  />
+                )}
+                {activeTab === 'student_vocab' && (
+                  <InteractiveVocabModal />
                 )}
                 {activeTab === 'student_notes' && (
                   <StudentNotes

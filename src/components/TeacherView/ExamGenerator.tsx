@@ -19,8 +19,8 @@ import {
 import { Exam, Question, ExamMode, ExamType, MathStrand, CognitiveLevel } from '../../types';
 import MathRenderer from '../MathRenderer';
 import { exportExamToDocx } from '../../utils/docxExport';
-import { printExamOrNotes } from '../../utils/printPdf';
-import { generateExam } from '../../services/geminiService';
+import { printExamOrNotes, printHaiPhongExam } from '../../utils/printPdf';
+import { generateExam, regenerateSingleQuestion } from '../../services/geminiService';
 
 interface ExamGeneratorProps {
   onSaveExam: (exam: Exam) => void;
@@ -42,7 +42,28 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({ onSaveExam, onNavi
   const [errorMsg, setErrorMsg] = useState('');
   const [generatedQuestions, setGeneratedQuestions] = useState<Question[] | null>(null);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [swappingIndex, setSwappingIndex] = useState<number | null>(null);
   const [successSaved, setSuccessSaved] = useState(false);
+
+  // Swap / Regenerate a single question
+  const handleSwapQuestion = async (index: number) => {
+    if (!generatedQuestions) return;
+    const target = generatedQuestions[index];
+    setSwappingIndex(index);
+    try {
+      const newQ = await regenerateSingleQuestion({
+        originalQuestion: target,
+        mode,
+      });
+      const updated = [...generatedQuestions];
+      updated[index] = newQ;
+      setGeneratedQuestions(updated);
+    } catch (err: any) {
+      alert('Không thể đổi câu hỏi: ' + (err?.message || 'Vui lòng thử lại'));
+    } finally {
+      setSwappingIndex(null);
+    }
+  };
 
   // File upload handler
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -489,12 +510,46 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({ onSaveExam, onNavi
                     DOCX Đáp Án
                   </button>
                   <button
-                    onClick={() => printExamOrNotes(examTitle)}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition"
-                    title="In trực tiếp hoặc Lưu dạng PDF"
+                    onClick={() => {
+                      const tempExam: Exam = {
+                        id: 'temp-exam',
+                        title: examTitle,
+                        mode,
+                        duration_minutes: 90,
+                        is_published: true,
+                        access_code: 'HP-EXAM',
+                        exam_type: examType,
+                        created_at: new Date().toISOString(),
+                        questions: generatedQuestions,
+                      };
+                      printHaiPhongExam(tempExam, { sheetType: 'question_sheet' });
+                    }}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 transition"
+                    title="In Đề Thi chuẩn mẫu Sở GD&ĐT Hải Phòng"
                   >
                     <Printer className="w-3.5 h-3.5" />
-                    In / PDF
+                    In Đề Thi (PDF)
+                  </button>
+                  <button
+                    onClick={() => {
+                      const tempExam: Exam = {
+                        id: 'temp-exam',
+                        title: examTitle,
+                        mode,
+                        duration_minutes: 90,
+                        is_published: true,
+                        access_code: 'HP-EXAM',
+                        exam_type: examType,
+                        created_at: new Date().toISOString(),
+                        questions: generatedQuestions,
+                      };
+                      printHaiPhongExam(tempExam, { sheetType: 'solution_sheet' });
+                    }}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 transition"
+                    title="In Hướng Dẫn Chấm & Đáp Án chuẩn mẫu Sở GD&ĐT Hải Phòng"
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    In Đáp Án (PDF)
                   </button>
                   <button
                     onClick={handleSaveExam}
@@ -529,13 +584,26 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({ onSaveExam, onNavi
                         </span>
                       </div>
 
-                      <button
-                        onClick={() => setEditingIndex(editingIndex === idx ? null : idx)}
-                        className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 font-medium"
-                      >
-                        <Edit3 className="w-3.5 h-3.5" />
-                        {editingIndex === idx ? 'Đóng chỉnh sửa' : 'Chỉnh sửa'}
-                      </button>
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => handleSwapQuestion(idx)}
+                          disabled={swappingIndex === idx}
+                          className="text-xs text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1 font-medium disabled:opacity-50"
+                          title="AI sinh câu hỏi khác cùng chuyên đề và độ khó thay thế câu này"
+                        >
+                          <RotateCw className={`w-3.5 h-3.5 ${swappingIndex === idx ? 'animate-spin' : ''}`} />
+                          {swappingIndex === idx ? 'Đang đổi câu...' : 'Đổi câu khác (Swap)'}
+                        </button>
+
+                        <button
+                          onClick={() => setEditingIndex(editingIndex === idx ? null : idx)}
+                          className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 font-medium"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                          {editingIndex === idx ? 'Đóng sửa' : 'Sửa nhanh'}
+                        </button>
+                      </div>
                     </div>
 
                     {/* Question Statement Rendered with KaTeX */}

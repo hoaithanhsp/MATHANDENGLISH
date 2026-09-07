@@ -15,6 +15,8 @@ import {
   Settings,
   LogOut,
   Target,
+  BookmarkCheck,
+  Languages,
 } from 'lucide-react';
 import { Profile, UserRole } from '../types';
 
@@ -165,6 +167,28 @@ export const Navbar: React.FC<NavbarProps> = ({
                 >
                   <KeyRound className="w-3.5 h-3.5 text-indigo-500" />
                   Vào Phòng Thi
+                </button>
+                <button
+                  onClick={() => setActiveTab('student_mistakes')}
+                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    activeTab === 'student_mistakes'
+                      ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 font-semibold'
+                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <BookmarkCheck className="w-3.5 h-3.5 text-rose-500" />
+                  Sổ Tay Câu Sai
+                </button>
+                <button
+                  onClick={() => setActiveTab('student_vocab')}
+                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    activeTab === 'student_vocab'
+                      ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-semibold'
+                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <Languages className="w-3.5 h-3.5 text-blue-500" />
+                  Từ Điển Thuật Ngữ
                 </button>
                 <button
                   onClick={() => setActiveTab('student_notes')}
@@ -333,6 +357,26 @@ export const Navbar: React.FC<NavbarProps> = ({
                 className="px-2.5 py-1 text-xs whitespace-nowrap rounded-lg text-slate-600 dark:text-slate-300"
               >
                 Mã Phòng Thi
+              </button>
+              <button
+                onClick={() => setActiveTab('student_mistakes')}
+                className={`px-2.5 py-1 text-xs whitespace-nowrap rounded-lg ${
+                  activeTab === 'student_mistakes'
+                    ? 'bg-rose-600 text-white'
+                    : 'text-slate-600 dark:text-slate-300'
+                }`}
+              >
+                Sổ Câu Sai
+              </button>
+              <button
+                onClick={() => setActiveTab('student_vocab')}
+                className={`px-2.5 py-1 text-xs whitespace-nowrap rounded-lg ${
+                  activeTab === 'student_vocab'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-slate-600 dark:text-slate-300'
+                }`}
+              >
+                Từ Điển
               </button>
               <button
                 onClick={() => setActiveTab('student_notes')}

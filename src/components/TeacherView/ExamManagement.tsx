@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { Exam, Question } from '../../types';
 import { exportExamToDocx } from '../../utils/docxExport';
-import { printExamOrNotes } from '../../utils/printPdf';
+import { printExamOrNotes, printHaiPhongExam } from '../../utils/printPdf';
 import MathRenderer from '../MathRenderer';
 
 interface ExamManagementProps {
@@ -321,11 +321,20 @@ export const ExamManagement: React.FC<ExamManagementProps> = ({
                     DOCX (Kèm Đáp Án)
                   </button>
                   <button
-                    onClick={() => printExamOrNotes(selectedExam.title)}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition"
+                    onClick={() => printHaiPhongExam(selectedExam, { sheetType: 'question_sheet' })}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 transition"
+                    title="In Đề Thi chuẩn mẫu Sở GD&ĐT Hải Phòng (Question Sheet)"
                   >
                     <Printer className="w-3.5 h-3.5" />
-                    In / PDF
+                    In Đề Thi (PDF)
+                  </button>
+                  <button
+                    onClick={() => printHaiPhongExam(selectedExam, { sheetType: 'solution_sheet' })}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 transition"
+                    title="In Hướng Dẫn Chấm & Đáp Án chuẩn mẫu Sở GD&ĐT Hải Phòng (Solution Sheet)"
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    In Đáp Án (PDF)
                   </button>
                 </div>
 

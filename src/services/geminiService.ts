@@ -9,6 +9,7 @@
 
 import { GoogleGenAI } from '@google/genai';
 import { apiKeyManager, AiProvider } from './apiKeyManager';
+import { Question } from '../types';
 
 // ============================================================
 // ERROR CLASSIFICATION
@@ -363,3 +364,81 @@ Output: JSON array of ${count} question objects.`;
     return JSON.parse(raw.replace(/```json\s*|```/g, '').trim());
   }
 };
+
+/** Regenerate / Swap a single question with matching metadata */
+export const regenerateSingleQuestion = async (params: {
+  originalQuestion: Question;
+  mode?: string;
+  customPrompt?: string;
+  onModelSwitch?: (from: string, to: string, reason: string) => void;
+}): Promise<Question> => {
+  const { originalQuestion, mode = 'bilingual', customPrompt, onModelSwitch } = params;
+
+  const prompt = `You need to regenerate / swap question #${originalQuestion.order_index} for a high-school Math Olympiad contest (Hai Phong city standard).
+Provide a NEW, DIFFERENT, EQUIVALENT replacement problem with the EXACT SAME specification:
+- Part: ${originalQuestion.part} (${originalQuestion.part === 'PART_1' ? 'Multiple Choice with 4 options' : 'Short Answer'})
+- Strand: ${originalQuestion.strand}
+- Topic: "${originalQuestion.topic}"
+- Difficulty: ${originalQuestion.difficulty}
+- Mode: ${mode}
+${customPrompt ? `- Teacher's specific requirement: "${customPrompt}"` : ''}
+
+CRITICAL RULES:
+1. Make the question original, mathematically sound, challenging, and suitable for Hai Phong City Math Olympiad.
+2. In bilingual mode:
+   - "question_vi" is translated from "question_en".
+   - DO NOT translate MCQ options into Vietnamese ("options_vi" should be empty or omitted). Options MUST stay pure English.
+3. For MCQ (PART_1): options_en must be an array of 4 items ["A. ...", "B. ...", "C. ...", "D. ..."], and correct_answer must be one of "A", "B", "C", "D".
+4. For Short Answer (PART_2): correct_answer must be a single concise number or fraction string (e.g. "42", "1/3", "-5.5", "12").
+5. Include a "hints" array of 2 progressive hints (Hint 1: direction/concept, Hint 2: intermediate step) to help students in practice mode.
+6. Use KaTeX-compatible LaTeX enclosed in $...$ with single backslashes (e.g., $\frac{a}{b}$, $\sqrt{x}$).
+7. Return ONLY a single valid JSON object matching the Question schema.
+
+Output Schema:
+{
+  "id": "${originalQuestion.id}",
+  "exam_id": "${originalQuestion.exam_id}",
+  "part": "${originalQuestion.part}",
+  "order_index": ${originalQuestion.order_index},
+  "strand": "${originalQuestion.strand}",
+  "topic": "${originalQuestion.topic}",
+  "difficulty": "${originalQuestion.difficulty}",
+  "question_en": "string",
+  "question_vi": "string (if bilingual)",
+  "options_en": ["A. ...", "B. ...", "C. ...", "D. ..."] (if PART_1),
+  "correct_answer": "string",
+  "acceptable_answers": ["string"] (if PART_2),
+  "hints": ["Hint 1: ...", "Hint 2: ..."],
+  "solution_en": "string",
+  "solution_vi": "string"
+}`;
+
+  const result = await generateContentWithFallback({
+    contents: prompt,
+    systemInstruction: HAIPHONG_SYSTEM_INSTRUCTION,
+    responseMimeType: 'application/json',
+    maxOutputTokens: 8192,
+    onModelSwitch,
+  });
+
+  const raw = result.text;
+  let parsed: any;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    parsed = JSON.parse(raw.replace(/```json\s*|```/g, '').trim());
+  }
+
+  // Ensure consistent identifiers
+  return {
+    ...originalQuestion,
+    ...parsed,
+    id: originalQuestion.id || `q-${Date.now()}`,
+    exam_id: originalQuestion.exam_id,
+    order_index: originalQuestion.order_index,
+    part: originalQuestion.part,
+    strand: originalQuestion.strand,
+    topic: originalQuestion.topic,
+  };
+};
+
