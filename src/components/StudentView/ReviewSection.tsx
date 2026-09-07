@@ -14,8 +14,10 @@ import {
   Layers,
   Award,
   FileText,
+  Languages,
 } from 'lucide-react';
 import { REVIEW_STRANDS, EXAM_STRUCTURE, ReviewStrand, ReviewTopic } from '../../data/reviewData';
+import MathRenderer from '../MathRenderer';
 
 export const ReviewSection: React.FC = () => {
   const [expandedStrand, setExpandedStrand] = useState<string | null>('algebra_calculus');
@@ -203,9 +205,9 @@ export const ReviewSection: React.FC = () => {
                           {topic.key_formulas.map((formula, fi) => (
                             <div
                               key={fi}
-                              className="px-3 py-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900 text-xs font-mono text-indigo-800 dark:text-indigo-200"
+                              className="px-3 py-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900 text-xs text-indigo-900 dark:text-indigo-200"
                             >
-                              ${formula}$
+                              <MathRenderer content={formula.startsWith('$') ? formula : `$${formula}$`} />
                             </div>
                           ))}
                         </div>
@@ -235,23 +237,33 @@ export const ReviewSection: React.FC = () => {
                           {topic.sample_questions.map((q) => (
                             <div
                               key={q.id}
-                              className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 space-y-2"
+                              className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 space-y-2.5"
                             >
                               <div className="flex items-center justify-between">
                                 {difficultyBadge(q.difficulty)}
                               </div>
-                              <p className="text-xs text-slate-800 dark:text-slate-200 font-medium leading-relaxed">
-                                🇬🇧 {q.question_en}
-                              </p>
+
+                              {/* 1. Phần Câu hỏi Tiếng Anh */}
+                              <div className="text-xs text-slate-800 dark:text-slate-200 font-medium leading-relaxed">
+                                <MathRenderer content={q.question_en} />
+                              </div>
+
+                              {/* 2. Phần Bản dịch Tiếng Việt (Tách biệt rõ ràng) */}
                               {q.question_vi && (
-                                <p className="text-xs text-slate-500 dark:text-slate-400 italic leading-relaxed">
-                                  🇻🇳 {q.question_vi}
-                                </p>
+                                <div className="p-2.5 rounded-lg bg-slate-100/80 dark:bg-slate-850 border border-slate-200 dark:border-slate-700 text-xs">
+                                  <div className="flex items-center gap-1 font-semibold text-[11px] text-indigo-600 dark:text-indigo-400 mb-1">
+                                    <Languages className="w-3.5 h-3.5" />
+                                    <span>Bản dịch Tiếng Việt:</span>
+                                  </div>
+                                  <div className="text-slate-600 dark:text-slate-300 italic leading-relaxed">
+                                    <MathRenderer content={q.question_vi} />
+                                  </div>
+                                </div>
                               )}
 
-                              {/* Options (Part I) */}
+                              {/* Options (Part I) - Chỉ hiển thị tiếng Anh, không dịch đáp án */}
                               {q.options && (
-                                <div className="grid grid-cols-2 gap-1.5 mt-2">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 mt-2">
                                   {q.options.map((opt, oi) => (
                                     <div
                                       key={oi}
@@ -261,7 +273,7 @@ export const ReviewSection: React.FC = () => {
                                           : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
                                       }`}
                                     >
-                                      {opt}
+                                      <MathRenderer content={opt} inline />
                                     </div>
                                   ))}
                                 </div>
@@ -276,14 +288,14 @@ export const ReviewSection: React.FC = () => {
                               </button>
 
                               {showSolution[q.id] && (
-                                <div className="mt-2 p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900 space-y-1">
-                                  <p className="text-xs text-emerald-800 dark:text-emerald-200">
-                                    <strong>🇬🇧 Solution:</strong> {q.solution_en}
-                                  </p>
+                                <div className="mt-2 p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900 space-y-1.5">
+                                  <div className="text-xs text-emerald-800 dark:text-emerald-200">
+                                    <strong>🇬🇧 Solution:</strong> <MathRenderer content={q.solution_en} />
+                                  </div>
                                   {q.solution_vi && (
-                                    <p className="text-xs text-emerald-600 dark:text-emerald-300 italic">
-                                      <strong>🇻🇳 Lời giải:</strong> {q.solution_vi}
-                                    </p>
+                                    <div className="text-xs text-emerald-600 dark:text-emerald-300 italic">
+                                      <strong>🇻🇳 Lời giải:</strong> <MathRenderer content={q.solution_vi} />
+                                    </div>
                                   )}
                                   <p className="text-xs font-bold text-emerald-700 dark:text-emerald-300 mt-1">
                                     ✅ Đáp án: {q.correct_answer}

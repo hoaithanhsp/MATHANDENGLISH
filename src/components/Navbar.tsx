@@ -112,6 +112,17 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <Layers className="w-3.5 h-3.5" />
                   HP Matrix Guide
                 </button>
+                <button
+                  onClick={() => setActiveTab('student_notes')}
+                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    activeTab === 'student_notes'
+                      ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-semibold'
+                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <BookOpen className="w-3.5 h-3.5" />
+                  13 Giáo Án Bồi Dưỡng
+                </button>
               </>
             ) : (
               <>
@@ -273,6 +284,16 @@ export const Navbar: React.FC<NavbarProps> = ({
                 }`}
               >
                 Ma Trận
+              </button>
+              <button
+                onClick={() => setActiveTab('student_notes')}
+                className={`px-2.5 py-1 text-xs whitespace-nowrap rounded-lg ${
+                  activeTab === 'student_notes'
+                    ? 'bg-indigo-600 text-white'
+                    : 'text-slate-600 dark:text-slate-300'
+                }`}
+              >
+                13 Giáo Án
               </button>
             </>
           ) : (

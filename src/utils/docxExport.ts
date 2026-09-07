@@ -204,17 +204,16 @@ function formatQuestionDocx(q: Question, mode: 'bilingual' | 'english_only', inc
     );
   }
 
-  // Options if PART_1
+  // Options if PART_1 (English only, no translation for options)
   if (q.part === 'PART_1' && q.options_en && q.options_en.length > 0) {
     const letters = ['A', 'B', 'C', 'D'];
     q.options_en.forEach((opt, idx) => {
       const label = letters[idx] || `${idx + 1}`;
-      const optVi = (mode === 'bilingual' && q.options_vi && q.options_vi[idx]) ? ` (${q.options_vi[idx]})` : '';
       paras.push(
         new Paragraph({
           children: [
             new TextRun({
-              text: `    ${opt.startsWith(label) ? opt : `${label}. ${opt}`}${optVi}`,
+              text: `    ${opt.startsWith(label) ? opt : `${label}. ${opt}`}`,
               size: 20,
             }),
           ],

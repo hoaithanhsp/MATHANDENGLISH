@@ -13,13 +13,13 @@ import {
   Save,
   RotateCw,
   PlusCircle,
-  Trash2
+  Trash2,
+  Languages
 } from 'lucide-react';
 import { Exam, Question, ExamMode, ExamType, MathStrand, CognitiveLevel } from '../../types';
 import MathRenderer from '../MathRenderer';
 import { exportExamToDocx } from '../../utils/docxExport';
 import { printExamOrNotes } from '../../utils/printPdf';
-import { SAMPLE_HAIPHONG_EXAM } from '../../data/sampleExam';
 import { generateExam } from '../../services/geminiService';
 
 interface ExamGeneratorProps {
@@ -93,10 +93,9 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({ onSaveExam, onNavi
 
       setGeneratedQuestions(questions);
     } catch (err: any) {
-      console.warn('API call failed or key missing, offering sample benchmark:', err);
-      setErrorMsg(`${err.message}. Đang nạp đề thi mẫu chuẩn Ma trận Hải Phòng (22 câu) để bạn có thể xem trước và tùy chỉnh.`);
-      // Load sample benchmark exam questions so user can continue without interruption
-      setGeneratedQuestions(SAMPLE_HAIPHONG_EXAM.questions || []);
+      console.error('Exam generation failed:', err);
+      setErrorMsg(`Lỗi khi tạo đề: ${err.message}. Vui lòng thử lại hoặc kiểm tra API Key trong Cài đặt.`);
+      setGeneratedQuestions(null);
     } finally {
       setIsGenerating(false);
     }
@@ -165,16 +164,6 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({ onSaveExam, onNavi
           </h2>
         </div>
         <div className="flex items-center gap-2.5">
-          <button
-            onClick={() => {
-              setGeneratedQuestions(SAMPLE_HAIPHONG_EXAM.questions || []);
-              setExamTitle(SAMPLE_HAIPHONG_EXAM.title);
-            }}
-            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750 transition shadow-xs"
-          >
-            <RotateCw className="w-3.5 h-3.5" />
-            Nạp Đề Chuẩn Mẫu HP
-          </button>
           <button
             onClick={handleGenerate}
             disabled={isGenerating}
@@ -477,7 +466,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({ onSaveExam, onNavi
                 <span className="text-xs text-slate-500 dark:text-slate-400">
                   {generatedQuestions
                     ? `${generatedQuestions.length} câu hỏi chuẩn ma trận (12 MCQ + 10 Short Answer)`
-                    : 'Chưa có dữ liệu đề. Nhấn "Sinh Đề Thi Bằng AI" hoặc "Nạp Đề Chuẩn Mẫu".'}
+                    : 'Chưa có dữ liệu đề. Hãy bấm "Sinh Đề Thi Bằng AI" để bắt đầu.'}
                 </span>
               </div>
 
@@ -557,9 +546,16 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({ onSaveExam, onNavi
                       <MathRenderer content={q.question_en} inline />
                     </div>
 
+                    {/* Vietnamese Translation Callout (Separated clearly, question only) */}
                     {mode === 'bilingual' && q.question_vi && (
-                      <div className="text-slate-500 dark:text-slate-400 italic mb-4 border-l-4 border-slate-200 dark:border-slate-700 pl-4 text-xs sm:text-sm font-sans">
-                        <MathRenderer content={q.question_vi} />
+                      <div className="mb-3 p-3 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs font-sans">
+                        <div className="flex items-center gap-1.5 font-bold text-[11px] text-indigo-600 dark:text-indigo-400 mb-1">
+                          <Languages className="w-3.5 h-3.5" />
+                          <span>Bản dịch Tiếng Việt:</span>
+                        </div>
+                        <div className="text-slate-700 dark:text-slate-300 leading-relaxed italic">
+                          <MathRenderer content={q.question_vi} />
+                        </div>
                       </div>
                     )}
 
@@ -701,7 +697,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({ onSaveExam, onNavi
                   Chưa có đề thi được hiển thị
                 </h4>
                 <p className="text-xs text-slate-500 max-w-sm mt-1">
-                  Chọn các thông số bên trái rồi bấm <strong>"Sinh Đề Thi Bằng AI"</strong>, hoặc bấm <strong>"Nạp Đề Chuẩn Mẫu Hải Phòng"</strong> ở góc phải trên.
+                  Chọn các thông số bên trái rồi bấm <strong>"Sinh Đề Thi Bằng AI"</strong> để tạo bộ đề chuẩn.
                 </p>
               </div>
             )}

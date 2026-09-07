@@ -88,7 +88,7 @@ export const StudentSubmissions: React.FC<StudentSubmissionsProps> = ({ assignme
                           onClick={() => setSelectedAssignment(item)}
                         >
                           <td className="px-4 py-3 font-semibold text-slate-900 dark:text-white">
-                            {item.student_name || 'Học sinh (THPT Khúc Thừa Dụ)'}
+                            {item.student_name || 'Học sinh'}
                           </td>
                           <td className="px-4 py-3 line-clamp-1 max-w-[200px]">
                             {getExamTitle(item.exam_id)}
@@ -146,7 +146,7 @@ export const StudentSubmissions: React.FC<StudentSubmissionsProps> = ({ assignme
                   Chi Tiết Bài Nộp
                 </h3>
                 <span className="text-xs text-slate-500 dark:text-slate-400">
-                  {selectedAssignment.student_name || 'Trần Minh Quang'}
+                  {selectedAssignment.student_name || 'Học sinh'}
                 </span>
               </div>
 

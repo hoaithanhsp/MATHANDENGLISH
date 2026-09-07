@@ -18,7 +18,7 @@ import {
 import { StudentStudyNote, ExamMode, Question } from '../../types';
 import MathRenderer from '../MathRenderer';
 import { printExamOrNotes } from '../../utils/printPdf';
-import { SAMPLE_STUDY_NOTES } from '../../data/sampleStudyNotes';
+import { CHAPTER_STUDY_NOTES } from '../../data/chapterStudyNotes';
 import { generateStudyLesson, generateTopicPractice } from '../../services/geminiService';
 
 interface StudyAssistantProps {
@@ -54,7 +54,7 @@ export const StudyAssistant: React.FC<StudyAssistantProps> = ({
   const [viewLayout, setViewLayout] = useState<'dual_column' | 'single_column'>('dual_column');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-  const [currentNote, setCurrentNote] = useState<StudentStudyNote>(SAMPLE_STUDY_NOTES[0]);
+  const [currentNote, setCurrentNote] = useState<StudentStudyNote>(CHAPTER_STUDY_NOTES[0]);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
 
@@ -83,9 +83,9 @@ export const StudyAssistant: React.FC<StudyAssistantProps> = ({
       setCurrentNote(newNote);
     } catch (err: any) {
       console.warn('AI study assistant error, using curated study note fallback:', err);
-      setErrorMsg(`${err.message}. Đang mở chuyên đề mẫu để bạn không bị gián đoạn ôn tập.`);
-      // Load fallback note
-      const fallback = SAMPLE_STUDY_NOTES.find((n) => n.topic.toLowerCase().includes(topic.toLowerCase())) || SAMPLE_STUDY_NOTES[0];
+      setErrorMsg(`${err.message}. Đang mở chuyên đề từ học liệu chuẩn để bạn không bị gián đoạn ôn tập.`);
+      // Load fallback note from official 25 chapters
+      const fallback = CHAPTER_STUDY_NOTES.find((n) => n.topic.toLowerCase().includes(topic.toLowerCase())) || CHAPTER_STUDY_NOTES[0];
       setCurrentNote({ ...fallback, topic });
     } finally {
       setIsLoading(false);

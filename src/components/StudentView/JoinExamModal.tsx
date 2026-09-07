@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
-import { KeyRound, X, ArrowRight, AlertCircle, Sparkles, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { KeyRound, X, ArrowRight, AlertCircle } from 'lucide-react';
 import { Exam } from '../../types';
 
 interface JoinExamModalProps {
   isOpen: boolean;
+  initialStudentName?: string;
   onClose: () => void;
   onJoinExam: (exam: Exam, studentName: string) => void;
   onFindExamByCode: (code: string) => Exam | undefined;
@@ -11,13 +12,20 @@ interface JoinExamModalProps {
 
 export const JoinExamModal: React.FC<JoinExamModalProps> = ({
   isOpen,
+  initialStudentName = '',
   onClose,
   onJoinExam,
   onFindExamByCode,
 }) => {
   const [accessCode, setAccessCode] = useState('');
-  const [studentName, setStudentName] = useState('Trần Minh Quang (Đội tuyển HSG)');
+  const [studentName, setStudentName] = useState(initialStudentName);
   const [errorMsg, setErrorMsg] = useState('');
+
+  useEffect(() => {
+    if (initialStudentName) {
+      setStudentName(initialStudentName);
+    }
+  }, [initialStudentName]);
 
   if (!isOpen) return null;
 
@@ -32,7 +40,7 @@ export const JoinExamModal: React.FC<JoinExamModalProps> = ({
 
     const exam = onFindExamByCode(accessCode.trim());
     if (!exam) {
-      setErrorMsg(`Không tìm thấy đề thi với mã "${accessCode.trim().toUpperCase()}". Bạn có thể thử mã "HP-MATH-2026".`);
+      setErrorMsg(`Không tìm thấy đề thi với mã "${accessCode.trim().toUpperCase()}". Vui lòng kiểm tra lại mã phòng thi do giáo viên cung cấp.`);
       return;
     }
 
@@ -95,18 +103,8 @@ export const JoinExamModal: React.FC<JoinExamModalProps> = ({
               value={accessCode}
               onChange={(e) => setAccessCode(e.target.value.toUpperCase())}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 font-mono text-sm font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              placeholder="VD: HP-MATH-2026"
+              placeholder="VD: HP-XXXX-2026"
             />
-            <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1">
-              <span>Mã chuẩn mẫu:</span>
-              <button
-                type="button"
-                onClick={() => setAccessCode('HP-MATH-2026')}
-                className="text-emerald-600 dark:text-emerald-400 hover:underline font-mono font-semibold"
-              >
-                HP-MATH-2026
-              </button>
-            </div>
           </div>
 
           {errorMsg && (

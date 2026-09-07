@@ -26,41 +26,43 @@ export const MathRenderer: React.FC<MathRendererProps> = ({ content, className =
     // we need to reduce it to "\sin" for KaTeX.
     let processed = content;
 
-    // Regex to match $$ ... $$ (block) or $ ... $ (inline)
+    // Regex to match $$ ... $$, \[ ... \], $ ... $, or \( ... \)
     // Avoid false positives like isolated $ signs
-    const tokenRegex = /(\$\$[\s\S]+?\$\$|\$[^\$\n]+?\$)/g;
+    const tokenRegex = /(\$\$[\s\S]+?\$\$|\\\[[\s\S]+?\\\]|\$[^\$\n]+?\$|\\\([^\n]+?\\\))/g;
     const parts = processed.split(tokenRegex);
 
     return parts
       .map((part) => {
         if (!part) return '';
 
-        // Block math: $$ ... $$
-        if (part.startsWith('$$') && part.endsWith('$$') && part.length >= 4) {
+        // Block math: $$ ... $$ or \[ ... \]
+        const isDoubleDollarBlock = part.startsWith('$$') && part.endsWith('$$') && part.length >= 4;
+        const isBracketBlock = part.startsWith('\\[') && part.endsWith('\\]') && part.length >= 4;
+        if (isDoubleDollarBlock || isBracketBlock) {
           let math = part.slice(2, -2).trim();
-          // Fix double-escaped backslashes inside math
           math = fixDoubleEscapes(math);
           try {
             return katex.renderToString(math, {
               displayMode: true,
               throwOnError: false,
-              output: 'htmlAndMathml',
+              output: 'html',
             });
           } catch (err) {
             return `<span class="text-rose-500 font-mono text-xs">[LaTeX Error: ${escapeHtml(math)}]</span>`;
           }
         }
 
-        // Inline math: $ ... $
-        if (part.startsWith('$') && part.endsWith('$') && part.length >= 2) {
-          let math = part.slice(1, -1).trim();
-          // Fix double-escaped backslashes inside math
+        // Inline math: $ ... $ or \( ... \)
+        const isDollarInline = part.startsWith('$') && part.endsWith('$') && part.length >= 2;
+        const isParenInline = part.startsWith('\\(') && part.endsWith('\\)') && part.length >= 4;
+        if (isDollarInline || isParenInline) {
+          let math = isDollarInline ? part.slice(1, -1).trim() : part.slice(2, -2).trim();
           math = fixDoubleEscapes(math);
           try {
             return katex.renderToString(math, {
               displayMode: false,
               throwOnError: false,
-              output: 'htmlAndMathml',
+              output: 'html',
             });
           } catch (err) {
             return `<span class="text-rose-500 font-mono text-xs">[LaTeX Error: ${escapeHtml(math)}]</span>`;

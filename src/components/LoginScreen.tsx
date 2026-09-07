@@ -10,14 +10,9 @@ import {
   Eye,
   EyeOff,
   AlertCircle,
-  Users,
-  UserCheck,
-  BookOpen,
   Loader2,
-  ChevronDown,
-  ChevronUp,
 } from 'lucide-react';
-import { PREDEFINED_ACCOUNTS, loginWithEmailPassword, AccountInfo } from '../services/authService';
+import { loginWithEmailPassword } from '../services/authService';
 import { Profile } from '../types';
 
 interface LoginScreenProps {
@@ -30,7 +25,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showAccounts, setShowAccounts] = useState(false);
 
   const handleLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -62,15 +56,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
       setLoading(false);
     }
   };
-
-  const handleQuickLogin = (account: AccountInfo) => {
-    setEmail(account.email);
-    setPassword(account.password);
-    setError('');
-  };
-
-  const teacherAccount = PREDEFINED_ACCOUNTS.filter((a) => a.role === 'teacher');
-  const studentAccounts = PREDEFINED_ACCOUNTS.filter((a) => a.role === 'student');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-emerald-50 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950 flex items-center justify-center p-4">

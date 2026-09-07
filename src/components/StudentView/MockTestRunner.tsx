@@ -13,7 +13,8 @@ import {
   Check,
   X,
   BookOpen,
-  PieChart
+  PieChart,
+  Languages
 } from 'lucide-react';
 import { Exam, Question, Assignment } from '../../types';
 import MathRenderer from '../MathRenderer';
@@ -214,12 +215,18 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
                   </div>
 
                   {/* Question */}
-                  <div className="text-xs sm:text-sm font-medium text-slate-900 dark:text-white mb-2">
+                  <div className="text-xs sm:text-sm font-medium text-slate-900 dark:text-white mb-2 leading-relaxed">
                     <MathRenderer content={q.question_en} />
                   </div>
-                  {q.question_vi && (
-                    <div className="text-xs italic text-slate-500 mb-2 pl-2 border-l-2 border-slate-300">
-                      <MathRenderer content={q.question_vi} />
+                  {q.question_vi && exam.mode === 'bilingual' && (
+                    <div className="mb-3 p-3 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs">
+                      <div className="flex items-center gap-1.5 font-bold text-[11px] text-indigo-600 dark:text-indigo-400 mb-1">
+                        <Languages className="w-3.5 h-3.5" />
+                        <span>Bản dịch Tiếng Việt:</span>
+                      </div>
+                      <div className="text-slate-700 dark:text-slate-300 leading-relaxed italic">
+                        <MathRenderer content={q.question_vi} />
+                      </div>
                     </div>
                   )}
 
@@ -336,8 +343,14 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
                 </div>
 
                 {currentQ.question_vi && exam.mode === 'bilingual' && (
-                  <div className="text-slate-500 dark:text-slate-400 italic mb-6 border-l-4 border-slate-200 dark:border-slate-700 pl-4 text-xs sm:text-sm font-sans">
-                    <MathRenderer content={currentQ.question_vi} />
+                  <div className="mb-6 p-3.5 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-sans">
+                    <div className="flex items-center gap-1.5 font-bold text-[11px] text-indigo-600 dark:text-indigo-400 mb-1.5">
+                      <Languages className="w-4 h-4" />
+                      <span>Bản dịch Tiếng Việt:</span>
+                    </div>
+                    <div className="text-slate-700 dark:text-slate-300 leading-relaxed italic">
+                      <MathRenderer content={currentQ.question_vi} />
+                    </div>
                   </div>
                 )}
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   FileText,
   Copy,
@@ -12,7 +12,8 @@ import {
   Layers,
   CheckCircle2,
   Eye,
-  Plus
+  Plus,
+  Languages
 } from 'lucide-react';
 import { Exam, Question } from '../../types';
 import { exportExamToDocx } from '../../utils/docxExport';
@@ -38,6 +39,15 @@ export const ExamManagement: React.FC<ExamManagementProps> = ({
   const [jsonUploadText, setJsonUploadText] = useState('');
   const [uploadError, setUploadError] = useState('');
   const [viewSolutions, setViewSolutions] = useState(false);
+
+  // Tự động đồng bộ selectedExam khi danh sách exams thay đổi
+  useEffect(() => {
+    if (!selectedExam && exams.length > 0) {
+      setSelectedExam(exams[0]);
+    } else if (selectedExam && !exams.find((e) => e.id === selectedExam.id)) {
+      setSelectedExam(exams[0] || null);
+    }
+  }, [exams, selectedExam]);
 
   const handleCopyCode = (code: string) => {
     navigator.clipboard.writeText(code);
@@ -138,67 +148,77 @@ export const ExamManagement: React.FC<ExamManagementProps> = ({
           </h3>
 
           <div className="space-y-2.5">
-            {exams.map((exam) => {
-              const isSelected = selectedExam?.id === exam.id;
-              return (
-                <div
-                  key={exam.id}
-                  onClick={() => setSelectedExam(exam)}
-                  className={`p-4 rounded-xl border cursor-pointer transition ${
-                    isSelected
-                      ? 'bg-indigo-50/70 dark:bg-indigo-950/40 border-indigo-500 shadow-xs'
-                      : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-2 mb-1.5">
-                    <span className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white line-clamp-1">
-                      {exam.title}
-                    </span>
-                    <span
-                      className={`shrink-0 px-2 py-0.5 rounded text-[10px] font-bold ${
-                        exam.is_published
-                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
-                          : 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300'
-                      }`}
-                    >
-                      {exam.is_published ? 'Đang mở' : 'Bản nháp'}
-                    </span>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-y-1 gap-x-3 text-[11px] text-slate-500 dark:text-slate-400 mb-3">
-                    <span>{exam.questions?.length || 22} câu hỏi</span>
-                    <span>•</span>
-                    <span>{exam.duration_minutes} phút</span>
-                    <span>•</span>
-                    <span>{exam.mode === 'bilingual' ? 'Song ngữ' : 'Tiếng Anh'}</span>
-                  </div>
-
-                  {/* Access Code & Quick Copy */}
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-200/60 dark:border-slate-700/60">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[11px] text-slate-400">Mã thi:</span>
-                      <span className="font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400">
-                        {exam.access_code}
+            {exams.length > 0 ? (
+              exams.map((exam) => {
+                const isSelected = selectedExam?.id === exam.id;
+                return (
+                  <div
+                    key={exam.id}
+                    onClick={() => setSelectedExam(exam)}
+                    className={`p-4 rounded-xl border cursor-pointer transition ${
+                      isSelected
+                        ? 'bg-indigo-50/70 dark:bg-indigo-950/40 border-indigo-500 shadow-xs'
+                        : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-1.5">
+                      <span className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white line-clamp-1">
+                        {exam.title}
+                      </span>
+                      <span
+                        className={`shrink-0 px-2 py-0.5 rounded text-[10px] font-bold ${
+                          exam.is_published
+                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
+                            : 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300'
+                        }`}
+                      >
+                        {exam.is_published ? 'Đang mở' : 'Bản nháp'}
                       </span>
                     </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleCopyCode(exam.access_code);
-                      }}
-                      className="p-1 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400"
-                      title="Sao chép mã phòng thi"
-                    >
-                      {copiedCode === exam.access_code ? (
-                        <Check className="w-3.5 h-3.5 text-emerald-500" />
-                      ) : (
-                        <Copy className="w-3.5 h-3.5" />
-                      )}
-                    </button>
+
+                    <div className="flex flex-wrap items-center gap-y-1 gap-x-3 text-[11px] text-slate-500 dark:text-slate-400 mb-3">
+                      <span>{exam.questions?.length || 22} câu hỏi</span>
+                      <span>•</span>
+                      <span>{exam.duration_minutes} phút</span>
+                      <span>•</span>
+                      <span>{exam.mode === 'bilingual' ? 'Song ngữ' : 'Tiếng Anh'}</span>
+                    </div>
+
+                    {/* Access Code & Quick Copy */}
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-200/60 dark:border-slate-700/60">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[11px] text-slate-400">Mã thi:</span>
+                        <span className="font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400">
+                          {exam.access_code}
+                        </span>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCopyCode(exam.access_code);
+                        }}
+                        className="p-1 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400"
+                        title="Sao chép mã phòng thi"
+                      >
+                        {copiedCode === exam.access_code ? (
+                          <Check className="w-3.5 h-3.5 text-emerald-500" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            ) : (
+              <div className="p-6 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-center text-slate-400 text-xs space-y-2">
+                <FileText className="w-8 h-8 mx-auto text-slate-300 dark:text-slate-600" />
+                <p className="font-semibold text-slate-700 dark:text-slate-300">Chưa có đề thi nào</p>
+                <p className="text-[11px] text-slate-400">
+                  Thầy/Cô hãy bấm "Tạo Đề Mới (AI)" hoặc tải lên đề tự soạn.
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -237,15 +257,13 @@ export const ExamManagement: React.FC<ExamManagementProps> = ({
                   >
                     {selectedExam.is_published ? 'Đang Mở Thi' : 'Đang Khóa Thi'}
                   </button>
-                  {exams.length > 1 && (
-                    <button
-                      onClick={() => onDeleteExam(selectedExam.id)}
-                      className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition"
-                      title="Xóa đề thi"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  )}
+                  <button
+                    onClick={() => onDeleteExam(selectedExam.id)}
+                    className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition"
+                    title="Xóa đề thi"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
 
@@ -341,13 +359,21 @@ export const ExamManagement: React.FC<ExamManagementProps> = ({
                       </span>
                     </div>
 
-                    <div className="text-xs sm:text-sm font-medium text-slate-900 dark:text-white mb-2">
+                    {/* 1. Phần Câu Hỏi Tiếng Anh */}
+                    <div className="text-xs sm:text-sm font-medium text-slate-900 dark:text-white mb-2 leading-relaxed">
                       <MathRenderer content={q.question_en} />
                     </div>
 
+                    {/* 2. Phần Bản Dịch Tiếng Việt (Tách biệt rõ ràng, chỉ dịch câu hỏi) */}
                     {selectedExam.mode === 'bilingual' && q.question_vi && (
-                      <div className="text-xs text-slate-600 dark:text-slate-400 italic mb-2.5 pl-2 border-l-2 border-indigo-300 dark:border-indigo-700">
-                        <MathRenderer content={q.question_vi} />
+                      <div className="mb-3 p-3 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs">
+                        <div className="flex items-center gap-1.5 font-bold text-[11px] text-indigo-600 dark:text-indigo-400 mb-1">
+                          <Languages className="w-3.5 h-3.5" />
+                          <span>Bản dịch Tiếng Việt:</span>
+                        </div>
+                        <div className="text-slate-700 dark:text-slate-300 leading-relaxed italic">
+                          <MathRenderer content={q.question_vi} />
+                        </div>
                       </div>
                     )}
 
@@ -400,6 +426,24 @@ export const ExamManagement: React.FC<ExamManagementProps> = ({
                     )}
                   </div>
                 ))}
+              </div>
+            </div>
+          ) : exams.length === 0 ? (
+            <div className="bg-white dark:bg-slate-800 rounded-2xl p-12 text-center border border-slate-200 dark:border-slate-700 shadow-xs space-y-3">
+              <FileText className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600" />
+              <h3 className="text-base font-bold text-slate-700 dark:text-slate-200">
+                Ngân Hàng Đề Thi Đang Trống
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+                Chưa có đề thi nào được lưu trữ. Thầy/Cô hãy bắt đầu bằng cách bấm nút <strong>"Tạo Đề Mới (AI)"</strong> để tạo đề thi chuẩn ma trận Hải Phòng hoặc <strong>"Tải Lên Đề Tự Soạn (JSON)"</strong>.
+              </p>
+              <div className="pt-2 flex justify-center gap-3">
+                <button
+                  onClick={onNavigateToGenerate}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition"
+                >
+                  Tạo Đề Mới Bằng AI
+                </button>
               </div>
             </div>
           ) : (

@@ -5,8 +5,6 @@
  */
 
 import { Exam, Assignment, StudentStudyNote, Profile, UserRole } from '../types';
-import { SAMPLE_HAIPHONG_EXAM } from '../data/sampleExam';
-import { SAMPLE_STUDY_NOTES } from '../data/sampleStudyNotes';
 import { CHAPTER_STUDY_NOTES } from '../data/chapterStudyNotes';
 import {
   isFirebaseConfigured,
@@ -36,7 +34,7 @@ const DEFAULT_STUDENT: Profile = {
   id: 'student-hp-01',
   email: 'student.olympiad@haiphong.edu.vn',
   role: 'student',
-  full_name: 'Trần Minh Quang (Đội tuyển HSG Toán Hải Phòng)',
+  full_name: 'Học sinh',
   created_at: new Date().toISOString(),
 };
 
@@ -80,11 +78,15 @@ export const storageService = {
   // Exams — Firebase + localStorage
   // ========================================
   getExams(): Exam[] {
-    const local = readLocal<Exam[]>(STORAGE_KEYS.EXAMS, []);
-    if (local.length > 0) return local;
-    const initial = [SAMPLE_HAIPHONG_EXAM];
-    writeLocal(STORAGE_KEYS.EXAMS, initial);
-    return initial;
+    const raw = readLocal<Exam[]>(STORAGE_KEYS.EXAMS, []);
+    // Tự động thanh lọc các đề thi demo cũ nếu còn lưu trong localStorage
+    const cleaned = raw.filter(
+      (e) => e.id !== 'hp-exam-sample-01' && e.access_code !== 'HP-MATH-2026'
+    );
+    if (cleaned.length !== raw.length) {
+      writeLocal(STORAGE_KEYS.EXAMS, cleaned);
+    }
+    return cleaned;
   },
 
   async saveExam(exam: Exam): Promise<void> {
@@ -125,11 +127,11 @@ export const storageService = {
 
     const fbExams = await fbGet<Record<string, Exam>>('exams');
     if (fbExams) {
-      const exams = Object.values(fbExams);
-      if (exams.length > 0) {
-        writeLocal(STORAGE_KEYS.EXAMS, exams);
-        return exams;
-      }
+      const exams = Object.values(fbExams).filter(
+        (e) => e.id !== 'hp-exam-sample-01' && e.access_code !== 'HP-MATH-2026'
+      );
+      writeLocal(STORAGE_KEYS.EXAMS, exams);
+      return exams;
     }
     return this.getExams();
   },
@@ -140,9 +142,14 @@ export const storageService = {
 
     return fbOnValue('exams', (data) => {
       if (data) {
-        const exams = Object.values(data) as Exam[];
+        const exams = (Object.values(data) as Exam[]).filter(
+          (e) => e.id !== 'hp-exam-sample-01' && e.access_code !== 'HP-MATH-2026'
+        );
         writeLocal(STORAGE_KEYS.EXAMS, exams);
         callback(exams);
+      } else {
+        writeLocal(STORAGE_KEYS.EXAMS, []);
+        callback([]);
       }
     });
   },
@@ -201,10 +208,19 @@ export const storageService = {
   // Study Notes
   // ========================================
   getStudyNotes(): StudentStudyNote[] {
-    const local = readLocal<StudentStudyNote[]>(STORAGE_KEYS.STUDY_NOTES, []);
-    if (local.length > 0) return local;
-    // Nạp sẵn: sample notes + 25 chương học liệu Toán Tiếng Anh
-    const initial = [...SAMPLE_STUDY_NOTES, ...CHAPTER_STUDY_NOTES];
+    const raw = readLocal<StudentStudyNote[]>(STORAGE_KEYS.STUDY_NOTES, []);
+    // Lọc bỏ các ghi chú demo mẫu
+    const cleaned = raw.filter(
+      (n) => n.id !== 'note-01' && n.id !== 'note-02' && n.student_id !== 'sample-student-id'
+    );
+    if (raw.length > 0) {
+      if (cleaned.length !== raw.length) {
+        writeLocal(STORAGE_KEYS.STUDY_NOTES, cleaned);
+      }
+      return cleaned;
+    }
+    // Nạp mặc định: 25 chương học liệu Toán Tiếng Anh chuẩn
+    const initial = [...CHAPTER_STUDY_NOTES];
     writeLocal(STORAGE_KEYS.STUDY_NOTES, initial);
     return initial;
   },

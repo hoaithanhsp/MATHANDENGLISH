@@ -23,3 +23,38 @@
 ::-webkit-scrollbar-thumb:hover {
   background-color: rgba(100, 116, 139, 0.6);
 }
+
+/* KaTeX Safety & Math Typography rules */
+.katex-mathml {
+  display: none !important;
+  position: absolute !important;
+  clip: rect(1px, 1px, 1px, 1px) !important;
+  padding: 0 !important;
+  border: 0 !important;
+  height: 1px !important;
+  width: 1px !important;
+  overflow: hidden !important;
+}
+
+.katex .sqrt {
+  display: inline-flex !important;
+  align-items: baseline !important;
+}
+
+.katex .vlist-t {
+  display: inline-table !important;
+  table-layout: fixed !important;
+}
+
+.katex {
+  font-size: 1.05em;
+  text-rendering: auto;
+}
+
+.math-rendered-block .katex-display {
+  margin: 0.75em 0 !important;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.25em 0;
+}
+

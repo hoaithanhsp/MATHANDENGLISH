@@ -215,7 +215,7 @@ Contest Structure & Rules (MUST BE STRICTLY FOLLOWED):
    - CORRECT in JSON: "$\\\\sin(x) + \\\\cos(x)$"
    - WRONG in JSON: "$\\sin(x)$" (single backslash gets lost in JSON parsing)
 6. Language:
-   - For bilingual mode: provide question_en and question_vi, options_en and options_vi (for Part 1), solution_en and solution_vi.
+   - For bilingual mode: provide question_en and question_vi (translate ONLY the question prompt, do NOT translate options/answers). options_en MUST be in English only (do NOT translate options to Vietnamese). Also provide solution_en and solution_vi.
    - For english_only: question_en, options_en, solution_en.
 7. Return clean JSON only without markdown code fences if possible, or standard JSON.`;
 
@@ -248,6 +248,9 @@ Number of questions: ${questionCount}
 ${topicPrompt ? `Focus Topic / Custom Instruction: ${topicPrompt}` : ''}
 ${customDocumentText ? `Reference Material / Document Context:\n${customDocumentText.slice(0, 4000)}` : ''}
 
+CRITICAL BILINGUAL RULE:
+In bilingual mode, ONLY translate the question prompt into "question_vi". Do NOT translate multiple-choice options or short answers. Keep "options_en" in English only.
+
 Output Schema:
 A valid JSON array containing ${questionCount} question objects with these exact properties:
 [
@@ -257,10 +260,9 @@ A valid JSON array containing ${questionCount} question objects with these exact
     "strand": "algebra_calculus" or "geometry_measurement" or "statistics_discrete",
     "topic": string,
     "difficulty": "understanding" or "application" or "advanced",
-    "question_en": string (using $...$ for math),
-    "question_vi": string (Vietnamese translation if bilingual),
-    "options_en": ["A. ...", "B. ...", "C. ...", "D. ..."] (null or omit for PART_2),
-    "options_vi": ["A. ...", "B. ...", "C. ...", "D. ..."] (null or omit for PART_2),
+    "question_en": string (English question prompt using $...$ for math),
+    "question_vi": string (Vietnamese translation of the QUESTION STATEMENT ONLY. Null if english_only),
+    "options_en": ["A. ...", "B. ...", "C. ...", "D. ..."] (English only, null or omit for PART_2),
     "correct_answer": string (For Part 1: "A", "B", "C", or "D". For Part 2: e.g. "42", "1/3", "-5.5"),
     "acceptable_answers": string[] (e.g. ["1/3", "0.333"]),
     "solution_en": string (detailed step-by-step solution with $...$),
@@ -337,12 +339,12 @@ export const generateTopicPractice = async (params: {
 
 CRITICAL RULES:
 1. ALL questions MUST be directly about "${topic}". Do NOT generate questions on other topics.
-2. Language mode: ${mode} (include both question_en and question_vi).
-3. Use KaTeX-compatible LaTeX with single backslash inside $...$ delimiters. Example: $\\sin(x)$, $\\frac{a}{b}$, $\\lim_{x \\to 0}$.
-4. Do NOT use \\\\sin or \\\\frac (double backslash). Use single backslash: \\sin, \\frac, \\sqrt, \\log, etc.
+2. Language mode: ${mode}. In bilingual mode, translate ONLY the question prompt into "question_vi". Do NOT translate options into Vietnamese.
+3. Use KaTeX-compatible LaTeX with single backslash inside $...$ delimiters. Example: $\sin(x)$, $\frac{a}{b}$, $\lim_{x \to 0}$.
+4. Do NOT use \\\\sin or \\\\frac (double backslash). Use single backslash: \sin, \frac, \sqrt, \log, etc.
 5. Include Part 1 (MCQ with 4 options) and Part 2 (Short-answer with correct_answer as a number or expression).
 6. Each question must have: id, part ("PART_1" or "PART_2"), order_index, strand, topic, difficulty, question_en, question_vi, correct_answer, solution_en, solution_vi.
-7. MCQ options format: ["A. ...", "B. ...", "C. ...", "D. ..."]
+7. MCQ options format (English only, do NOT translate): ["A. ...", "B. ...", "C. ...", "D. ..."]
 
 Output: JSON array of ${count} question objects.`;
 
