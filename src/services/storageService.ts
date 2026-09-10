@@ -24,6 +24,8 @@ const STORAGE_KEYS = {
   MISTAKES: 'hp_math_mistakes',
   VOCAB: 'hp_math_vocab',
   AUTOSAVE_PREFIX: 'hp_exam_autosave_',
+  AI_QUESTS_PREFIX: 'hp_ai_quests_',
+  DELETED_EXAMS: 'hp_math_deleted_exams',
 };
 
 const DEFAULT_TEACHER: Profile = {
@@ -81,16 +83,38 @@ export const storageService = {
   // ========================================
   // Exams — Firebase + localStorage
   // ========================================
+  getDeletedExamIds(): Set<string> {
+    const list = readLocal<string[]>(STORAGE_KEYS.DELETED_EXAMS, []);
+    return new Set(list);
+  },
+
+  markExamDeleted(examId: string): void {
+    const set = this.getDeletedExamIds();
+    set.add(examId);
+    writeLocal(STORAGE_KEYS.DELETED_EXAMS, Array.from(set));
+  },
+
+  unmarkExamDeleted(examId: string): void {
+    const set = this.getDeletedExamIds();
+    if (set.has(examId)) {
+      set.delete(examId);
+      writeLocal(STORAGE_KEYS.DELETED_EXAMS, Array.from(set));
+    }
+  },
+
   getExams(): Exam[] {
     const raw = readLocal<Exam[]>(STORAGE_KEYS.EXAMS, []);
-    // Tự động thanh lọc các đề thi demo cũ nếu còn lưu trong localStorage
+    const deletedIds = this.getDeletedExamIds();
+
+    // Tự động thanh lọc các đề thi demo cũ và các đề thi đã bị xóa
     const cleaned = raw.filter(
-      (e) => e && e.id !== 'hp-exam-sample-01' && e.access_code !== 'HP-MATH-2026'
+      (e) => e && e.id && !deletedIds.has(e.id) && e.id !== 'hp-exam-sample-01' && e.access_code !== 'HP-MATH-2026'
     );
 
-    // Tự động nạp các bộ đề thi chuẩn Hải Phòng (Mock 01, Mock 02, Code 136)
+    // Tự động nạp các bộ đề thi chuẩn Hải Phòng nếu chưa từng bị xóa
     let modified = false;
     for (const preloaded of ALL_HAIPHONG_PRELOADED_EXAMS) {
+      if (deletedIds.has(preloaded.id)) continue;
       const exists = cleaned.some(
         (e) => e.id === preloaded.id || e.access_code?.toUpperCase() === preloaded.access_code.toUpperCase()
       );
@@ -106,19 +130,22 @@ export const storageService = {
     return cleaned;
   },
 
-
   mergeExams(currentList: Exam[], newList: Exam[]): Exam[] {
+    const deletedIds = this.getDeletedExamIds();
     const map = new Map<string, Exam>();
     for (const item of currentList) {
-      if (item && item.id) map.set(item.id, item);
+      if (item && item.id && !deletedIds.has(item.id)) map.set(item.id, item);
     }
     for (const item of newList) {
-      if (item && item.id) map.set(item.id, item);
+      if (item && item.id && !deletedIds.has(item.id)) map.set(item.id, item);
     }
     return Array.from(map.values());
   },
 
   async saveExam(exam: Exam): Promise<void> {
+    // Phục hồi lại nếu trước đó từng bị đánh dấu xóa
+    this.unmarkExamDeleted(exam.id);
+
     // Always save to localStorage first (instant)
     const exams = this.getExams();
     const idx = exams.findIndex((e) => e.id === exam.id);
@@ -136,11 +163,18 @@ export const storageService = {
   },
 
   async deleteExam(examId: string): Promise<void> {
-    const exams = this.getExams().filter((e) => e.id !== examId);
-    writeLocal(STORAGE_KEYS.EXAMS, exams);
+    // 1. Đánh dấu vĩnh viễn vào danh sách đã xóa để không bị nạp lại
+    this.markExamDeleted(examId);
 
+    // 2. Lọc bỏ ngay khỏi localStorage cache
+    const current = readLocal<Exam[]>(STORAGE_KEYS.EXAMS, []);
+    const filtered = current.filter((e) => e && e.id !== examId);
+    writeLocal(STORAGE_KEYS.EXAMS, filtered);
+
+    // 3. Xóa trên Firebase Cloud Realtime Database
     if (isFirebaseConfigured()) {
       await fbRemove(`exams/${examId}`);
+      await fbRemove(`exam_sessions/${examId}`);
     }
   },
 
@@ -227,12 +261,13 @@ export const storageService = {
     if (!isFirebaseConfigured()) return () => {};
 
     return fbOnValue('exams', (data) => {
-      const current = this.getExams();
+      const deletedIds = this.getDeletedExamIds();
+      const current = this.getExams().filter((e) => !deletedIds.has(e.id));
       if (data) {
         const cloudExams = (Object.values(data) as Exam[]).filter(
-          (e) => e && e.id !== 'hp-exam-sample-01' && e.access_code !== 'HP-MATH-2026'
+          (e) => e && e.id && !deletedIds.has(e.id) && e.id !== 'hp-exam-sample-01' && e.access_code !== 'HP-MATH-2026'
         );
-        const merged = this.mergeExams(current, cloudExams);
+        const merged = this.mergeExams(current, cloudExams).filter((e) => !deletedIds.has(e.id));
         writeLocal(STORAGE_KEYS.EXAMS, merged);
         callback(merged);
       } else {
@@ -550,5 +585,91 @@ export const storageService = {
     } else {
       document.documentElement.classList.remove('dark');
     }
+  },
+
+  // ========================================
+  // Live Stats & Realtime Tracking
+  // ========================================
+  getTodayDateKey(): string {
+    return new Date().toISOString().slice(0, 10);
+  },
+
+  getAiQuestsToday(): number {
+    const todayKey = this.getTodayDateKey();
+    return readLocal<number>(`${STORAGE_KEYS.AI_QUESTS_PREFIX}${todayKey}`, 0);
+  },
+
+  async incrementAiQuests(count: number = 1): Promise<number> {
+    const todayKey = this.getTodayDateKey();
+    const localKey = `${STORAGE_KEYS.AI_QUESTS_PREFIX}${todayKey}`;
+    const current = readLocal<number>(localKey, 0);
+    const updated = current + count;
+    writeLocal(localKey, updated);
+
+    if (isFirebaseConfigured()) {
+      try {
+        const cloudCount = (await fbGet<number>(`stats/daily_ai_quests/${todayKey}`)) || 0;
+        const newCloud = cloudCount + count;
+        await fbSet(`stats/daily_ai_quests/${todayKey}`, newCloud);
+        return newCloud;
+      } catch (err) {
+        console.warn('Error updating AI quests counter to Firebase:', err);
+      }
+    }
+    return updated;
+  },
+
+  onAiQuestsChanged(callback: (count: number) => void): () => void {
+    const todayKey = this.getTodayDateKey();
+    const localKey = `${STORAGE_KEYS.AI_QUESTS_PREFIX}${todayKey}`;
+    const localVal = readLocal<number>(localKey, 0);
+    callback(localVal);
+
+    if (!isFirebaseConfigured()) return () => {};
+
+    return fbOnValue(`stats/daily_ai_quests/${todayKey}`, (data) => {
+      const val = typeof data === 'number' ? data : (data ? Number(data) : 0);
+      writeLocal(localKey, val);
+      callback(val);
+    });
+  },
+
+  onActiveSessionsCountChanged(callback: (activeCount: number) => void): () => void {
+    if (!isFirebaseConfigured()) {
+      callback(0);
+      return () => {};
+    }
+
+    return fbOnValue('exam_sessions', (data) => {
+      if (!data) {
+        callback(0);
+        return;
+      }
+      const now = Date.now();
+      let count = 0;
+      try {
+        const examGroups = Object.values(data as Record<string, Record<string, ExamSession>>);
+        for (const examGroup of examGroups) {
+          if (examGroup && typeof examGroup === 'object') {
+            for (const session of Object.values(examGroup)) {
+              if (
+                session &&
+                session.status === 'in_progress' &&
+                session.last_active_at
+              ) {
+                const diffMs = now - new Date(session.last_active_at).getTime();
+                // Nếu heartbeat trong vòng 3 phút thì tính là đang online
+                if (diffMs >= 0 && diffMs < 3 * 60 * 1000) {
+                  count++;
+                }
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error counting active sessions:', err);
+      }
+      callback(count);
+    });
   },
 };

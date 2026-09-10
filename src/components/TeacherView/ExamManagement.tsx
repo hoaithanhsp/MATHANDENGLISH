@@ -41,6 +41,7 @@ export const ExamManagement: React.FC<ExamManagementProps> = ({
   const [jsonUploadText, setJsonUploadText] = useState('');
   const [uploadError, setUploadError] = useState('');
   const [viewSolutions, setViewSolutions] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Tự động đồng bộ selectedExam khi danh sách exams thay đổi
   useEffect(() => {
@@ -62,6 +63,27 @@ export const ExamManagement: React.FC<ExamManagementProps> = ({
     onSaveExam(updated);
     if (selectedExam?.id === exam.id) {
       setSelectedExam(updated);
+    }
+  };
+
+  const handleDeleteExamAction = (examId: string, examTitle: string) => {
+    const isConfirmed = window.confirm(
+      `Thầy/Cô có chắc chắn muốn xóa đề thi:\n"${examTitle}"?\n\nĐề thi sẽ bị xóa khỏi hệ thống và Firebase Cloud.`
+    );
+    if (!isConfirmed) return;
+
+    setDeletingId(examId);
+
+    // Chuyển ngay selectedExam sang đề thi khác còn lại nếu đang chọn đề này
+    const remaining = exams.filter((e) => e.id !== examId);
+    if (selectedExam?.id === examId) {
+      setSelectedExam(remaining[0] || null);
+    }
+
+    try {
+      onDeleteExam(examId);
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -187,7 +209,7 @@ export const ExamManagement: React.FC<ExamManagementProps> = ({
                       <span>{exam.mode === 'bilingual' ? 'Song ngữ' : 'Tiếng Anh'}</span>
                     </div>
 
-                    {/* Access Code & Quick Copy */}
+                    {/* Access Code & Quick Copy & Quick Delete */}
                     <div className="flex items-center justify-between pt-2 border-t border-slate-200/60 dark:border-slate-700/60">
                       <div className="flex items-center gap-1.5">
                         <span className="text-[11px] text-slate-400">Mã thi:</span>
@@ -195,20 +217,32 @@ export const ExamManagement: React.FC<ExamManagementProps> = ({
                           {exam.access_code}
                         </span>
                       </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleCopyCode(exam.access_code);
-                        }}
-                        className="p-1 text-slate-400 hover:text-teal-600 dark:hover:text-teal-400"
-                        title="Sao chép mã phòng thi"
-                      >
-                        {copiedCode === exam.access_code ? (
-                          <Check className="w-3.5 h-3.5 text-emerald-500" />
-                        ) : (
-                          <Copy className="w-3.5 h-3.5" />
-                        )}
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCopyCode(exam.access_code);
+                          }}
+                          className="p-1 text-slate-400 hover:text-teal-600 dark:hover:text-teal-400"
+                          title="Sao chép mã phòng thi"
+                        >
+                          {copiedCode === exam.access_code ? (
+                            <Check className="w-3.5 h-3.5 text-emerald-500" />
+                          ) : (
+                            <Copy className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteExamAction(exam.id, exam.title);
+                          }}
+                          className="p-1 text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 transition"
+                          title="Xóa đề thi này"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -261,11 +295,13 @@ export const ExamManagement: React.FC<ExamManagementProps> = ({
                     {selectedExam.is_published ? 'Đang Mở Thi' : 'Đang Khóa Thi'}
                   </button>
                   <button
-                    onClick={() => onDeleteExam(selectedExam.id)}
-                    className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition"
-                    title="Xóa đề thi"
+                    onClick={() => handleDeleteExamAction(selectedExam.id, selectedExam.title)}
+                    disabled={deletingId === selectedExam.id}
+                    className="px-3 py-1.5 rounded-xl text-xs font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 hover:bg-rose-100 dark:hover:bg-rose-900/40 transition flex items-center gap-1.5 disabled:opacity-50"
+                    title="Xóa đề thi vĩnh viễn"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                    <span>{deletingId === selectedExam.id ? 'Đang xóa...' : 'Xóa đề thi'}</span>
                   </button>
                 </div>
               </div>

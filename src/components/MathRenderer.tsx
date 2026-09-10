@@ -20,12 +20,10 @@ export const MathRenderer: React.FC<MathRendererProps> = ({ content, className =
   const renderedHtml = useMemo(() => {
     if (!content) return '';
 
-    // Step 0: Clean up Gemini-generated MATHPLACEHOLDER tokens (bug from JSON mode)
-    // These are %%%MATHPLACEHOLDER0%%%, %%%MATHPLACEHOLDER1%%%, etc. (NO underscore)
-    // They appear when Gemini couldn't escape LaTeX in JSON mode.
-    let cleanedContent = content.replace(/%%%MATHPLACEHOLDER\d+%%%/g, '[formula]');
+    // Step 0: Normalize and prepare content
+    let cleanedContent = content;
 
-    // Step 1: Extract and render KaTeX formulas to protected placeholders
+    // Step 1: Extract and render KaTeX formulas to safe protected placeholders
     const mathTokens: string[] = [];
     const tokenRegex = /(\$\$[\s\S]+?\$\$|\\\[[\s\S]+?\\\]|\$[^\$\n]+?\$|\\\([^\n]+?\\\))/g;
 
@@ -48,11 +46,11 @@ export const MathRenderer: React.FC<MathRendererProps> = ({ content, className =
             ? `<div class="katex-display-wrapper my-3 overflow-x-auto py-1 text-center">${rendered}</div>`
             : `<span class="katex-inline-wrapper">${rendered}</span>`
         );
-        return `%%%MATH_PLACEHOLDER_${index}%%%`;
+        return `@@@KATEXMATH${index}TOKEN@@@`;
       } catch {
         const index = mathTokens.length;
         mathTokens.push(`<span class="text-rose-500 font-mono text-xs">[LaTeX Error: ${escapeHtml(rawMath)}]</span>`);
-        return `%%%MATH_PLACEHOLDER_${index}%%%`;
+        return `@@@KATEXMATH${index}TOKEN@@@`;
       }
     });
 
@@ -61,7 +59,7 @@ export const MathRenderer: React.FC<MathRendererProps> = ({ content, className =
       let escaped = escapeHtml(textWithPlaceholders);
       escaped = formatInlineStyles(escaped);
       for (let i = 0; i < mathTokens.length; i++) {
-        escaped = escaped.split(`%%%MATH_PLACEHOLDER_${i}%%%`).join(mathTokens[i]);
+        escaped = escaped.split(`@@@KATEXMATH${i}TOKEN@@@`).join(mathTokens[i]);
       }
       return escaped;
     }
@@ -171,7 +169,7 @@ export const MathRenderer: React.FC<MathRendererProps> = ({ content, className =
 
     // Step 4: Restore all KaTeX placeholders
     for (let i = 0; i < mathTokens.length; i++) {
-      finalHtml = finalHtml.split(`%%%MATH_PLACEHOLDER_${i}%%%`).join(mathTokens[i]);
+      finalHtml = finalHtml.split(`@@@KATEXMATH${i}TOKEN@@@`).join(mathTokens[i]);
     }
 
     return finalHtml;

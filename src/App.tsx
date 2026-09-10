@@ -178,6 +178,7 @@ export default function App() {
 
   // Student starts topical practice
   const handleStartPracticeQuiz = (topic: string, questions: Question[]) => {
+    storageService.incrementAiQuests(questions.length);
     const practiceExam: Exam = {
       id: `practice-${Date.now()}`,
       title: `Bài tập luyện chuyên đề: ${topic}`,
@@ -261,6 +262,8 @@ export default function App() {
                   <ExamGenerator
                     onSaveExam={handleSaveExam}
                     onNavigateToBank={() => setActiveTab('teacher_exams')}
+                    exams={exams}
+                    assignments={assignments}
                   />
                 )}
                 {activeTab === 'teacher_exams' && (
@@ -305,6 +308,8 @@ export default function App() {
                       handleSaveExam(exam);
                       setActiveRunningExam(exam);
                     }}
+                    exams={exams}
+                    assignments={assignments}
                   />
                 )}
                 {activeTab === 'student_assistant' && (

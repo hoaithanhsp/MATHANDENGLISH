@@ -230,10 +230,10 @@ III. ACADEMIC ENGLISH & Olympiad STYLE:
 
 IV. MATHEMATICAL FORMATTING (KaTeX):
 - All formulas MUST use standard LaTeX delimiters: '$...$' for inline and '$$...$$' for display.
-- ABSOLUTELY NEVER use placeholder tokens like %%%MATHPLACEHOLDER%%% or similar. ALWAYS write the actual LaTeX formula inline.
-- In JSON strings, double-escape all LaTeX backslashes: use \\\\frac{a}{b} (4 backslashes in source) so that after JSON parse it becomes \\frac{a}{b}.
-- Example correct JSON value: "Find $\\\\frac{a}{b}$ when $\\\\sqrt{x} = 3$"
-- NEVER replace formulas with placeholders — always embed the actual math expression.
+- Every formula, equation, variable, interval, coordinate, and function must be written as real LaTeX, for example: $P = 2x + 3y$, $\\begin{cases} 2x - y + 2 \\ge 0 \\\\ x + 2y - 4 \\le 0 \\end{cases}$, $[-4; 6]$, $\\frac{a}{b}$.
+- Write mathematical expressions directly inside the text. Always embed the exact math formulas and options.
+- In JSON strings, double-escape all LaTeX backslashes: use \\\\frac{a}{b} so that after JSON parse it becomes \\frac{a}{b}.
+- Example correct JSON value: "Find the maximum value of $P = 2x + 3y$ when $\\\\sqrt{x} \\\\le 3$"
 - The response must be a valid JSON array/object wrapped in ${'```'}json ... ${'```'} code fences.`;
 
 // ============================================================
@@ -361,7 +361,7 @@ A valid JSON array containing ${questionCount} question objects:
 
 CRITICAL FORMATTING RULES:
 - Wrap your output inside \`\`\`json ... \`\`\` code fences.
-- Write ALL math formulas DIRECTLY using LaTeX $...$ inline. NEVER use placeholder tokens like %%%MATHPLACEHOLDER%%%.
+- Write ALL math formulas DIRECTLY using LaTeX $...$ inline, for example "$f(x) = 3\\\\sin(2x) - 4\\\\cos(2x) + 1$", "$\\\\frac{a}{b}$", "$[-4; 6]$".
 - In JSON strings, escape LaTeX backslashes properly: "\\\\frac{a}{b}", "\\\\sqrt{x}", "\\\\sin(2x)".
 - Each formula must be wrapped in $ delimiters: "$\\\\frac{a}{b}$", "$\\\\triangle ABC$".
 - Options must also have proper LaTeX: "A. $6\\\\sqrt{5}$", NOT "A. 6\\sqrt{5}".`;
@@ -398,7 +398,7 @@ Generate a comprehensive lesson in JSON format with:
    [{ "name_en": string, "name_vi": string, "steps": string[], "sample_problem": string (with math symbols in $...$), "solution": string (detailed step-by-step) }]
 
 Return ONLY valid JSON matching this schema, wrapped in \`\`\`json ... \`\`\` code fences.
-Write ALL math directly as LaTeX in $...$ — NEVER use placeholders.`;
+Write ALL math formulas directly as standard LaTeX in $...$ or $$...$$.`;
 
   const result = await generateContentWithFallback({
     contents: prompt,
@@ -432,7 +432,7 @@ CRITICAL RULES:
 7. MCQ options format (English only, do NOT translate): ["A. ...", "B. ...", "C. ...", "D. ..."]
 
 Output: JSON array of ${count} question objects wrapped in \`\`\`json ... \`\`\` code fences.
-Write ALL math formulas DIRECTLY using $...$ LaTeX. NEVER use placeholder tokens.
+Write ALL math formulas directly using standard $...$ LaTeX.
 Escape LaTeX backslashes in JSON strings: "\\\\frac{a}{b}", "$\\\\sqrt{x}$".`;
 
   const result = await generateContentWithFallback({
