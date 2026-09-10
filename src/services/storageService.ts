@@ -84,12 +84,23 @@ export const storageService = {
     const raw = readLocal<Exam[]>(STORAGE_KEYS.EXAMS, []);
     // Tự động thanh lọc các đề thi demo cũ nếu còn lưu trong localStorage
     const cleaned = raw.filter(
-      (e) => e.id !== 'hp-exam-sample-01' && e.access_code !== 'HP-MATH-2026'
+      (e) => e && e.id !== 'hp-exam-sample-01' && e.access_code !== 'HP-MATH-2026'
     );
     if (cleaned.length !== raw.length) {
       writeLocal(STORAGE_KEYS.EXAMS, cleaned);
     }
     return cleaned;
+  },
+
+  mergeExams(currentList: Exam[], newList: Exam[]): Exam[] {
+    const map = new Map<string, Exam>();
+    for (const item of currentList) {
+      if (item && item.id) map.set(item.id, item);
+    }
+    for (const item of newList) {
+      if (item && item.id) map.set(item.id, item);
+    }
+    return Array.from(map.values());
   },
 
   async saveExam(exam: Exam): Promise<void> {
@@ -121,22 +132,73 @@ export const storageService = {
   getExamByAccessCode(code: string): Exam | undefined {
     const exams = this.getExams();
     const norm = code.trim().toUpperCase();
-    return exams.find((e) => e.access_code.toUpperCase() === norm);
+    return exams.find((e) => e.access_code?.toUpperCase() === norm);
+  },
+
+  /** Tra cứu đề thi theo mã phòng thi (tìm trong local cache + truy vấn trực tiếp từ Firebase Cloud) */
+  async findExamByCodeAsync(code: string): Promise<Exam | undefined> {
+    const norm = code.trim().toUpperCase();
+    if (!norm) return undefined;
+
+    // 1. Kiểm tra nhanh trong local memory/cache
+    const localExams = this.getExams();
+    const foundLocal = localExams.find((e) => e.access_code?.toUpperCase() === norm);
+    if (foundLocal) return foundLocal;
+
+    // 2. Tra cứu trực tiếp trên Firebase Realtime Database
+    if (isFirebaseConfigured()) {
+      try {
+        const fbExams = await fbGet<Record<string, Exam>>('exams');
+        if (fbExams) {
+          const cloudExams = Object.values(fbExams).filter(
+            (e) => e && e.id !== 'hp-exam-sample-01' && e.access_code !== 'HP-MATH-2026'
+          );
+          const merged = this.mergeExams(localExams, cloudExams);
+          writeLocal(STORAGE_KEYS.EXAMS, merged);
+          return merged.find((e) => e.access_code?.toUpperCase() === norm);
+        }
+      } catch (err) {
+        console.error('Lỗi khi tra cứu đề thi trên Firebase:', err);
+      }
+    }
+
+    return undefined;
   },
 
   // Sync exams from Firebase (for initial load)
   async syncExamsFromFirebase(): Promise<Exam[]> {
-    if (!isFirebaseConfigured()) return this.getExams();
+    const current = this.getExams();
+    if (!isFirebaseConfigured()) return current;
 
-    const fbExams = await fbGet<Record<string, Exam>>('exams');
-    if (fbExams) {
-      const exams = Object.values(fbExams).filter(
-        (e) => e.id !== 'hp-exam-sample-01' && e.access_code !== 'HP-MATH-2026'
-      );
-      writeLocal(STORAGE_KEYS.EXAMS, exams);
-      return exams;
+    try {
+      const fbExams = await fbGet<Record<string, Exam>>('exams');
+      if (fbExams) {
+        const cloudExams = Object.values(fbExams).filter(
+          (e) => e && e.id !== 'hp-exam-sample-01' && e.access_code !== 'HP-MATH-2026'
+        );
+        const merged = this.mergeExams(current, cloudExams);
+        writeLocal(STORAGE_KEYS.EXAMS, merged);
+
+        // Tự động đẩy các đề chỉ có ở local lên Firebase
+        for (const localExam of current) {
+          if (localExam.id && !cloudExams.some((c) => c.id === localExam.id)) {
+            fbSet(`exams/${localExam.id}`, localExam).catch(console.error);
+          }
+        }
+
+        return merged;
+      } else {
+        // Nếu Firebase chưa có danh sách nào nhưng local có đề, đẩy lên Firebase
+        if (current.length > 0) {
+          for (const localExam of current) {
+            fbSet(`exams/${localExam.id}`, localExam).catch(console.error);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Sync exams warning:', err);
     }
-    return this.getExams();
+    return current;
   },
 
   // Subscribe to realtime exam updates
@@ -144,15 +206,16 @@ export const storageService = {
     if (!isFirebaseConfigured()) return () => {};
 
     return fbOnValue('exams', (data) => {
+      const current = this.getExams();
       if (data) {
-        const exams = (Object.values(data) as Exam[]).filter(
-          (e) => e.id !== 'hp-exam-sample-01' && e.access_code !== 'HP-MATH-2026'
+        const cloudExams = (Object.values(data) as Exam[]).filter(
+          (e) => e && e.id !== 'hp-exam-sample-01' && e.access_code !== 'HP-MATH-2026'
         );
-        writeLocal(STORAGE_KEYS.EXAMS, exams);
-        callback(exams);
+        const merged = this.mergeExams(current, cloudExams);
+        writeLocal(STORAGE_KEYS.EXAMS, merged);
+        callback(merged);
       } else {
-        writeLocal(STORAGE_KEYS.EXAMS, []);
-        callback([]);
+        callback(current);
       }
     });
   },

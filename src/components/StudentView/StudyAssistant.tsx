@@ -290,12 +290,21 @@ export const StudyAssistant: React.FC<StudyAssistantProps> = ({
           </div>
 
           {/* Section 1: Theory Content with KaTeX */}
-          <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-4">
-            <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <BookOpen className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              1. Tóm Tắt Lý Thuyết & Công Thức Trọng Tâm (Core Theory)
-            </h4>
-            <div className="prose prose-slate dark:prose-invert max-w-none text-xs sm:text-sm">
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-5">
+            <div className="flex flex-wrap items-center justify-between gap-3 pb-3.5 border-b border-slate-100 dark:border-slate-700/80">
+              <h4 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                  <BookOpen className="w-5 h-5" />
+                </div>
+                <span>1. Tóm Tắt Lý Thuyết & Công Thức Trọng Tâm (Core Theory)</span>
+              </h4>
+              <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 px-3 py-1 rounded-full border border-emerald-200 dark:border-emerald-800 flex items-center gap-1.5 shadow-2xs">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                Chuẩn Lý Thuyết & Công Thức Olympic
+              </span>
+            </div>
+
+            <div className="bg-slate-50/50 dark:bg-slate-900/30 p-5 sm:p-6 rounded-xl border border-slate-200/70 dark:border-slate-800/80 leading-relaxed">
               <MathRenderer content={currentNote.content_markdown} />
             </div>
           </div>

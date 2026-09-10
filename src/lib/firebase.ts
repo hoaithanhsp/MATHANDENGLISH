@@ -123,11 +123,33 @@ export const getCurrentUser = (): User | null => {
 // FIREBASE REALTIME DATABASE HELPERS
 // ============================================================
 
+/** 
+ * Loại bỏ các key có giá trị undefined trong object/array 
+ * để ngăn Firebase SDK ném lỗi "value argument contains undefined"
+ */
+export const cleanUndefined = (obj: any): any => {
+  if (obj === null || obj === undefined) return null;
+  if (Array.isArray(obj)) {
+    return obj.map(cleanUndefined).filter((v) => v !== undefined);
+  }
+  if (typeof obj === 'object') {
+    const cleaned: Record<string, any> = {};
+    for (const [key, value] of Object.entries(obj)) {
+      if (value !== undefined) {
+        cleaned[key] = cleanUndefined(value);
+      }
+    }
+    return cleaned;
+  }
+  return obj;
+};
+
 /** Write data to a path */
 export const fbSet = async (path: string, data: any): Promise<boolean> => {
   const db = getFirebaseDb();
   try {
-    await set(ref(db, path), data);
+    const sanitized = cleanUndefined(data);
+    await set(ref(db, path), sanitized);
     return true;
   } catch (error) {
     console.error(`Firebase write error at ${path}:`, error);
@@ -139,8 +161,9 @@ export const fbSet = async (path: string, data: any): Promise<boolean> => {
 export const fbPush = async (path: string, data: any): Promise<string | null> => {
   const db = getFirebaseDb();
   try {
+    const sanitized = cleanUndefined(data);
     const newRef = push(ref(db, path));
-    await set(newRef, data);
+    await set(newRef, sanitized);
     return newRef.key;
   } catch (error) {
     console.error(`Firebase push error at ${path}:`, error);
@@ -186,8 +209,13 @@ export const fbOnValue = (
     callback(snapshot.exists() ? snapshot.val() : null);
   };
 
-  onValue(dbRef, handler);
+  const unsubscribe = onValue(
+    dbRef,
+    handler,
+    (error) => {
+      console.warn(`Firebase onValue listener error at ${path}:`, error);
+    }
+  );
 
-  // Return unsubscribe function
-  return () => off(dbRef, 'value', handler);
+  return unsubscribe;
 };

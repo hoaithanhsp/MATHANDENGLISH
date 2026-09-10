@@ -123,12 +123,20 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({ onSaveExam, onNavi
   };
 
   // Save current generated exam
-  const handleSaveExam = () => {
+  const handleSaveExam = async () => {
     if (!generatedQuestions || generatedQuestions.length === 0) return;
 
+    const examId = `exam-${Date.now()}`;
     const accessCode = `HP-${Math.random().toString(36).substring(2, 6).toUpperCase()}-${new Date().getFullYear()}`;
+    const formattedQuestions = generatedQuestions.map((q, idx) => ({
+      ...q,
+      id: q.id || `q-${Date.now()}-${idx + 1}`,
+      exam_id: examId,
+      order_index: idx + 1,
+    }));
+
     const newExam: Exam = {
-      id: `exam-${Date.now()}`,
+      id: examId,
       title: examTitle.trim() || 'Đề Thi Tuyển Chọn Đội Tuyển HSG Toán THPT',
       description: `Đề thi ${mode === 'bilingual' ? 'Song ngữ Anh - Việt' : 'Full Tiếng Anh'} chuẩn ma trận Sở GD&ĐT Hải Phòng. ${generatedQuestions.length} câu / 90 phút.`,
       mode,
@@ -137,10 +145,10 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({ onSaveExam, onNavi
       access_code: accessCode,
       exam_type: examType,
       created_at: new Date().toISOString(),
-      questions: generatedQuestions,
+      questions: formattedQuestions,
     };
 
-    onSaveExam(newExam);
+    await Promise.resolve(onSaveExam(newExam));
     setSuccessSaved(true);
     setTimeout(() => {
       onNavigateToBank();

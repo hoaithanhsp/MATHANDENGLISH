@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { KeyRound, X, ArrowRight, AlertCircle } from 'lucide-react';
+import { KeyRound, X, ArrowRight, AlertCircle, Loader2 } from 'lucide-react';
 import { Exam } from '../../types';
 
 interface JoinExamModalProps {
@@ -7,7 +7,7 @@ interface JoinExamModalProps {
   initialStudentName?: string;
   onClose: () => void;
   onJoinExam: (exam: Exam, studentName: string) => void;
-  onFindExamByCode: (code: string) => Exam | undefined;
+  onFindExamByCode: (code: string) => Promise<Exam | undefined> | Exam | undefined;
 }
 
 export const JoinExamModal: React.FC<JoinExamModalProps> = ({
@@ -20,6 +20,7 @@ export const JoinExamModal: React.FC<JoinExamModalProps> = ({
   const [accessCode, setAccessCode] = useState('');
   const [studentName, setStudentName] = useState(initialStudentName);
   const [errorMsg, setErrorMsg] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
     if (initialStudentName) {
@@ -29,28 +30,36 @@ export const JoinExamModal: React.FC<JoinExamModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleJoin = (e: React.FormEvent) => {
+  const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
 
-    if (!accessCode.trim()) {
+    const cleanCode = accessCode.trim().toUpperCase();
+    if (!cleanCode) {
       setErrorMsg('Vui lòng nhập mã phòng thi do giáo viên cung cấp.');
       return;
     }
 
-    const exam = onFindExamByCode(accessCode.trim());
-    if (!exam) {
-      setErrorMsg(`Không tìm thấy đề thi với mã "${accessCode.trim().toUpperCase()}". Vui lòng kiểm tra lại mã phòng thi do giáo viên cung cấp.`);
-      return;
-    }
+    setIsSearching(true);
+    try {
+      const exam = await Promise.resolve(onFindExamByCode(cleanCode));
+      if (!exam) {
+        setErrorMsg(`Không tìm thấy đề thi với mã "${cleanCode}". Vui lòng kiểm tra lại mã phòng thi do giáo viên cung cấp.`);
+        return;
+      }
 
-    if (!exam.is_published) {
-      setErrorMsg('Đề thi này hiện đang tạm khóa hoặc chưa được giáo viên mở thi.');
-      return;
-    }
+      if (!exam.is_published) {
+        setErrorMsg('Đề thi này hiện đang tạm khóa hoặc chưa được giáo viên mở thi.');
+        return;
+      }
 
-    onJoinExam(exam, studentName.trim() || 'Học sinh');
-    onClose();
+      onJoinExam(exam, studentName.trim() || 'Học sinh');
+      onClose();
+    } catch (err: any) {
+      setErrorMsg(`Lỗi kết nối khi tra cứu: ${err?.message || 'Vui lòng kiểm tra kết nối mạng.'}`);
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   return (
@@ -124,10 +133,20 @@ export const JoinExamModal: React.FC<JoinExamModalProps> = ({
             </button>
             <button
               type="submit"
-              className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition shadow-xs"
+              disabled={isSearching}
+              className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-70 disabled:cursor-not-allowed transition shadow-xs"
             >
-              <span>Bắt Đầu Làm Bài</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              {isSearching ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Đang tìm phòng thi...</span>
+                </>
+              ) : (
+                <>
+                  <span>Bắt Đầu Làm Bài</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </>
+              )}
             </button>
           </div>
         </form>

@@ -148,13 +148,13 @@ export default function App() {
   };
 
   // Exam actions
-  const handleSaveExam = (exam: Exam) => {
-    storageService.saveExam(exam);
+  const handleSaveExam = async (exam: Exam) => {
+    await storageService.saveExam(exam);
     setExams(storageService.getExams());
   };
 
-  const handleDeleteExam = (id: string) => {
-    storageService.deleteExam(id);
+  const handleDeleteExam = async (id: string) => {
+    await storageService.deleteExam(id);
     setExams(storageService.getExams());
   };
 
@@ -436,7 +436,7 @@ export default function App() {
         initialStudentName={currentUser.full_name}
         onClose={() => setIsJoinModalOpen(false)}
         onJoinExam={handleJoinExam}
-        onFindExamByCode={(code) => storageService.getExamByAccessCode(code)}
+        onFindExamByCode={(code) => storageService.findExamByCodeAsync(code)}
       />
     </div>
   );
