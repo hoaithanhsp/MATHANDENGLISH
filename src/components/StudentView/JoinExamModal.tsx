@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { KeyRound, X, ArrowRight, AlertCircle, Loader2 } from 'lucide-react';
 import { Exam } from '../../types';
 
@@ -111,7 +111,7 @@ export const JoinExamModal: React.FC<JoinExamModalProps> = ({
               required
               value={accessCode}
               onChange={(e) => setAccessCode(e.target.value.toUpperCase())}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 font-mono text-sm font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 font-mono text-sm font-bold text-teal-600 dark:text-teal-400 uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-emerald-500"
               placeholder="VD: HP-XXXX-2026"
             />
           </div>

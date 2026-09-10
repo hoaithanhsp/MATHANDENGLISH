@@ -55,12 +55,12 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="flex items-center justify-between h-16">
           {/* Logo & Brand matching Clean Minimalism design */}
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold font-serif text-base shadow-xs shrink-0">
+            <div className="w-8 h-8 bg-teal-600 rounded-lg flex items-center justify-center text-white font-bold font-serif text-base shadow-xs shrink-0">
               Σ
             </div>
             <div className="flex items-center">
               <h1 className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 dark:text-white">
-                MathElite <span className="text-indigo-600">AI</span>
+                MathElite <span className="text-teal-600">AI</span>
               </h1>
               <span className="hidden sm:inline-block ml-3 px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest font-semibold rounded border border-slate-200 dark:border-slate-700">
                 HP Matrix 1.0
@@ -76,67 +76,67 @@ export const Navbar: React.FC<NavbarProps> = ({
                   onClick={() => setActiveTab('teacher_generate')}
                   className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                     activeTab === 'teacher_generate'
-                      ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-semibold'
+                      ? 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 font-semibold'
                       : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
                   }`}
                 >
                   <Sparkles className="w-3.5 h-3.5" />
-                  AI Generator
+                  Tạo đề AI
                 </button>
                 <button
                   onClick={() => setActiveTab('teacher_exams')}
                   className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                     activeTab === 'teacher_exams'
-                      ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-semibold'
+                      ? 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 font-semibold'
                       : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
                   }`}
                 >
                   <FileText className="w-3.5 h-3.5" />
-                  Exam Bank
+                  Ngân hàng đề
                 </button>
                 <button
                   onClick={() => setActiveTab('teacher_submissions')}
                   className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                     activeTab === 'teacher_submissions'
-                      ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-semibold'
+                      ? 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 font-semibold'
                       : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
                   }`}
                 >
                   <UserCheck className="w-3.5 h-3.5" />
-                  Bài Nộp HS
+                  Bài nộp HS
                 </button>
                 <button
                   onClick={() => setActiveTab('teacher_radar')}
                   className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                     activeTab === 'teacher_radar'
-                      ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-semibold'
+                      ? 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 font-semibold'
                       : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
                   }`}
                 >
-                  <Radar className="w-3.5 h-3.5 text-indigo-500" />
-                  Radar Năng Lực K11
+                  <Radar className="w-3.5 h-3.5 text-teal-500" />
+                  Radar năng lực K11
                 </button>
                 <button
                   onClick={() => setActiveTab('matrix_guide')}
                   className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                     activeTab === 'matrix_guide'
-                      ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-semibold'
+                      ? 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 font-semibold'
                       : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
                   }`}
                 >
                   <Layers className="w-3.5 h-3.5" />
-                  HP Matrix Guide
+                  Ma trận đề thi
                 </button>
                 <button
                   onClick={() => setActiveTab('student_notes')}
                   className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                     activeTab === 'student_notes'
-                      ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-semibold'
+                      ? 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 font-semibold'
                       : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
                   }`}
                 >
                   <BookOpen className="w-3.5 h-3.5" />
-                  13 Giáo Án Bồi Dưỡng
+                  13 Giáo án bồi dưỡng
                 </button>
               </>
             ) : (
@@ -145,45 +145,45 @@ export const Navbar: React.FC<NavbarProps> = ({
                   onClick={() => setActiveTab('student_generate')}
                   className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                     activeTab === 'student_generate'
-                      ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-semibold'
+                      ? 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 font-semibold'
                       : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
                   }`}
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
-                  Tự Tạo Đề AI
+                  <Sparkles className="w-3.5 h-3.5 text-teal-500" />
+                  Tự tạo đề AI
                 </button>
                 <button
                   onClick={() => setActiveTab('student_assistant')}
                   className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                     activeTab === 'student_assistant'
-                      ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-semibold'
+                      ? 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 font-semibold'
                       : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
                   }`}
                 >
                   <BookOpen className="w-3.5 h-3.5" />
-                  Tự Học Chuyên Đề
+                  Tự học chuyên đề
                 </button>
                 <button
                   onClick={() => setActiveTab('student_review')}
                   className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                     activeTab === 'student_review'
-                      ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-semibold'
+                      ? 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 font-semibold'
                       : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
                   }`}
                 >
                   <Target className="w-3.5 h-3.5" />
-                  Ôn Tập HSG
+                  Ôn tập HSG
                 </button>
                 <button
                   onClick={() => setActiveTab('student_mock')}
                   className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                     activeTab === 'student_mock'
-                      ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-semibold'
+                      ? 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 font-semibold'
                       : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
                   }`}
                 >
                   <Clock className="w-3.5 h-3.5" />
-                  Luyện Đề 90 Phút
+                  Luyện đề 90 phút
                 </button>
                 <button
                   onClick={() => setActiveTab('student_proof')}
@@ -200,8 +200,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                   onClick={onOpenQuickJoin}
                   className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                 >
-                  <KeyRound className="w-3.5 h-3.5 text-indigo-500" />
-                  Vào Phòng Thi
+                  <KeyRound className="w-3.5 h-3.5 text-teal-500" />
+                  Vào phòng thi
                 </button>
                 <button
                   onClick={() => setActiveTab('student_mistakes')}
@@ -212,7 +212,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   }`}
                 >
                   <BookmarkCheck className="w-3.5 h-3.5 text-rose-500" />
-                  Sổ Tay Câu Sai
+                  Sổ tay câu sai
                 </button>
                 <button
                   onClick={() => setActiveTab('student_vocab')}
@@ -223,18 +223,18 @@ export const Navbar: React.FC<NavbarProps> = ({
                   }`}
                 >
                   <Languages className="w-3.5 h-3.5 text-blue-500" />
-                  Từ Điển Thuật Ngữ
+                  Từ điển thuật ngữ
                 </button>
                 <button
                   onClick={() => setActiveTab('student_notes')}
                   className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                     activeTab === 'student_notes'
-                      ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-semibold'
+                      ? 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 font-semibold'
                       : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
                   }`}
                 >
                   <FileText className="w-3.5 h-3.5" />
-                  Vở Ghi Ôn Tập
+                  Vở ghi ôn tập
                 </button>
               </>
             )}
@@ -246,7 +246,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80">
               <div
                 className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
-                style={{ backgroundColor: isTeacher ? '#4F46E5' : '#059669' }}
+                style={{ backgroundColor: isTeacher ? '#0D9488' : '#059669' }}
               >
                 {currentUser.full_name?.charAt(0) || (isTeacher ? 'T' : 'S')}
               </div>
@@ -254,7 +254,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <div className="font-semibold text-slate-800 dark:text-slate-200 truncate max-w-[140px]">
                   {currentUser.full_name}
                 </div>
-                <div className={`text-[10px] font-bold ${isTeacher ? 'text-indigo-600 dark:text-indigo-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                <div className={`text-[10px] font-bold ${isTeacher ? 'text-teal-600 dark:text-teal-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
                   {isTeacher ? 'Giáo viên' : 'Học sinh'}
                 </div>
               </div>
@@ -266,7 +266,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
               title="Xem Database Schema"
             >
-              <Database className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+              <Database className="w-4 h-4 text-teal-600 dark:text-teal-400" />
             </button>
 
             {/* Settings Button */}
@@ -308,37 +308,37 @@ export const Navbar: React.FC<NavbarProps> = ({
                 onClick={() => setActiveTab('teacher_generate')}
                 className={`px-2.5 py-1 text-xs whitespace-nowrap rounded-lg ${
                   activeTab === 'teacher_generate'
-                    ? 'bg-indigo-600 text-white'
+                    ? 'bg-teal-600 text-white'
                     : 'text-slate-600 dark:text-slate-300'
                 }`}
               >
-                Tạo Đề AI
+                Tạo đề AI
               </button>
               <button
                 onClick={() => setActiveTab('teacher_exams')}
                 className={`px-2.5 py-1 text-xs whitespace-nowrap rounded-lg ${
                   activeTab === 'teacher_exams'
-                    ? 'bg-indigo-600 text-white'
+                    ? 'bg-teal-600 text-white'
                     : 'text-slate-600 dark:text-slate-300'
                 }`}
               >
-                Ngân Hàng Đề
+                Ngân hàng đề
               </button>
               <button
                 onClick={() => setActiveTab('teacher_submissions')}
                 className={`px-2.5 py-1 text-xs whitespace-nowrap rounded-lg ${
                   activeTab === 'teacher_submissions'
-                    ? 'bg-indigo-600 text-white'
+                    ? 'bg-teal-600 text-white'
                     : 'text-slate-600 dark:text-slate-300'
                 }`}
               >
-                Bài Nộp HS
+                Bài nộp HS
               </button>
               <button
                 onClick={() => setActiveTab('teacher_radar')}
                 className={`px-2.5 py-1 text-xs whitespace-nowrap rounded-lg ${
                   activeTab === 'teacher_radar'
-                    ? 'bg-indigo-600 text-white'
+                    ? 'bg-teal-600 text-white'
                     : 'text-slate-600 dark:text-slate-300'
                 }`}
               >
@@ -348,21 +348,21 @@ export const Navbar: React.FC<NavbarProps> = ({
                 onClick={() => setActiveTab('matrix_guide')}
                 className={`px-2.5 py-1 text-xs whitespace-nowrap rounded-lg ${
                   activeTab === 'matrix_guide'
-                    ? 'bg-indigo-600 text-white'
+                    ? 'bg-teal-600 text-white'
                     : 'text-slate-600 dark:text-slate-300'
                 }`}
               >
-                Ma Trận
+                Ma trận
               </button>
               <button
                 onClick={() => setActiveTab('student_notes')}
                 className={`px-2.5 py-1 text-xs whitespace-nowrap rounded-lg ${
                   activeTab === 'student_notes'
-                    ? 'bg-indigo-600 text-white'
+                    ? 'bg-teal-600 text-white'
                     : 'text-slate-600 dark:text-slate-300'
                 }`}
               >
-                13 Giáo Án
+                13 Giáo án
               </button>
             </>
           ) : (
@@ -371,12 +371,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                 onClick={() => setActiveTab('student_generate')}
                 className={`px-2.5 py-1 text-xs whitespace-nowrap rounded-lg flex items-center gap-1 ${
                   activeTab === 'student_generate'
-                    ? 'bg-indigo-600 text-white font-semibold'
+                    ? 'bg-teal-600 text-white font-semibold'
                     : 'text-slate-600 dark:text-slate-300'
                 }`}
               >
                 <Sparkles className="w-3 h-3" />
-                Tạo Đề AI
+                Tạo đề AI
               </button>
               <button
                 onClick={() => setActiveTab('student_assistant')}
@@ -386,7 +386,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     : 'text-slate-600 dark:text-slate-300'
                 }`}
               >
-                Tự Học AI
+                Tự học AI
               </button>
               <button
                 onClick={() => setActiveTab('student_review')}
@@ -396,7 +396,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     : 'text-slate-600 dark:text-slate-300'
                 }`}
               >
-                Ôn Tập
+                Ôn tập
               </button>
               <button
                 onClick={() => setActiveTab('student_mock')}
@@ -406,7 +406,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     : 'text-slate-600 dark:text-slate-300'
                 }`}
               >
-                Luyện Đề 90p
+                Luyện đề 90p
               </button>
               <button
                 onClick={() => setActiveTab('student_proof')}
@@ -416,13 +416,13 @@ export const Navbar: React.FC<NavbarProps> = ({
                     : 'text-slate-600 dark:text-slate-300'
                 }`}
               >
-                Tự Luận
+                Tự luận
               </button>
               <button
                 onClick={onOpenQuickJoin}
                 className="px-2.5 py-1 text-xs whitespace-nowrap rounded-lg text-slate-600 dark:text-slate-300"
               >
-                Mã Phòng Thi
+                Mã phòng thi
               </button>
               <button
                 onClick={() => setActiveTab('student_mistakes')}
@@ -432,7 +432,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     : 'text-slate-600 dark:text-slate-300'
                 }`}
               >
-                Sổ Câu Sai
+                Sổ câu sai
               </button>
               <button
                 onClick={() => setActiveTab('student_vocab')}
@@ -442,7 +442,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     : 'text-slate-600 dark:text-slate-300'
                 }`}
               >
-                Từ Điển
+                Từ điển
               </button>
               <button
                 onClick={() => setActiveTab('student_notes')}
@@ -452,7 +452,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     : 'text-slate-600 dark:text-slate-300'
                 }`}
               >
-                Vở Ghi
+                Vở ghi
               </button>
             </>
           )}

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+﻿import React, { useMemo } from 'react';
 import katex from 'katex';
 
 interface MathRendererProps {
@@ -85,7 +85,7 @@ export const MathRenderer: React.FC<MathRendererProps> = ({ content, className =
       if (/^#\s+(.+)$/.test(trimmed)) {
         const titleText = escapeHtml(trimmed.replace(/^#\s+/, ''));
         parsedHtmlChunks.push(
-          `<h2 class="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white mt-5 mb-2.5 pb-2 border-b border-indigo-200 dark:border-indigo-900/60 tracking-tight leading-snug">${formatInlineStyles(titleText)}</h2>`
+          `<h2 class="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white mt-5 mb-2.5 pb-2 border-b border-teal-200 dark:border-teal-900/60 tracking-tight leading-snug">${formatInlineStyles(titleText)}</h2>`
         );
         continue;
       }
@@ -94,7 +94,7 @@ export const MathRenderer: React.FC<MathRendererProps> = ({ content, className =
       if (/^##\s+(.+)$/.test(trimmed)) {
         const subText = escapeHtml(trimmed.replace(/^##\s+/, ''));
         parsedHtmlChunks.push(
-          `<h3 class="text-base sm:text-lg font-bold text-indigo-700 dark:text-indigo-300 mt-4 mb-2 tracking-tight">${formatInlineStyles(subText)}</h3>`
+          `<h3 class="text-base sm:text-lg font-bold text-teal-700 dark:text-teal-300 mt-4 mb-2 tracking-tight">${formatInlineStyles(subText)}</h3>`
         );
         continue;
       }
@@ -121,7 +121,7 @@ export const MathRenderer: React.FC<MathRendererProps> = ({ content, className =
       if (/^#####+\s+(.+)$/.test(trimmed)) {
         const h5Text = escapeHtml(trimmed.replace(/^#####+\s+/, ''));
         parsedHtmlChunks.push(
-          `<h6 class="text-xs font-bold text-slate-700 dark:text-slate-300 mt-2.5 mb-1 pl-2.5 border-l-2 border-indigo-400">${formatInlineStyles(h5Text)}</h6>`
+          `<h6 class="text-xs font-bold text-slate-700 dark:text-slate-300 mt-2.5 mb-1 pl-2.5 border-l-2 border-teal-400">${formatInlineStyles(h5Text)}</h6>`
         );
         continue;
       }
@@ -150,7 +150,7 @@ export const MathRenderer: React.FC<MathRendererProps> = ({ content, className =
         const num = numMatch[1];
         const numText = escapeHtml(numMatch[2]);
         parsedHtmlChunks.push(
-          `<div class="flex items-start gap-2.5 my-1.5 pl-2"><span class="font-bold text-indigo-600 dark:text-indigo-400 shrink-0 text-xs sm:text-sm mt-0.5 min-w-[1.25rem]">${num}.</span><div class="flex-1 leading-relaxed text-slate-700 dark:text-slate-300 text-xs sm:text-sm">${formatInlineStyles(numText)}</div></div>`
+          `<div class="flex items-start gap-2.5 my-1.5 pl-2"><span class="font-bold text-teal-600 dark:text-teal-400 shrink-0 text-xs sm:text-sm mt-0.5 min-w-[1.25rem]">${num}.</span><div class="flex-1 leading-relaxed text-slate-700 dark:text-slate-300 text-xs sm:text-sm">${formatInlineStyles(numText)}</div></div>`
         );
         continue;
       }
@@ -205,7 +205,7 @@ function formatInlineStyles(text: string): string {
   res = res.replace(/(^|[^_])_([^_\s][^_]*?)_([^_]|$)/g, '$1<em class="italic text-slate-700 dark:text-slate-300">$2</em>$3');
 
   // Inline code: `code`
-  res = res.replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 font-mono text-xs font-semibold border border-slate-200/60 dark:border-slate-700/60">$1</code>');
+  res = res.replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-teal-600 dark:text-teal-400 font-mono text-xs font-semibold border border-slate-200/60 dark:border-slate-700/60">$1</code>');
 
   return res;
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import {
   BookOpen,
   CheckCircle2,
@@ -209,7 +209,7 @@ export const MistakeNotebook: React.FC<MistakeNotebookProps> = ({ onPracticeMist
           <div className="flex rounded-xl bg-slate-100 dark:bg-slate-700 p-1 text-xs font-semibold">
             <button
               onClick={() => setSelectedFilter('all')}
-              className={`px-3 py-1 rounded-lg transition ${selectedFilter === 'all' ? 'bg-white dark:bg-slate-800 text-indigo-600 shadow-xs' : 'text-slate-600 dark:text-slate-300'}`}
+              className={`px-3 py-1 rounded-lg transition ${selectedFilter === 'all' ? 'bg-white dark:bg-slate-800 text-teal-600 shadow-xs' : 'text-slate-600 dark:text-slate-300'}`}
             >
               Tất cả ({mistakes.length})
             </button>
@@ -249,7 +249,7 @@ export const MistakeNotebook: React.FC<MistakeNotebookProps> = ({ onPracticeMist
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Tìm theo từ khóa/chuyên đề..."
-            className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-teal-500"
           />
         </div>
       </div>
@@ -284,7 +284,7 @@ export const MistakeNotebook: React.FC<MistakeNotebookProps> = ({ onPracticeMist
                 {/* Meta Header */}
                 <div className="flex flex-wrap items-center justify-between gap-2 pb-3 mb-3 border-b border-slate-100 dark:border-slate-700">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="px-2.5 py-0.5 rounded text-[11px] font-bold bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300">
+                    <span className="px-2.5 py-0.5 rounded text-[11px] font-bold bg-teal-100 text-teal-800 dark:bg-teal-950/60 dark:text-teal-300">
                       {q.topic || q.strand}
                     </span>
                     <span className={`px-2.5 py-0.5 rounded text-[11px] font-bold ${badge.color}`}>
@@ -324,7 +324,7 @@ export const MistakeNotebook: React.FC<MistakeNotebookProps> = ({ onPracticeMist
                 {/* Question Vietnamese if any */}
                 {q.question_vi && (
                   <div className="mb-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 text-xs">
-                    <div className="flex items-center gap-1 text-indigo-600 dark:text-indigo-400 font-bold text-[11px] mb-1">
+                    <div className="flex items-center gap-1 text-teal-600 dark:text-teal-400 font-bold text-[11px] mb-1">
                       <Languages className="w-3.5 h-3.5" /> Bản dịch Tiếng Việt:
                     </div>
                     <div className="italic text-slate-700 dark:text-slate-300">
@@ -375,12 +375,12 @@ export const MistakeNotebook: React.FC<MistakeNotebookProps> = ({ onPracticeMist
                         onChange={(e) => setNoteText(e.target.value)}
                         placeholder="Ghi chú cá nhân (vd: chú ý công thức nhân đôi, dịch nhầm từ coprime là số nguyên tố)..."
                         rows={2}
-                        className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-teal-500"
                       />
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleSaveNote(item.id, item.mistake_reason || 'formula_error')}
-                          className="px-3 py-1 rounded bg-indigo-600 text-white font-bold text-xs"
+                          className="px-3 py-1 rounded bg-teal-600 text-white font-bold text-xs"
                         >
                           Lưu Ghi Chú
                         </button>
@@ -406,7 +406,7 @@ export const MistakeNotebook: React.FC<MistakeNotebookProps> = ({ onPracticeMist
                           setEditingNoteId(item.id);
                           setNoteText(item.notes || '');
                         }}
-                        className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-semibold shrink-0"
+                        className="text-xs text-teal-600 dark:text-teal-400 hover:underline font-semibold shrink-0"
                       >
                         {item.notes ? 'Chỉnh sửa ghi chú' : '+ Thêm ghi chú lý do sai'}
                       </button>
@@ -416,13 +416,13 @@ export const MistakeNotebook: React.FC<MistakeNotebookProps> = ({ onPracticeMist
 
                 {/* Detailed Solution Reveal */}
                 <details className="mt-3 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
-                  <summary className="font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
+                  <summary className="font-bold text-teal-600 dark:text-teal-400 hover:underline">
                     Xem lời giải chi tiết
                   </summary>
-                  <div className="p-3 mt-2 rounded-xl bg-indigo-50/40 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900 leading-relaxed">
+                  <div className="p-3 mt-2 rounded-xl bg-teal-50/40 dark:bg-teal-950/20 border border-teal-100 dark:border-teal-900 leading-relaxed">
                     <MathRenderer content={q.solution_en} />
                     {q.solution_vi && (
-                      <div className="mt-2 pt-2 border-t border-indigo-100/60 dark:border-indigo-900/60 italic text-slate-600 dark:text-slate-400">
+                      <div className="mt-2 pt-2 border-t border-teal-100/60 dark:border-teal-900/60 italic text-slate-600 dark:text-slate-400">
                         <MathRenderer content={q.solution_vi} />
                       </div>
                     )}

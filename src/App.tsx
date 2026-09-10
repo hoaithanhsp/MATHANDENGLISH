@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
 import { LoginScreen } from './components/LoginScreen';
 import { ExamGenerator } from './components/TeacherView/ExamGenerator';
@@ -179,7 +179,7 @@ export default function App() {
   const handleStartPracticeQuiz = (topic: string, questions: Question[]) => {
     const practiceExam: Exam = {
       id: `practice-${Date.now()}`,
-      title: `Bài Tập Luyện Chuyên Đề: ${topic}`,
+      title: `Bài tập luyện chuyên đề: ${topic}`,
       description: `Bài tập trắc nghiệm & điền đáp số theo chuyên đề ${topic}`,
       mode: 'bilingual',
       duration_minutes: 30,
@@ -205,7 +205,7 @@ export default function App() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
         <div className="text-center space-y-3">
-          <Loader2 className="w-8 h-8 animate-spin text-indigo-500 mx-auto" />
+          <Loader2 className="w-8 h-8 animate-spin text-teal-500 mx-auto" />
           <p className="text-sm text-slate-500">Đang kiểm tra đăng nhập...</p>
         </div>
       </div>
@@ -315,7 +315,7 @@ export default function App() {
                     <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                       <div>
                         <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                          Phòng Luyện Thi Chuẩn Ma Trận Hải Phòng (90 Phút)
+                          Phòng luyện thi chuẩn ma trận Hải Phòng (90 phút)
                         </h2>
                         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                           Chọn một đề thi có sẵn bên dưới, tự tạo đề mới bằng AI, hoặc nhập mã đề thi từ thầy cô giáo để bắt đầu làm bài.
@@ -325,16 +325,16 @@ export default function App() {
                       <div className="flex flex-wrap items-center gap-2.5 shrink-0">
                         <button
                           onClick={() => setActiveTab('student_generate')}
-                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 border border-indigo-200 dark:border-indigo-800 transition shadow-xs"
+                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-100 dark:hover:bg-teal-900/60 border border-teal-200 dark:border-teal-800 transition shadow-xs"
                         >
                           <Sparkles className="w-3.5 h-3.5" />
-                          Tự Tạo Đề AI
+                          Tự tạo đề AI
                         </button>
                         <button
                           onClick={() => setIsJoinModalOpen(true)}
                           className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition shadow-xs"
                         >
-                          Nhập Mã Phòng Thi (Access Code)
+                          Nhập mã phòng thi (Access Code)
                         </button>
                       </div>
                     </div>
@@ -374,7 +374,7 @@ export default function App() {
                                   onClick={() => setActiveRunningExam(exam)}
                                   className="px-3.5 py-1.5 rounded-xl text-xs font-bold text-white bg-emerald-600 group-hover:bg-emerald-700 transition shadow-xs"
                                 >
-                                  Bắt Đầu Thi
+                                  Bắt đầu thi
                                 </button>
                               </div>
                             </div>
@@ -386,7 +386,7 @@ export default function App() {
                           📝
                         </div>
                         <h3 className="text-base font-bold text-slate-700 dark:text-slate-200">
-                          Chưa Có Đề Thi Nào Đang Mở
+                          Chưa có đề thi nào đang mở
                         </h3>
                         <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
                           Hiện tại chưa có đề thi chính thức nào được mở trong danh sách. Nếu Thầy/Cô đã cung cấp mã phòng thi (Access Code), bạn hãy bấm nút bên dưới để vào thi ngay.
@@ -396,7 +396,7 @@ export default function App() {
                             onClick={() => setIsJoinModalOpen(true)}
                             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition shadow-xs"
                           >
-                            Nhập Mã Phòng Thi (Access Code)
+                            Nhập mã phòng thi (Access Code)
                           </button>
                         </div>
                       </div>
@@ -435,7 +435,7 @@ export default function App() {
       <footer className="border-t border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 py-4 text-center space-y-2">
         <VisitCounter />
         <p className="text-xs text-slate-400">
-          Hệ Thống Dạy & Học Đội Tuyển HSG Toán THPT Bằng Tiếng Anh • Chuẩn Ma Trận Sở GD&ĐT Hải Phòng
+          Hệ thống dạy & học đội tuyển HSG Toán THPT bằng tiếng Anh • Chuẩn ma trận Sở GD&ĐT Hải Phòng
         </p>
         <p className="text-[10px] text-slate-400/70">
           Tác giả: <strong>Trần Hoài Thanh</strong> — THPT Khúc Thừa Dụ, TP.Hải Phòng — Zalo: 0348296773

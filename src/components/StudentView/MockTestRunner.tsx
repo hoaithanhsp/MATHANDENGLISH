@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import {
   Clock,
   AlertCircle,
@@ -320,7 +320,7 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
     return (
       <div className="space-y-6 max-w-4xl mx-auto py-4 animate-in fade-in">
         {/* Score Banner */}
-        <div className="bg-gradient-to-br from-indigo-950 via-indigo-900 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl text-center relative overflow-hidden">
+        <div className="bg-gradient-to-br from-teal-950 via-teal-900 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl text-center relative overflow-hidden">
           <div className="relative z-10 max-w-lg mx-auto">
             <div className="w-16 h-16 mx-auto mb-3 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center text-amber-400">
               <Award className="w-9 h-9" />
@@ -329,13 +329,13 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
               Kết Quả Bài Thi Tuyển Chọn
             </span>
             <h2 className="text-2xl font-bold mt-1">{exam.title}</h2>
-            <p className="text-xs text-indigo-200 mt-1">Học sinh: {studentName}</p>
+            <p className="text-xs text-teal-200 mt-1">Học sinh: {studentName}</p>
 
             {/* Big Score Display */}
             <div className="my-6">
               <div className="text-5xl sm:text-6xl font-black tracking-tight text-white font-mono">
                 {score.toFixed(2)}
-                <span className="text-2xl font-normal text-indigo-200"> / 20.00</span>
+                <span className="text-2xl font-normal text-teal-200"> / 20.00</span>
               </div>
               <p className="text-sm text-emerald-300 font-medium mt-2">
                 Đúng {correctCount} / {totalQuestions} câu ({((correctCount / totalQuestions) * 100).toFixed(1)}%)
@@ -361,16 +361,16 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
 
             {/* Teacher Feedback Banner if available */}
             {submittedAssignment.teacher_feedback && (
-              <div className="my-4 p-4 rounded-2xl bg-indigo-900/60 border border-indigo-400/40 text-left backdrop-blur-md">
+              <div className="my-4 p-4 rounded-2xl bg-teal-900/60 border border-teal-400/40 text-left backdrop-blur-md">
                 <div className="flex items-center gap-2 text-amber-300 text-xs font-bold mb-1">
                   <Award className="w-4 h-4" />
                   <span>Lời Nhận Xét & Dặn Dò Của Thầy Cô:</span>
                 </div>
-                <p className="text-xs sm:text-sm text-indigo-100 italic leading-relaxed whitespace-pre-wrap">
+                <p className="text-xs sm:text-sm text-teal-100 italic leading-relaxed whitespace-pre-wrap">
                   "{submittedAssignment.teacher_feedback}"
                 </p>
                 {submittedAssignment.graded_at && (
-                  <span className="text-[10px] text-indigo-300 block mt-2">
+                  <span className="text-[10px] text-teal-300 block mt-2">
                     Nhận xét lúc: {new Date(submittedAssignment.graded_at).toLocaleString('vi-VN')}
                   </span>
                 )}
@@ -380,14 +380,14 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
             <div className="flex flex-wrap justify-center gap-3">
               <button
                 onClick={onExit}
-                className="px-5 py-2.5 rounded-xl text-xs font-bold bg-white text-indigo-900 hover:bg-indigo-50 transition shadow-md"
+                className="px-5 py-2.5 rounded-xl text-xs font-bold bg-white text-teal-900 hover:bg-teal-50 transition shadow-md"
               >
                 Quay Lại Danh Sách
               </button>
 
               <button
                 onClick={() => printHaiPhongExam(exam, { sheetType: 'question_sheet' })}
-                className="px-4 py-2.5 rounded-xl text-xs font-bold bg-indigo-700/80 hover:bg-indigo-600 text-white transition flex items-center gap-1.5"
+                className="px-4 py-2.5 rounded-xl text-xs font-bold bg-teal-700/80 hover:bg-teal-600 text-white transition flex items-center gap-1.5"
               >
                 <Printer className="w-3.5 h-3.5" />
                 In Đề Thi (PDF)
@@ -409,7 +409,7 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
           <div className="border-b border-slate-200 dark:border-slate-700 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
               <h3 className="font-bold text-slate-900 dark:text-white text-base flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                <BookOpen className="w-5 h-5 text-teal-600 dark:text-teal-400" />
                 Chi Tiết Lời Giải & Phân Tích 22 Câu Hỏi
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
@@ -465,7 +465,7 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
                   </div>
                   {q.question_vi && exam.mode === 'bilingual' && (
                     <div className="mb-3 p-3 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs">
-                      <div className="flex items-center gap-1.5 font-bold text-[11px] text-indigo-600 dark:text-indigo-400 mb-1">
+                      <div className="flex items-center gap-1.5 font-bold text-[11px] text-teal-600 dark:text-teal-400 mb-1">
                         <Languages className="w-3.5 h-3.5" />
                         <span>Bản dịch Tiếng Việt:</span>
                       </div>
@@ -521,7 +521,7 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
 
                   {/* Solution */}
                   <div className="pt-2 text-xs text-slate-600 dark:text-slate-300">
-                    <span className="font-bold text-indigo-600 dark:text-indigo-400">Lời giải chi tiết: </span>
+                    <span className="font-bold text-teal-600 dark:text-teal-400">Lời giải chi tiết: </span>
                     <MathRenderer content={q.solution_en} />
                     {q.solution_vi && (
                       <div className="mt-1 italic text-slate-500 text-[11px]">
@@ -591,7 +591,7 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
                 ? 'bg-rose-50 text-rose-600 border-rose-300 dark:bg-rose-950/40 dark:border-rose-800 animate-pulse'
                 : timeLeft <= 900
                 ? 'bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/40 dark:border-amber-800'
-                : 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:border-indigo-800 dark:text-indigo-300'
+                : 'bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950/40 dark:border-teal-800 dark:text-teal-300'
             }`}
           >
             <Clock className="w-4 h-4" />
@@ -618,7 +618,7 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
                 {/* Question Header */}
                 <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-200 dark:border-slate-700">
                   <div className="flex items-center gap-2.5">
-                    <span className="px-2.5 py-1 bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 text-[10px] font-bold rounded uppercase tracking-wider">
+                    <span className="px-2.5 py-1 bg-teal-100 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 text-[10px] font-bold rounded uppercase tracking-wider">
                       {exam.mode === 'bilingual' ? 'Bilingual' : 'English Only'}
                     </span>
                     <span className="px-2.5 py-1 bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 text-[10px] font-bold rounded uppercase tracking-wider">
@@ -663,7 +663,7 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
 
                 {/* Question Text */}
                 <div className="text-base sm:text-lg font-serif text-slate-900 dark:text-white leading-relaxed mb-3">
-                  <span className="font-sans font-bold text-indigo-600 dark:text-indigo-400 mr-2">
+                  <span className="font-sans font-bold text-teal-600 dark:text-teal-400 mr-2">
                     Question {currentQ.order_index < 10 ? `0${currentQ.order_index}` : currentQ.order_index}:
                   </span>
                   <MathRenderer content={currentQ.question_en} inline />
@@ -671,7 +671,7 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
 
                 {currentQ.question_vi && exam.mode === 'bilingual' && (
                   <div className="mb-6 p-3.5 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-sans">
-                    <div className="flex items-center gap-1.5 font-bold text-[11px] text-indigo-600 dark:text-indigo-400 mb-1.5">
+                    <div className="flex items-center gap-1.5 font-bold text-[11px] text-teal-600 dark:text-teal-400 mb-1.5">
                       <Languages className="w-4 h-4" />
                       <span>Bản dịch Tiếng Việt:</span>
                     </div>
@@ -717,15 +717,15 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
                           onClick={() => handleSelectAnswer(letter)}
                           className={`p-3.5 rounded-xl border cursor-pointer transition flex items-center justify-between ${
                             isSelected
-                              ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-950 dark:text-indigo-200 font-semibold shadow-xs'
-                              : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 hover:border-indigo-300 dark:hover:border-indigo-600 text-slate-700 dark:text-slate-300'
+                              ? 'border-teal-600 bg-teal-50 dark:bg-teal-950/50 text-teal-950 dark:text-teal-200 font-semibold shadow-xs'
+                              : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 hover:border-teal-300 dark:hover:border-teal-600 text-slate-700 dark:text-slate-300'
                           }`}
                         >
                           <div className="flex items-center gap-3">
                             <span
                               className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
                                 isSelected
-                                  ? 'bg-indigo-600 text-white'
+                                  ? 'bg-teal-600 text-white'
                                   : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
                               }`}
                             >
@@ -735,7 +735,7 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
                               <MathRenderer content={opt.replace(/^[A-D]\.\s*/, '')} inline />
                             </div>
                           </div>
-                          {isSelected && <Check className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />}
+                          {isSelected && <Check className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0" />}
                         </div>
                       );
                     })}
@@ -749,7 +749,7 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
                       <button
                         type="button"
                         onClick={() => setShowVirtualKeypad(!showVirtualKeypad)}
-                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-teal-600 dark:text-teal-400 hover:underline"
                       >
                         <Keyboard className="w-3.5 h-3.5" />
                         {showVirtualKeypad ? 'Ẩn bàn phím ảo' : 'Mở bàn phím số/phân số'}
@@ -761,7 +761,7 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
                       value={answers[currentQ.id] || ''}
                       onChange={(e) => handleSelectAnswer(e.target.value)}
                       placeholder="VD: 42, 1/3, -5.5..."
-                      className="w-full sm:w-72 px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 font-mono text-base font-bold bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-full sm:w-72 px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 font-mono text-base font-bold bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
                     />
 
                     {/* Virtual Keypad for Mobile / Fast Numeric Input */}
@@ -848,7 +848,7 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
                 <button
                   disabled={currentIndex === totalQuestions - 1}
                   onClick={() => setCurrentIndex((prev) => Math.min(totalQuestions - 1, prev + 1))}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-40 transition shadow-xs"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-40 transition shadow-xs"
                 >
                   Câu tiếp
                   <ChevronRight className="w-4 h-4" />
@@ -895,7 +895,7 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
                   bgClass = 'bg-amber-500 text-white font-bold ring-2 ring-amber-300';
                 }
                 if (isCurrent) {
-                  bgClass += ' ring-2 ring-indigo-500 ring-offset-2';
+                  bgClass += ' ring-2 ring-teal-500 ring-offset-2';
                 }
 
                 return (

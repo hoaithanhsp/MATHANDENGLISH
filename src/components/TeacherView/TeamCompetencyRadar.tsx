@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+﻿import React, { useState, useMemo } from 'react';
 import {
   Radar,
   Award,
@@ -155,7 +155,7 @@ export const TeamCompetencyRadar: React.FC<TeamCompetencyRadarProps> = ({ assign
       <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <Radar className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            <Radar className="w-5 h-5 text-teal-600 dark:text-teal-400" />
             Bảng Radar & Phân Tích Năng Lực Đội Tuyển K11 Hải Phòng
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
@@ -169,7 +169,7 @@ export const TeamCompetencyRadar: React.FC<TeamCompetencyRadarProps> = ({ assign
           <select
             value={selectedStudentId}
             onChange={(e) => setSelectedStudentId(e.target.value)}
-            className="px-3 py-2 rounded-xl text-xs font-semibold bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="px-3 py-2 rounded-xl text-xs font-semibold bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-teal-500"
           >
             <option value="all">Toàn bộ Đội tuyển ({studentList.length} học sinh)</option>
             {studentList.map((stu) => (
@@ -211,7 +211,7 @@ export const TeamCompetencyRadar: React.FC<TeamCompetencyRadarProps> = ({ assign
           <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">
             Đánh Giá Chuẩn Tuyển Chọn
           </span>
-          <div className="text-base font-bold text-indigo-600 dark:text-indigo-400 mt-2">
+          <div className="text-base font-bold text-teal-600 dark:text-teal-400 mt-2">
             {overallRate >= 80
               ? '🌟 Phong độ Vững vàng — Sẵn sàng tranh Giải Thành phố'
               : overallRate >= 65
@@ -274,7 +274,7 @@ export const TeamCompetencyRadar: React.FC<TeamCompetencyRadarProps> = ({ assign
               <circle cx="150" cy="150" r="3" fill="#6366F1" />
 
               {/* Labels on vertices */}
-              <text x="150" y="32" textAnchor="middle" className="text-[10px] font-bold fill-indigo-600 dark:fill-indigo-400">
+              <text x="150" y="32" textAnchor="middle" className="text-[10px] font-bold fill-teal-600 dark:fill-teal-400">
                 Đại số & Giải tích ({strandStats[0]?.accuracyRate}%)
               </text>
               <text x="245" y="215" textAnchor="start" className="text-[10px] font-bold fill-emerald-600 dark:fill-emerald-400">
@@ -295,7 +295,7 @@ export const TeamCompetencyRadar: React.FC<TeamCompetencyRadarProps> = ({ assign
         <div className="lg:col-span-7 space-y-4">
           <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-4">
             <h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
-              <BarChart3 className="w-4 h-4 text-indigo-600" />
+              <BarChart3 className="w-4 h-4 text-teal-600" />
               Chi Tiết Tỷ Lệ Làm Đúng Theo Từng Mạch
             </h3>
 
@@ -325,7 +325,7 @@ export const TeamCompetencyRadar: React.FC<TeamCompetencyRadarProps> = ({ assign
                               ? 'text-emerald-600 dark:text-emerald-400'
                               : isWeak
                               ? 'text-rose-600 dark:text-rose-400'
-                              : 'text-indigo-600 dark:text-indigo-400'
+                              : 'text-teal-600 dark:text-teal-400'
                           }`}
                         >
                           {stat.accuracyRate}%
@@ -344,7 +344,7 @@ export const TeamCompetencyRadar: React.FC<TeamCompetencyRadarProps> = ({ assign
                             ? 'bg-emerald-500'
                             : isWeak
                             ? 'bg-rose-500'
-                            : 'bg-indigo-600'
+                            : 'bg-teal-600'
                         }`}
                         style={{ width: `${stat.accuracyRate}%` }}
                       />
@@ -367,9 +367,9 @@ export const TeamCompetencyRadar: React.FC<TeamCompetencyRadarProps> = ({ assign
           </div>
 
           {/* Pedagogical Action Plan */}
-          <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-indigo-200 dark:border-indigo-900/60 shadow-xs space-y-3">
-            <h3 className="font-bold text-sm text-indigo-950 dark:text-indigo-200 flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-indigo-600" />
+          <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-teal-200 dark:border-teal-900/60 shadow-xs space-y-3">
+            <h3 className="font-bold text-sm text-teal-950 dark:text-teal-200 flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-teal-600" />
               Khuyến Nghị Sư Phạm Của Thầy Cô (Lộ Trình Bồi Dưỡng K11)
             </h3>
 

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Settings Modal — API Key, Model, Firebase Configuration
  * Theo quy chuẩn api.md:
  * - Hai tab: Gemini API và Agent Platform API
@@ -135,7 +135,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-slate-200 dark:border-slate-700">
           <div className="flex items-center gap-2.5">
-            <Settings className="w-5 h-5 text-indigo-500" />
+            <Settings className="w-5 h-5 text-teal-500" />
             <h2 className="text-lg font-bold text-slate-900 dark:text-white">Cài Đặt Hệ Thống</h2>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition">
@@ -155,7 +155,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
               onClick={() => setActiveTab(tab.id)}
               className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-semibold transition border-b-2 ${
                 activeTab === tab.id
-                  ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                  ? 'border-teal-500 text-teal-600 dark:text-teal-400'
                   : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
               }`}
             >
@@ -171,16 +171,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
           {activeTab === 'gemini' && (
             <div className="space-y-4">
               {/* Provider selection */}
-              <div className="p-3 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800">
+              <div className="p-3 rounded-xl bg-teal-50 dark:bg-teal-950/30 border border-teal-200 dark:border-teal-800">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="radio"
                     name="provider"
                     checked={selectedProvider === 'gemini'}
                     onChange={() => setSelectedProvider('gemini')}
-                    className="accent-indigo-600"
+                    className="accent-teal-600"
                   />
-                  <span className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">
+                  <span className="text-sm font-semibold text-teal-700 dark:text-teal-300">
                     Sử dụng Gemini API làm dịch vụ chính
                   </span>
                 </label>
@@ -198,7 +198,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                     value={geminiKey}
                     onChange={(e) => setGeminiKey(e.target.value)}
                     placeholder="AIzaSy... hoặc AQ..."
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm font-mono focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition pr-10"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm font-mono focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 transition pr-10"
                   />
                   <button
                     onClick={() => setShowGeminiKey(!showGeminiKey)}
@@ -214,7 +214,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                 )}
                 <p className="text-[10px] text-slate-400 mt-1">
                   Lấy key tại{' '}
-                  <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="text-indigo-500 underline">
+                  <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="text-teal-500 underline">
                     aistudio.google.com/apikey
                   </a>
                 </p>
@@ -228,7 +228,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                 <select
                   value={geminiModel}
                   onChange={(e) => setGeminiModel(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm focus:ring-2 focus:ring-indigo-500/50 transition"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm focus:ring-2 focus:ring-teal-500/50 transition"
                 >
                   {GEMINI_MODELS.map((m) => (
                     <option key={m} value={m}>{m}</option>
@@ -353,7 +353,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                 )}
                 <p className="text-[10px] text-slate-400 mt-1.5">
                   Lấy config tại{' '}
-                  <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" className="text-indigo-500 underline">
+                  <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" className="text-teal-500 underline">
                     Firebase Console
                   </a>{' '}
                   → Project Settings → Your apps → Web
@@ -380,7 +380,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
           </button>
           <button
             onClick={handleSave}
-            className="px-6 py-2.5 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition shadow-sm"
+            className="px-6 py-2.5 rounded-xl text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 transition shadow-sm"
           >
             Lưu Cấu Hình
           </button>

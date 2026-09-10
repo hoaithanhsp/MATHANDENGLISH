@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   Sparkles,
   Upload,
@@ -238,17 +238,17 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
               : 'Chào mừng trở lại, Thầy Trần Hoài Thanh • THPT Khúc Thừa Dụ, TP.Hải Phòng'}
           </p>
           <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
-            {isStudentMode ? 'AI Exam Generator — Tự Tạo Đề Luyện Tập' : 'Teacher Dashboard & AI Generator'}
+            {isStudentMode ? 'AI Exam Generator — Tự tạo đề luyện tập' : 'Teacher Dashboard & AI Generator'}
           </h2>
         </div>
         <div className="flex items-center gap-2.5">
           <button
             onClick={handleGenerate}
             disabled={isGenerating}
-            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-200 dark:shadow-none transition flex items-center gap-1.5 disabled:opacity-50"
+            className="px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold shadow-md shadow-teal-200 dark:shadow-none transition flex items-center gap-1.5 disabled:opacity-50"
           >
             <Sparkles className="w-3.5 h-3.5" />
-            {isGenerating ? 'Đang tạo...' : isStudentMode ? '+ Tạo Đề Thi Mới' : '+ Generate New Exam'}
+            {isGenerating ? 'Đang tạo...' : isStudentMode ? '+ Tạo đề thi mới' : '+ Generate New Exam'}
           </button>
         </div>
       </div>
@@ -284,7 +284,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
           <div className="text-3xl font-black text-slate-900 dark:text-white">
             {isStudentMode ? 'Instant AI' : '42'}
           </div>
-          <div className="text-indigo-500 text-xs font-medium mt-1">
+          <div className="text-teal-500 text-xs font-medium mt-1">
             {isStudentMode ? 'Tự chấm & Lời giải chi tiết' : 'HP Matrix compliant'}
           </div>
         </div>
@@ -296,8 +296,8 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
         <div className="lg:col-span-1 space-y-5">
           <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-xs space-y-4">
             <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <Sliders className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-              Cấu Hình Đề Thi
+              <Sliders className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+              Cấu hình đề thi
             </h3>
 
             {/* Exam Title */}
@@ -309,7 +309,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
                 type="text"
                 value={examTitle}
                 onChange={(e) => setExamTitle(e.target.value)}
-                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
                 placeholder="VD: Đề thi chọn HSG TP Hải Phòng năm 2026"
               />
             </div>
@@ -325,7 +325,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
                   onClick={() => setMode('bilingual')}
                   className={`px-3 py-2 rounded-xl text-xs font-semibold border transition ${
                     mode === 'bilingual'
-                      ? 'bg-indigo-50 dark:bg-indigo-950/40 border-indigo-500 text-indigo-700 dark:text-indigo-300'
+                      ? 'bg-teal-50 dark:bg-teal-950/40 border-teal-500 text-teal-700 dark:text-teal-300'
                       : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
                   }`}
                 >
@@ -336,7 +336,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
                   onClick={() => setMode('english_only')}
                   className={`px-3 py-2 rounded-xl text-xs font-semibold border transition ${
                     mode === 'english_only'
-                      ? 'bg-indigo-50 dark:bg-indigo-950/40 border-indigo-500 text-indigo-700 dark:text-indigo-300'
+                      ? 'bg-teal-50 dark:bg-teal-950/40 border-teal-500 text-teal-700 dark:text-teal-300'
                       : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
                   }`}
                 >
@@ -354,7 +354,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
                 <label
                   className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer transition ${
                     examType === 'haiphong_matrix'
-                      ? 'bg-indigo-50/50 dark:bg-indigo-950/30 border-indigo-500'
+                      ? 'bg-teal-50/50 dark:bg-teal-950/30 border-teal-500'
                       : 'border-slate-200 dark:border-slate-700'
                   }`}
                 >
@@ -363,7 +363,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
                     name="examType"
                     checked={examType === 'haiphong_matrix'}
                     onChange={() => setExamType('haiphong_matrix')}
-                    className="mt-0.5 text-indigo-600 focus:ring-indigo-500"
+                    className="mt-0.5 text-teal-600 focus:ring-teal-500"
                   />
                   <div>
                     <span className="text-xs font-bold text-slate-900 dark:text-white block">
@@ -378,7 +378,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
                 <label
                   className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer transition ${
                     examType === 'topic_practice'
-                      ? 'bg-indigo-50/50 dark:bg-indigo-950/30 border-indigo-500'
+                      ? 'bg-teal-50/50 dark:bg-teal-950/30 border-teal-500'
                       : 'border-slate-200 dark:border-slate-700'
                   }`}
                 >
@@ -387,7 +387,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
                     name="examType"
                     checked={examType === 'topic_practice'}
                     onChange={() => setExamType('topic_practice')}
-                    className="mt-0.5 text-indigo-600 focus:ring-indigo-500"
+                    className="mt-0.5 text-teal-600 focus:ring-teal-500"
                   />
                   <div>
                     <span className="text-xs font-bold text-slate-900 dark:text-white block">
@@ -411,7 +411,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
                 value={topicPrompt}
                 onChange={(e) => setTopicPrompt(e.target.value)}
                 placeholder="VD: Nhấn mạnh vào Nguyên lý Dirichlet và Thiết diện trong hình học không gian..."
-                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
             </div>
 
@@ -420,7 +420,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
               <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
                 Tải lên tài liệu tham khảo (Text / Markdown / File đề cũ):
               </label>
-              <div className="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl p-3 text-center hover:border-indigo-400 transition bg-slate-50/50 dark:bg-slate-900/50">
+              <div className="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl p-3 text-center hover:border-teal-400 transition bg-slate-50/50 dark:bg-slate-900/50">
                 <input
                   type="file"
                   id="doc-upload"
@@ -430,7 +430,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
                 />
                 <label htmlFor="doc-upload" className="cursor-pointer flex flex-col items-center justify-center">
                   <Upload className="w-5 h-5 text-slate-400 mb-1" />
-                  <span className="text-xs font-medium text-indigo-600 dark:text-indigo-400">
+                  <span className="text-xs font-medium text-teal-600 dark:text-teal-400">
                     {uploadedFileName ? uploadedFileName : 'Chọn tệp tài liệu tham khảo'}
                   </span>
                   <span className="text-[10px] text-slate-400 mt-0.5">Hỗ trợ .txt, .md, .json</span>
@@ -458,7 +458,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
               type="button"
               disabled={isGenerating}
               onClick={handleGenerate}
-              className="w-full py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-indigo-600 to-emerald-600 hover:from-indigo-700 hover:to-emerald-700 transition shadow-md shadow-indigo-500/20 flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 transition shadow-md shadow-teal-500/20 flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {isGenerating ? (
                 <>
@@ -486,7 +486,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
           <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-xs">
             <h4 className="font-bold text-slate-800 dark:text-white text-xs uppercase tracking-wider mb-4 flex items-center justify-between">
               <span>HP Matrix Distribution</span>
-              <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-mono font-semibold">22 Qs Total</span>
+              <span className="text-[10px] text-teal-600 dark:text-teal-400 font-mono font-semibold">22 Qs Total</span>
             </h4>
             <div className="space-y-3.5">
               <div>
@@ -513,33 +513,33 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
                   <span className="text-slate-400 font-mono">7/22 (32%)</span>
                 </div>
                 <div className="w-full bg-slate-100 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
-                  <div className="bg-indigo-500 h-full w-[32%] rounded-full"></div>
+                  <div className="bg-teal-500 h-full w-[32%] rounded-full"></div>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Export Suite Card from Design Prototype */}
-          <div className="bg-indigo-600 rounded-2xl p-5 text-white shadow-lg shadow-indigo-100 dark:shadow-none flex flex-col justify-center items-center text-center">
+          <div className="bg-teal-600 rounded-2xl p-5 text-white shadow-lg shadow-teal-100 dark:shadow-none flex flex-col justify-center items-center text-center">
             <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center mb-2.5 text-lg">
               <Download className="w-5 h-5 text-white" />
             </div>
             <h5 className="font-bold text-sm mb-1">Export Suite</h5>
-            <p className="text-xs text-indigo-100/80 mb-3.5">
+            <p className="text-xs text-teal-100/80 mb-3.5">
               Download DOCX with LaTeX intact or PDF
             </p>
             <div className="grid grid-cols-2 gap-2 w-full">
               <button
                 type="button"
                 onClick={() => handleExportDocx(false)}
-                className="bg-white hover:bg-slate-50 text-indigo-900 py-2 rounded-lg text-xs font-bold transition shadow-xs"
+                className="bg-white hover:bg-slate-50 text-teal-900 py-2 rounded-lg text-xs font-bold transition shadow-xs"
               >
                 DOCX (LaTeX)
               </button>
               <button
                 type="button"
                 onClick={() => printExamOrNotes(examTitle)}
-                className="bg-indigo-500/80 hover:bg-indigo-500 text-white py-2 rounded-lg text-xs font-bold transition border border-indigo-400/40"
+                className="bg-teal-500/80 hover:bg-teal-500 text-white py-2 rounded-lg text-xs font-bold transition border border-teal-400/40"
               >
                 PDF (Print)
               </button>
@@ -555,12 +555,12 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
               <div>
                 <h3 className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
                   <Eye className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                  Bản Xem Trước Trực Quan KaTeX & Hiệu Chỉnh Đề
+                  Bản xem trước trực quan KaTeX & hiệu chỉnh đề
                 </h3>
                 <span className="text-xs text-slate-500 dark:text-slate-400">
                   {generatedQuestions
                     ? `${generatedQuestions.length} câu hỏi chuẩn ma trận (12 MCQ + 10 Short Answer)`
-                    : 'Chưa có dữ liệu đề. Hãy bấm "Sinh Đề Thi Bằng AI" để bắt đầu.'}
+                    : 'Chưa có dữ liệu đề. Hãy bấm "Sinh đề thi bằng AI" để bắt đầu.'}
                 </span>
               </div>
 
@@ -579,7 +579,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
                     className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition"
                     title="Xuất file DOCX có kèm đáp án và lời giải chi tiết"
                   >
-                    <Download className="w-3.5 h-3.5 text-indigo-500" />
+                    <Download className="w-3.5 h-3.5 text-teal-500" />
                     DOCX Đáp Án
                   </button>
                   <button
@@ -597,7 +597,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
                       };
                       printHaiPhongExam(tempExam, { sheetType: 'question_sheet' });
                     }}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 transition"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 hover:bg-teal-100 transition"
                     title="In Đề Thi chuẩn mẫu Sở GD&ĐT Hải Phòng"
                   >
                     <Printer className="w-3.5 h-3.5" />
@@ -627,7 +627,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
                   {onStartTestNow && (
                     <button
                       onClick={() => handleSaveExam(true)}
-                      className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition shadow-md shadow-indigo-200 dark:shadow-none"
+                      className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 transition shadow-md shadow-teal-200 dark:shadow-none"
                     >
                       <Play className="w-3.5 h-3.5 fill-current" />
                       Vào Làm Bài Ngay
@@ -652,12 +652,12 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
                 {generatedQuestions.map((q, idx) => (
                   <div
                     key={q.id || idx}
-                    className="p-4 rounded-xl border border-slate-200 dark:border-slate-750 bg-slate-50/50 dark:bg-slate-900/40 hover:border-indigo-300 dark:hover:border-indigo-700 transition"
+                    className="p-4 rounded-xl border border-slate-200 dark:border-slate-750 bg-slate-50/50 dark:bg-slate-900/40 hover:border-teal-300 dark:hover:border-teal-700 transition"
                   >
                     {/* Question Header tags */}
                     <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
                       <div className="flex items-center gap-2">
-                        <span className="px-2.5 py-0.5 bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 text-[10px] font-bold rounded uppercase tracking-wider">
+                        <span className="px-2.5 py-0.5 bg-teal-100 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 text-[10px] font-bold rounded uppercase tracking-wider">
                           {mode === 'bilingual' ? 'Bilingual' : 'English Only'}
                         </span>
                         <span className="px-2.5 py-0.5 bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 text-[10px] font-bold rounded uppercase tracking-wider">
@@ -682,7 +682,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
 
                         <button
                           onClick={() => setEditingIndex(editingIndex === idx ? null : idx)}
-                          className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 font-medium"
+                          className="text-xs text-teal-600 dark:text-teal-400 hover:underline flex items-center gap-1 font-medium"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
                           {editingIndex === idx ? 'Đóng sửa' : 'Sửa nhanh'}
@@ -692,7 +692,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
 
                     {/* Question Statement Rendered with KaTeX */}
                     <div className="text-slate-900 dark:text-white text-sm leading-relaxed mb-2 font-serif">
-                      <span className="font-sans font-bold text-indigo-600 dark:text-indigo-400 mr-2">
+                      <span className="font-sans font-bold text-teal-600 dark:text-teal-400 mr-2">
                         Question {q.order_index < 10 ? `0${q.order_index}` : q.order_index}:
                       </span>
                       <MathRenderer content={q.question_en} inline />
@@ -701,7 +701,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
                     {/* Vietnamese Translation Callout (Separated clearly, question only) */}
                     {mode === 'bilingual' && q.question_vi && (
                       <div className="mb-3 p-3 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs font-sans">
-                        <div className="flex items-center gap-1.5 font-bold text-[11px] text-indigo-600 dark:text-indigo-400 mb-1">
+                        <div className="flex items-center gap-1.5 font-bold text-[11px] text-teal-600 dark:text-teal-400 mb-1">
                           <Languages className="w-3.5 h-3.5" />
                           <span>Bản dịch Tiếng Việt:</span>
                         </div>
@@ -723,14 +723,14 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
                               key={oIdx}
                               className={`p-3 rounded-xl border flex items-center space-x-3 transition-colors ${
                                 isCorrect
-                                  ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-950 dark:text-indigo-100 font-semibold shadow-xs'
-                                  : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 hover:border-indigo-300 dark:hover:border-indigo-600'
+                                  ? 'border-teal-600 bg-teal-50 dark:bg-teal-950/50 text-teal-950 dark:text-teal-100 font-semibold shadow-xs'
+                                  : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 hover:border-teal-300 dark:hover:border-teal-600'
                               }`}
                             >
                               <span
                                 className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
                                   isCorrect
-                                    ? 'bg-indigo-600 text-white'
+                                    ? 'bg-teal-600 text-white'
                                     : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
                                 }`}
                               >
@@ -740,7 +740,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
                                 <MathRenderer content={opt.replace(/^[A-D]\.\s*/, '')} inline />
                               </div>
                               {isCorrect && (
-                                <span className="text-[10px] uppercase font-bold text-indigo-600 dark:text-indigo-400 shrink-0">
+                                <span className="text-[10px] uppercase font-bold text-teal-600 dark:text-teal-400 shrink-0">
                                   ✓ Đáp án
                                 </span>
                               )}
@@ -752,7 +752,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
 
                     {/* Short Answer if PART_2 */}
                     {q.part === 'PART_2' && (
-                      <div className="my-2 p-2.5 rounded-lg bg-indigo-50/50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800/50 flex items-center justify-between text-xs">
+                      <div className="my-2 p-2.5 rounded-lg bg-teal-50/50 dark:bg-teal-950/30 border border-teal-200 dark:border-teal-800/50 flex items-center justify-between text-xs">
                         <span className="text-slate-600 dark:text-slate-400 font-medium">
                           Đáp số đúng (Short-answer):
                         </span>
@@ -777,7 +777,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
 
                     {/* In-place edit drawer */}
                     {editingIndex === idx && (
-                      <div className="mt-4 p-4 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 space-y-3 text-xs">
+                      <div className="mt-4 p-4 rounded-xl bg-teal-50/70 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 space-y-3 text-xs">
                         <h4 className="font-bold text-slate-900 dark:text-white">
                           Hiệu chỉnh Câu {q.order_index}
                         </h4>
@@ -849,7 +849,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
                   Chưa có đề thi được hiển thị
                 </h4>
                 <p className="text-xs text-slate-500 max-w-sm mt-1">
-                  Chọn các thông số bên trái rồi bấm <strong>"Sinh Đề Thi Bằng AI"</strong> để tạo bộ đề chuẩn.
+                  Chọn các thông số bên trái rồi bấm <strong>"Sinh đề thi bằng AI"</strong> để tạo bộ đề chuẩn.
                 </p>
               </div>
             )}

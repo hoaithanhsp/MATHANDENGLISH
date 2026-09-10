@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import {
   BookOpen,
   Search,
@@ -113,7 +113,7 @@ export const InteractiveVocabModal: React.FC = () => {
   return (
     <div className="space-y-6 max-w-5xl mx-auto py-2 animate-in fade-in">
       {/* Top Banner */}
-      <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+      <div className="bg-gradient-to-r from-blue-900 via-teal-900 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-xs font-bold text-blue-300 mb-2">
             <Languages className="w-3.5 h-3.5" />
@@ -130,7 +130,7 @@ export const InteractiveVocabModal: React.FC = () => {
         <div className="flex gap-2 shrink-0">
           <button
             onClick={() => setShowAddModal(true)}
-            className="px-4 py-2.5 rounded-2xl bg-white text-indigo-950 font-bold text-xs shadow-md hover:bg-blue-50 transition flex items-center gap-1.5"
+            className="px-4 py-2.5 rounded-2xl bg-white text-teal-950 font-bold text-xs shadow-md hover:bg-blue-50 transition flex items-center gap-1.5"
           >
             <Plus className="w-4 h-4" />
             Thêm Thuật Ngữ Mới
@@ -145,7 +145,7 @@ export const InteractiveVocabModal: React.FC = () => {
             onClick={() => setActiveTab('dictionary')}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
               activeTab === 'dictionary'
-                ? 'bg-indigo-600 text-white shadow-xs'
+                ? 'bg-teal-600 text-white shadow-xs'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
             }`}
           >
@@ -160,7 +160,7 @@ export const InteractiveVocabModal: React.FC = () => {
             }}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
               activeTab === 'flashcards'
-                ? 'bg-indigo-600 text-white shadow-xs'
+                ? 'bg-teal-600 text-white shadow-xs'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
             }`}
           >
@@ -209,7 +209,7 @@ export const InteractiveVocabModal: React.FC = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Tra từ tiếng Anh, tiếng Việt, định nghĩa..."
-                className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-teal-500"
               />
             </div>
           </div>
@@ -219,18 +219,18 @@ export const InteractiveVocabModal: React.FC = () => {
             {filteredWords.map((word) => (
               <div
                 key={word.id}
-                className="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xs hover:border-indigo-300 dark:hover:border-indigo-600 transition flex flex-col justify-between space-y-3"
+                className="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xs hover:border-teal-300 dark:hover:border-teal-600 transition flex flex-col justify-between space-y-3"
               >
                 <div>
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-base font-bold text-indigo-600 dark:text-indigo-400">
+                        <span className="text-base font-bold text-teal-600 dark:text-teal-400">
                           {word.term_en}
                         </span>
                         <button
                           onClick={() => handleSpeak(word.term_en)}
-                          className="p-1 rounded-full text-slate-400 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+                          className="p-1 rounded-full text-slate-400 hover:text-teal-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
                           title="Nghe phát âm chuẩn"
                         >
                           <Volume2 className="w-3.5 h-3.5" />
@@ -288,7 +288,7 @@ export const InteractiveVocabModal: React.FC = () => {
           {/* Flip Card Container */}
           <div
             onClick={() => setIsFlipped(!isFlipped)}
-            className="cursor-pointer min-h-[300px] rounded-3xl p-8 bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 border-2 border-indigo-200 dark:border-indigo-900 shadow-xl flex flex-col items-center justify-center text-center relative transition-all duration-300 hover:shadow-2xl select-none"
+            className="cursor-pointer min-h-[300px] rounded-3xl p-8 bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 border-2 border-teal-200 dark:border-teal-900 shadow-xl flex flex-col items-center justify-center text-center relative transition-all duration-300 hover:shadow-2xl select-none"
           >
             <span className="absolute top-4 right-4 text-slate-400 text-xs flex items-center gap-1">
               <RotateCw className="w-3.5 h-3.5" /> Chạm để lật thẻ
@@ -297,14 +297,14 @@ export const InteractiveVocabModal: React.FC = () => {
             {!isFlipped ? (
               // FRONT SIDE: English term + pronunciation
               <div className="space-y-4 animate-in fade-in flex flex-col items-center">
-                <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300">
+                <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-teal-100 text-teal-800 dark:bg-teal-950/60 dark:text-teal-300">
                   {currentCard.strand || 'Math Olympiad'}
                 </span>
                 <h3 className="text-3xl font-black text-slate-900 dark:text-white">
                   {currentCard.term_en}
                 </h3>
                 {currentCard.pronunciation && (
-                  <p className="text-sm font-mono text-indigo-600 dark:text-indigo-400">
+                  <p className="text-sm font-mono text-teal-600 dark:text-teal-400">
                     {currentCard.pronunciation}
                   </p>
                 )}
@@ -314,7 +314,7 @@ export const InteractiveVocabModal: React.FC = () => {
                     e.stopPropagation();
                     handleSpeak(currentCard.term_en);
                   }}
-                  className="px-3 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900 transition flex items-center gap-1.5 text-xs font-semibold shadow-xs"
+                  className="px-3 py-1.5 rounded-full bg-teal-50 dark:bg-teal-950 text-teal-600 dark:text-teal-400 hover:bg-teal-100 dark:hover:bg-teal-900 transition flex items-center gap-1.5 text-xs font-semibold shadow-xs"
                   title="Nghe phát âm chuẩn (Web Speech)"
                 >
                   <Volume2 className="w-4 h-4" /> Phát âm Audio
@@ -336,7 +336,7 @@ export const InteractiveVocabModal: React.FC = () => {
                       e.stopPropagation();
                       handleSpeak(currentCard.term_en);
                     }}
-                    className="p-1 rounded-full text-slate-400 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+                    className="p-1 rounded-full text-slate-400 hover:text-teal-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
                     title="Nghe lại phát âm tiếng Anh"
                   >
                     <Volume2 className="w-4 h-4" />
@@ -383,7 +383,7 @@ export const InteractiveVocabModal: React.FC = () => {
                 setCardIndex((prev) => prev + 1);
                 setIsFlipped(false);
               }}
-              className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs"
+              className="px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs"
             >
               Thẻ kế tiếp <ChevronRight className="w-4 h-4" />
             </button>
@@ -500,7 +500,7 @@ export const InteractiveVocabModal: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700"
+                  className="px-4 py-2 rounded-xl bg-teal-600 text-white font-bold hover:bg-teal-700"
                 >
                   Lưu Thuật Ngữ
                 </button>

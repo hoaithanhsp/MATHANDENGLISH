@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   UserCheck,
   Award,
@@ -100,7 +100,7 @@ export const StudentSubmissions: React.FC<StudentSubmissionsProps> = ({ assignme
       <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <UserCheck className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            <UserCheck className="w-5 h-5 text-teal-600 dark:text-teal-400" />
             Quản Lý Bài Nộp & Phản Hồi Học Sinh (Đội Tuyển K11)
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
@@ -116,7 +116,7 @@ export const StudentSubmissions: React.FC<StudentSubmissionsProps> = ({ assignme
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Tìm theo tên học sinh, đề thi, mã HS..."
-            className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-teal-500"
           />
         </div>
       </div>
@@ -124,7 +124,7 @@ export const StudentSubmissions: React.FC<StudentSubmissionsProps> = ({ assignme
       {/* Overview Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs flex items-center gap-4">
-          <div className="p-3 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 rounded-xl">
+          <div className="p-3 bg-teal-50 dark:bg-teal-950/50 text-teal-600 dark:text-teal-400 rounded-xl">
             <UserCheck className="w-6 h-6" />
           </div>
           <div>
@@ -212,7 +212,7 @@ export const StudentSubmissions: React.FC<StudentSubmissionsProps> = ({ assignme
                           onClick={() => handleSelectAssignment(item)}
                           className={`hover:bg-slate-50 dark:hover:bg-slate-800/60 transition cursor-pointer ${
                             isSelected
-                              ? 'bg-indigo-50/70 dark:bg-indigo-950/40 font-medium'
+                              ? 'bg-teal-50/70 dark:bg-teal-950/40 font-medium'
                               : ''
                           }`}
                         >
@@ -233,7 +233,7 @@ export const StudentSubmissions: React.FC<StudentSubmissionsProps> = ({ assignme
                                 score >= 16.0
                                   ? 'text-emerald-600 dark:text-emerald-400'
                                   : score >= 10.0
-                                  ? 'text-indigo-600 dark:text-indigo-400'
+                                  ? 'text-teal-600 dark:text-teal-400'
                                   : 'text-amber-600 dark:text-amber-400'
                               }`}
                             >
@@ -254,7 +254,7 @@ export const StudentSubmissions: React.FC<StudentSubmissionsProps> = ({ assignme
                           </td>
                           <td className="px-4 py-3">
                             {item.teacher_feedback ? (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300">
                                 <Check className="w-3 h-3" /> Đã phê
                               </span>
                             ) : (
@@ -274,7 +274,7 @@ export const StudentSubmissions: React.FC<StudentSubmissionsProps> = ({ assignme
                                 e.stopPropagation();
                                 handleSelectAssignment(item);
                               }}
-                              className="p-1 text-indigo-600 dark:text-indigo-400 hover:underline inline-flex items-center gap-1 font-semibold"
+                              className="p-1 text-teal-600 dark:text-teal-400 hover:underline inline-flex items-center gap-1 font-semibold"
                             >
                               <Eye className="w-3.5 h-3.5" />
                               Xem bài
@@ -328,10 +328,10 @@ export const StudentSubmissions: React.FC<StudentSubmissionsProps> = ({ assignme
               </div>
 
               {/* Teacher Feedback Loop Box */}
-              <div className="p-3.5 rounded-xl bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800/60 space-y-2.5">
+              <div className="p-3.5 rounded-xl bg-teal-50/60 dark:bg-teal-950/30 border border-teal-200 dark:border-teal-800/60 space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-indigo-900 dark:text-indigo-300 flex items-center gap-1.5">
-                    <MessageSquare className="w-3.5 h-3.5 text-indigo-600" />
+                  <span className="text-xs font-bold text-teal-900 dark:text-teal-300 flex items-center gap-1.5">
+                    <MessageSquare className="w-3.5 h-3.5 text-teal-600" />
                     Lời Phê & Dặn Dò Của Thầy/Cô:
                   </span>
                   {feedbackSavedMsg && (
@@ -346,7 +346,7 @@ export const StudentSubmissions: React.FC<StudentSubmissionsProps> = ({ assignme
                   value={feedbackText}
                   onChange={(e) => setFeedbackText(e.target.value)}
                   placeholder="Nhập lời nhận xét, lưu ý câu sai hoặc dặn dò cho học sinh này..."
-                  className="w-full p-2.5 rounded-lg border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-slate-900 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="w-full p-2.5 rounded-lg border border-teal-200 dark:border-teal-800 bg-white dark:bg-slate-900 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-teal-500"
                 />
 
                 {/* Quick Feedback Suggestions */}
@@ -358,7 +358,7 @@ export const StudentSubmissions: React.FC<StudentSubmissionsProps> = ({ assignme
                         key={i}
                         type="button"
                         onClick={() => setFeedbackText((prev) => (prev ? `${prev}\n${tpl}` : tpl))}
-                        className="px-2 py-0.5 text-[10px] rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-indigo-400 transition truncate max-w-full text-left"
+                        className="px-2 py-0.5 text-[10px] rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-teal-400 transition truncate max-w-full text-left"
                         title={tpl}
                       >
                         {tpl.slice(0, 32)}...
@@ -376,7 +376,7 @@ export const StudentSubmissions: React.FC<StudentSubmissionsProps> = ({ assignme
                   <button
                     onClick={handleSaveFeedback}
                     disabled={isSavingFeedback}
-                    className="ml-auto px-3.5 py-1.5 rounded-lg text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition flex items-center gap-1.5 shadow-xs disabled:opacity-50"
+                    className="ml-auto px-3.5 py-1.5 rounded-lg text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 transition flex items-center gap-1.5 shadow-xs disabled:opacity-50"
                   >
                     <Save className="w-3.5 h-3.5" />
                     {isSavingFeedback ? 'Đang lưu...' : 'Lưu Lời Phê'}

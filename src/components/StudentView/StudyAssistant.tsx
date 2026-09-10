@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   BookOpen,
   Sparkles,
@@ -157,36 +157,36 @@ export const StudyAssistant: React.FC<StudyAssistantProps> = ({
             onClick={() => setActiveStudyTab('haiphong_topics')}
             className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition ${
               activeStudyTab === 'haiphong_topics'
-                ? 'bg-indigo-600 text-white shadow-sm'
+                ? 'bg-teal-600 text-white shadow-sm'
                 : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
             }`}
           >
             <Award className="w-4 h-4" />
-            11 Chuyên Đề VDC Hải Phòng 2025
+            11 chuyên đề VDC Hải Phòng 2025
           </button>
 
           <button
             onClick={() => setActiveStudyTab('roadmap')}
             className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition ${
               activeStudyTab === 'roadmap'
-                ? 'bg-indigo-600 text-white shadow-sm'
+                ? 'bg-teal-600 text-white shadow-sm'
                 : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
             }`}
           >
             <Calendar className="w-4 h-4" />
-            Lộ Trình Ôn Luyện 12 Tuần
+            Lộ trình ôn luyện 12 tuần
           </button>
 
           <button
             onClick={() => setActiveStudyTab('ai_assistant')}
             className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition ${
               activeStudyTab === 'ai_assistant'
-                ? 'bg-indigo-600 text-white shadow-sm'
+                ? 'bg-teal-600 text-white shadow-sm'
                 : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
             }`}
           >
             <Sparkles className="w-4 h-4" />
-            Trợ Lý AI Tùy Biến
+            Trợ lý AI tùy biến
           </button>
         </div>
 
@@ -196,7 +196,7 @@ export const StudyAssistant: React.FC<StudyAssistantProps> = ({
             onClick={() => setMode('bilingual')}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
               mode === 'bilingual'
-                ? 'bg-indigo-50 border-indigo-500 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300'
+                ? 'bg-teal-50 border-teal-500 text-teal-700 dark:bg-teal-950/40 dark:text-teal-300'
                 : 'border-slate-200 dark:border-slate-700 text-slate-500'
             }`}
           >
@@ -206,7 +206,7 @@ export const StudyAssistant: React.FC<StudyAssistantProps> = ({
             onClick={() => setMode('english_only')}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
               mode === 'english_only'
-                ? 'bg-indigo-50 border-indigo-500 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300'
+                ? 'bg-teal-50 border-teal-500 text-teal-700 dark:bg-teal-950/40 dark:text-teal-300'
                 : 'border-slate-200 dark:border-slate-700 text-slate-500'
             }`}
           >
@@ -219,13 +219,13 @@ export const StudyAssistant: React.FC<StudyAssistantProps> = ({
       {activeStudyTab === 'haiphong_topics' && (
         <div className="space-y-6">
           {/* Header Info */}
-          <div className="bg-gradient-to-r from-indigo-900 via-slate-900 to-emerald-950 p-6 rounded-2xl text-white shadow-sm border border-indigo-800/40">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-white/10 text-indigo-200 mb-3 border border-white/10">
+          <div className="bg-gradient-to-r from-teal-900 via-slate-900 to-emerald-950 p-6 rounded-2xl text-white shadow-sm border border-teal-800/40">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-white/10 text-teal-200 mb-3 border border-white/10">
               <Target className="w-3.5 h-3.5 text-amber-400" />
               Tài Liệu Độc Quyền — Bám Sát Ma Trận Sở GD&ĐT Hải Phòng 2025
             </div>
-            <h3 className="text-xl font-bold">11 Chuyên Đề Trọng Tâm Vận Dụng Cao (VDC)</h3>
-            <p className="text-xs text-indigo-200/90 mt-1 max-w-3xl leading-relaxed">
+            <h3 className="text-xl font-bold">11 chuyên đề trọng tâm vận dụng cao (VDC)</h3>
+            <p className="text-xs text-teal-200/90 mt-1 max-w-3xl leading-relaxed">
               Tổng hợp từ bộ tài liệu ôn thi học sinh giỏi thành phố: Dãy số truy hồi, Quy hoạch tuyến tính thực tế, Ba đường conic ứng dụng, Nguyên lý Dirichlet chuồng - thỏ và Nguyên lý bất biến.
             </p>
           </div>
@@ -240,13 +240,13 @@ export const StudyAssistant: React.FC<StudyAssistantProps> = ({
                   onClick={() => setSelectedHpTopic(top)}
                   className={`p-4 rounded-xl border text-left transition relative flex flex-col justify-between ${
                     isSelected
-                      ? 'bg-indigo-50/90 dark:bg-indigo-950/50 border-indigo-500 shadow-xs ring-2 ring-indigo-500/20'
-                      : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-700'
+                      ? 'bg-teal-50/90 dark:bg-teal-950/50 border-teal-500 shadow-xs ring-2 ring-teal-500/20'
+                      : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-teal-300 dark:hover:border-teal-700'
                   }`}
                 >
                   <div className="space-y-2">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-300">
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase bg-teal-100 text-teal-800 dark:bg-teal-900/60 dark:text-teal-300">
                         Chuyên đề {top.topic_number < 10 ? `0${top.topic_number}` : top.topic_number}
                       </span>
                       <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
@@ -260,7 +260,7 @@ export const StudyAssistant: React.FC<StudyAssistantProps> = ({
                       {top.title_en}
                     </p>
                   </div>
-                  <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between text-[11px] text-indigo-600 dark:text-indigo-400 font-semibold">
+                  <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between text-[11px] text-teal-600 dark:text-teal-400 font-semibold">
                     <span>{isSelected ? 'Đang xem' : 'Xem chi tiết'}</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </div>
@@ -276,7 +276,7 @@ export const StudyAssistant: React.FC<StudyAssistantProps> = ({
               <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs flex flex-wrap items-center justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-indigo-600 text-white">
+                    <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-teal-600 text-white">
                       Chuyên đề {selectedHpTopic.topic_number < 10 ? `0${selectedHpTopic.topic_number}` : selectedHpTopic.topic_number}
                     </span>
                     <span className="text-xs font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 px-3 py-1 rounded-lg border border-amber-200 dark:border-amber-800">
@@ -342,14 +342,14 @@ export const StudyAssistant: React.FC<StudyAssistantProps> = ({
                       }
                     }}
                     disabled={isGeneratingQuiz}
-                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-indigo-600 to-emerald-600 hover:from-indigo-700 hover:to-emerald-700 transition shadow-xs disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 transition shadow-xs disabled:opacity-50"
                   >
                     {isGeneratingQuiz ? (
                       <RotateCw className="w-3.5 h-3.5 animate-spin" />
                     ) : (
                       <FileQuestion className="w-3.5 h-3.5" />
                     )}
-                    Tạo Bài Tập Chuyên Đề & Làm Ngay
+                    Tạo bài tập chuyên đề & làm ngay
                   </button>
 
                   <button
@@ -394,7 +394,7 @@ export const StudyAssistant: React.FC<StudyAssistantProps> = ({
               {/* Sample Problems */}
               <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-4">
                 <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-indigo-600" />
+                  <CheckCircle2 className="w-4 h-4 text-teal-600" />
                   Bài Tập Minh Họa Vận Dụng Cao (Sample Olympiad Problems)
                 </h4>
                 <div className="space-y-4">
@@ -404,7 +404,7 @@ export const StudyAssistant: React.FC<StudyAssistantProps> = ({
                       className="p-5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-900/40 space-y-3"
                     >
                       <div className="space-y-1.5">
-                        <div className="text-xs sm:text-sm font-bold text-indigo-900 dark:text-indigo-300">
+                        <div className="text-xs sm:text-sm font-bold text-teal-900 dark:text-teal-300">
                           <MathRenderer content={prob.problem_en} />
                         </div>
                         {prob.problem_vi && (
@@ -440,13 +440,13 @@ export const StudyAssistant: React.FC<StudyAssistantProps> = ({
       {/* TAB 2: LỘ TRÌNH ÔN THI 12 TUẦN */}
       {activeStudyTab === 'roadmap' && (
         <div className="space-y-6">
-          <div className="bg-gradient-to-r from-indigo-900 via-indigo-950 to-slate-900 p-6 rounded-2xl text-white shadow-sm border border-indigo-800/40">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-white/10 text-indigo-200 mb-3 border border-white/10">
+          <div className="bg-gradient-to-r from-teal-900 via-teal-950 to-slate-900 p-6 rounded-2xl text-white shadow-sm border border-teal-800/40">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-white/10 text-teal-200 mb-3 border border-white/10">
               <Calendar className="w-3.5 h-3.5 text-amber-400" />
               Chiến Lược Ôn Luyện Đạt Giải Cao — Sở GD&ĐT Hải Phòng
             </div>
-            <h3 className="text-xl font-bold">Kế Hoạch & Lộ Trình Ôn Luyện 12 Tuần</h3>
-            <p className="text-xs text-indigo-200/90 mt-1 max-w-3xl leading-relaxed">
+            <h3 className="text-xl font-bold">Kế Hoạch & Lộ trình ôn luyện 12 tuần</h3>
+            <p className="text-xs text-teal-200/90 mt-1 max-w-3xl leading-relaxed">
               Thiết kế khoa học 3 giai đoạn: Nền tảng (Tuần 1–3) → Chuyên sâu VDC theo mạch (Tuần 4–8) → Tổng luyện đề bấm giờ 90 phút (Tuần 9–12).
             </p>
           </div>
@@ -458,7 +458,7 @@ export const StudyAssistant: React.FC<StudyAssistantProps> = ({
                 className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-4"
               >
                 <div className="border-b border-slate-100 dark:border-slate-700 pb-3">
-                  <h4 className="text-base font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-2">
+                  <h4 className="text-base font-bold text-teal-600 dark:text-teal-400 flex items-center gap-2">
                     <Layers className="w-4 h-4" />
                     {phase.phase_name}
                   </h4>
@@ -474,7 +474,7 @@ export const StudyAssistant: React.FC<StudyAssistantProps> = ({
                       className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 space-y-2.5 flex flex-col justify-between"
                     >
                       <div>
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-300">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-teal-100 text-teal-800 dark:bg-teal-900/60 dark:text-teal-300">
                           Tuần {w.week}
                         </span>
                         <h5 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white mt-1.5 leading-snug">
@@ -505,12 +505,12 @@ export const StudyAssistant: React.FC<StudyAssistantProps> = ({
           <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-4">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
               <div>
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 mb-2">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-teal-50 text-teal-700 dark:bg-teal-950/40 dark:text-teal-400 border border-teal-200 dark:border-teal-800 mb-2">
                   <Sparkles className="w-3.5 h-3.5" />
                   AI Study Assistant for Math Olympiad
                 </div>
                 <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                  Góc Tự Học Chuyên Đề Tùy Chọn Bằng AI
+                  Góc tự học chuyên đề tùy chọn bằng AI
                 </h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                   Nhập bất kỳ chủ đề toán học nào để AI sinh bài giảng lý thuyết chuẩn KaTeX và bài tập thực hành.
@@ -528,13 +528,13 @@ export const StudyAssistant: React.FC<StudyAssistantProps> = ({
                   onChange={(e) => setTopicInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleGenerateLesson()}
                   placeholder="VD: Pigeonhole Principle, Whispering gallery ellipse, Squeeze Theorem..."
-                  className="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
                 />
               </div>
               <button
                 disabled={isLoading || !topicInput.trim()}
                 onClick={() => handleGenerateLesson()}
-                className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition shadow-xs flex items-center justify-center gap-1.5 disabled:opacity-50 shrink-0"
+                className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 transition shadow-xs flex items-center justify-center gap-1.5 disabled:opacity-50 shrink-0"
               >
                 {isLoading ? (
                   <>
@@ -595,14 +595,14 @@ export const StudyAssistant: React.FC<StudyAssistantProps> = ({
               <button
                 onClick={handleCreateTopicPractice}
                 disabled={isGeneratingQuiz}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-indigo-600 to-emerald-600 hover:from-indigo-700 hover:to-emerald-700 transition shadow-xs disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 transition shadow-xs disabled:opacity-50"
               >
                 {isGeneratingQuiz ? (
                   <RotateCw className="w-3.5 h-3.5 animate-spin" />
                 ) : (
                   <FileQuestion className="w-3.5 h-3.5" />
                 )}
-                Tạo Bài Tập Chuyên Đề & Làm Ngay
+                Tạo bài tập chuyên đề & làm ngay
               </button>
 
               <button
@@ -639,7 +639,7 @@ export const StudyAssistant: React.FC<StudyAssistantProps> = ({
                 <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                   <BookOpen className="w-5 h-5" />
                 </div>
-                <span>1. Tóm Tắt Lý Thuyết & Công Thức Trọng Tâm (Core Theory)</span>
+                <span>1. Tóm tắt lý thuyết & công thức trọng tâm (Core Theory)</span>
               </h4>
               <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 px-3 py-1 rounded-full border border-emerald-200 dark:border-emerald-800 flex items-center gap-1.5 shadow-2xs">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -656,7 +656,7 @@ export const StudyAssistant: React.FC<StudyAssistantProps> = ({
           {currentNote.glossary && currentNote.glossary.length > 0 && (
             <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-4">
               <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <Languages className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                <Languages className="w-4 h-4 text-teal-600 dark:text-teal-400" />
                 2. Từ Vựng & Thuật Ngữ Toán Chuyên Ngành (Glossary & Definitions)
               </h4>
               <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -670,7 +670,7 @@ export const StudyAssistant: React.FC<StudyAssistantProps> = ({
                     className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-900/40 space-y-2"
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <span className="font-bold text-indigo-600 dark:text-indigo-400 text-xs sm:text-sm">
+                      <span className="font-bold text-teal-600 dark:text-teal-400 text-xs sm:text-sm">
                         {item.term_en}
                       </span>
                       <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
@@ -722,7 +722,7 @@ export const StudyAssistant: React.FC<StudyAssistantProps> = ({
                         </span>
                         {m.steps.map((s, sIdx) => (
                           <div key={sIdx} className="flex items-start gap-2 text-xs text-slate-600 dark:text-slate-300">
-                            <span className="font-bold text-indigo-500">{sIdx + 1}.</span>
+                            <span className="font-bold text-teal-500">{sIdx + 1}.</span>
                             <span>{s}</span>
                           </div>
                         ))}

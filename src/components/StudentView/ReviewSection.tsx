@@ -1,4 +1,4 @@
-/**
+﻿/**
  * ReviewSection — Mục Ôn Tập theo Cấu trúc Đề thi HSG TP Hải Phòng
  * 3 Mạch kiến thức → 13 Chuyên đề → Công thức + Mẹo thi + Câu hỏi mẫu
  */
@@ -60,8 +60,8 @@ export const ReviewSection: React.FC = () => {
       {/* Header */}
       <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
         <div className="flex items-start gap-4">
-          <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-950/50 rounded-xl flex items-center justify-center shrink-0">
-            <BookOpen className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+          <div className="w-12 h-12 bg-teal-100 dark:bg-teal-950/50 rounded-xl flex items-center justify-center shrink-0">
+            <BookOpen className="w-6 h-6 text-teal-600 dark:text-teal-400" />
           </div>
           <div className="flex-1">
             <h2 className="text-xl font-bold text-slate-900 dark:text-white">
@@ -92,10 +92,10 @@ export const ReviewSection: React.FC = () => {
               {EXAM_STRUCTURE.parts.map((part) => (
                 <div
                   key={part.part}
-                  className="px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900 text-xs"
+                  className="px-3 py-1.5 rounded-lg bg-teal-50 dark:bg-teal-950/30 border border-teal-100 dark:border-teal-900 text-xs"
                 >
-                  <span className="font-bold text-indigo-700 dark:text-indigo-300">{part.name_vi}</span>
-                  <span className="text-indigo-500 ml-1">• {part.question_count} câu</span>
+                  <span className="font-bold text-teal-700 dark:text-teal-300">{part.name_vi}</span>
+                  <span className="text-teal-500 ml-1">• {part.question_count} câu</span>
                 </div>
               ))}
             </div>
@@ -205,7 +205,7 @@ export const ReviewSection: React.FC = () => {
                           {topic.key_formulas.map((formula, fi) => (
                             <div
                               key={fi}
-                              className="px-3 py-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900 text-xs text-indigo-900 dark:text-indigo-200"
+                              className="px-3 py-2 rounded-lg bg-teal-50 dark:bg-teal-950/20 border border-teal-100 dark:border-teal-900 text-xs text-teal-900 dark:text-teal-200"
                             >
                               <MathRenderer content={formula.startsWith('$') ? formula : `$${formula}$`} />
                             </div>
@@ -232,7 +232,7 @@ export const ReviewSection: React.FC = () => {
                       {topic.sample_questions.length > 0 && (
                         <div>
                           <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 mb-2">
-                            <FileText className="w-3.5 h-3.5 text-indigo-500" /> Câu hỏi mẫu
+                            <FileText className="w-3.5 h-3.5 text-teal-500" /> Câu hỏi mẫu
                           </h4>
                           {topic.sample_questions.map((q) => (
                             <div
@@ -251,7 +251,7 @@ export const ReviewSection: React.FC = () => {
                               {/* 2. Phần Bản dịch Tiếng Việt (Tách biệt rõ ràng) */}
                               {q.question_vi && (
                                 <div className="p-2.5 rounded-lg bg-slate-100/80 dark:bg-slate-850 border border-slate-200 dark:border-slate-700 text-xs">
-                                  <div className="flex items-center gap-1 font-semibold text-[11px] text-indigo-600 dark:text-indigo-400 mb-1">
+                                  <div className="flex items-center gap-1 font-semibold text-[11px] text-teal-600 dark:text-teal-400 mb-1">
                                     <Languages className="w-3.5 h-3.5" />
                                     <span>Bản dịch Tiếng Việt:</span>
                                   </div>
@@ -282,7 +282,7 @@ export const ReviewSection: React.FC = () => {
                               {/* Show/Hide Solution */}
                               <button
                                 onClick={() => toggleSolution(q.id)}
-                                className="mt-2 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+                                className="mt-2 text-[11px] font-semibold text-teal-600 dark:text-teal-400 hover:underline"
                               >
                                 {showSolution[q.id] ? '▼ Ẩn lời giải' : '▶ Xem lời giải'}
                               </button>
