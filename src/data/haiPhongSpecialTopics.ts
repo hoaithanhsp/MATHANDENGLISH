@@ -1,5 +1,13 @@
 import { MathStrand } from '../types';
 
+export interface TopicGlossaryItem {
+  term_en: string;
+  term_vi: string;
+  pronunciation?: string;
+  definition: string;
+  example?: string;
+}
+
 export interface OlympiadSpecialTopic {
   id: string;
   topic_number: number;
@@ -10,7 +18,8 @@ export interface OlympiadSpecialTopic {
   summary: string;
   content_markdown: string;
   key_formulas: string[];
-  sample_problems: {
+  glossary?: TopicGlossaryItem[];
+  sample_problems?: {
     problem_en: string;
     problem_vi: string;
     solution_en: string;
@@ -38,13 +47,62 @@ export const HAIPHONG_SPECIAL_TOPICS: OlympiadSpecialTopic[] = [
 1. **Dãy truy hồi tuyến tính cấp 1:** $u_{n+1} = a u_n + b$. Sử dụng điểm bất động $c = \\frac{b}{1-a}$, chuyển về cấp số nhân $u_n - c = a^{n-1}(u_1 - c)$.
 2. **Dãy truy hồi phân tuyến tính:** $u_{n+1} = \\frac{a u_n + b}{c u_n + d}$. Xét phương trình đặc trưng tìm nghiệm $x_1, x_2$, xét tỉ số $\\frac{u_n - x_1}{u_n - x_2}$ tạo thành cấp số nhân.
 3. **Giới hạn dãy số:** Áp dụng định lý Weierstrass (dãy tăng + bị chặn trên $\\implies$ có giới hạn $L$) rồi giải phương trình $L = f(L)$.`,
-    sample_problems: [
+    glossary: [
       {
-        problem_en: 'Given a sequence $(u_n)$ with $u_1 = 2$ and recurrence $u_{n+1} = \\frac{u_n + 1}{u_n + 3}$ for all $n \\ge 1$. Evaluate $\\lim_{n \\to \\infty} u_n$.',
-        problem_vi: 'Cho dãy số $(u_n)$ có $u_1 = 2$ và hệ thức truy hồi $u_{n+1} = \\frac{u_n+1}{u_n+3}$. Tính giới hạn của dãy số khi $n \\to \\infty$.',
-        solution_en: 'The sequence is bounded below by 0 and decreasing, so it converges to $L \\ge 0$. Taking limits: $L = \\frac{L + 1}{L + 3} \\iff L^2 + 2L - 1 = 0 \\implies L = \\sqrt{2} - 1 \\approx 0.414$.',
-        solution_vi: 'Dãy số dương, giảm và bị chặn dưới bởi 0 nên hội tụ về $L \\ge 0$. Giải phương trình $L = \\frac{L+1}{L+3} \\iff L^2 + 2L - 1 = 0 \\implies L = \\sqrt{2} - 1 \\approx 0.41$.',
-        answer: '0.41 (hoặc \\sqrt{2}-1)'
+        term_en: 'recurrence relation',
+        pronunciation: '/rɪˈkɜːrəns rɪˈleɪʃən/',
+        term_vi: 'hệ thức truy hồi',
+        definition: 'An equation that recursively defines a sequence; each term is expressed as a function of the preceding terms.',
+        example: 'The sequence satisfies the fractional linear recurrence $u_{n+1} = \\frac{u_n + 1}{u_n + 3}$.'
+      },
+      {
+        term_en: 'general term',
+        pronunciation: '/ˈdʒɛnərəl tɜːrm/',
+        term_vi: 'số hạng tổng quát (u_n)',
+        definition: 'A formula giving the value of the n-th term of a sequence directly from its index n.',
+        example: 'The general term of the geometric sequence is $u_n = u_1 \\cdot q^{n-1}$.'
+      },
+      {
+        term_en: 'limit of sequence',
+        pronunciation: '/ˈlɪmɪt əv ˈsiːkwəns/',
+        term_vi: 'giới hạn của dãy số',
+        definition: 'The value L that terms of sequence approach as index n tends to infinity: $\\lim_{n \\to \\infty} u_n = L$.',
+        example: '$\\lim_{n \\to \\infty} \\frac{2n + 1}{n + 3} = 2$.'
+      },
+      {
+        term_en: 'squeeze theorem',
+        pronunciation: '/skwiːz ˈθɪərəm/',
+        term_vi: 'định lý kẹp (Sandwich Theorem)',
+        definition: 'If $a_n \\le u_n \\le b_n$ for all n and $\\lim a_n = \\lim b_n = L$, then $\\lim u_n = L$.',
+        example: 'Since $-\\frac{1}{n} \\le \\frac{\\sin n}{n} \\le \\frac{1}{n}$, by the Squeeze Theorem $\\lim_{n \\to \\infty} \\frac{\\sin n}{n} = 0$.'
+      },
+      {
+        term_en: 'Weierstrass theorem',
+        pronunciation: '/ˈvaɪərʃtrɑːs ˈθɪərəm/',
+        term_vi: 'định lý Weierstrass (đơn điệu & bị chặn)',
+        definition: 'Every bounded monotonic sequence of real numbers is convergent.',
+        example: 'A sequence that is monotonically increasing and bounded above by M converges to a finite limit $L \\le M$.'
+      },
+      {
+        term_en: 'fixed point',
+        pronunciation: '/fɪkst pɔɪnt/',
+        term_vi: 'điểm bất động',
+        definition: 'A real value c satisfying $f(c) = c$; used to construct auxiliary geometric sequences $v_n = u_n - c$.',
+        example: 'For $u_{n+1} = a u_n + b$ with $a \\ne 1$, the fixed point is $c = \\frac{b}{1-a}$.'
+      },
+      {
+        term_en: 'convergent sequence',
+        pronunciation: '/kənˈvɜːrdʒənt ˈsiːkwəns/',
+        term_vi: 'dãy số hội tụ',
+        definition: 'A sequence whose terms approach a specific finite real number as n approaches infinity.',
+        example: 'Sequence $u_n = \\frac{1}{2^n}$ is convergent with limit 0.'
+      },
+      {
+        term_en: 'divergent sequence',
+        pronunciation: '/daɪˈvɜːrdʒənt ˈsiːkwəns/',
+        term_vi: 'dãy số phân kỳ',
+        definition: 'A sequence that does not converge to any finite limit (tends to $\\pm \\infty$ or oscillates).',
+        example: 'The sequence $u_n = (-1)^n$ oscillates and is divergent.'
       }
     ]
   },
@@ -66,13 +124,48 @@ export const HAIPHONG_SPECIAL_TOPICS: OlympiadSpecialTopic[] = [
 1. **Đổi biến số:** Đặt $t = a^x$ (điều kiện $t > 0$) hoặc $t = \\log_a x$ ($t \\in \\mathbb{R}$). Chuyển phương trình về bậc hai theo $t$, áp dụng định lý Viète và so sánh nghiệm với 0.
 2. **Đếm số nghiệm nguyên:** Khảo sát hàm số hoặc cô lập tham số $m$, lập bảng biến thiên để xác định số nghiệm nguyên $x$.
 3. **Bài toán thực tế:** Tính chu kỳ bán rã, bài toán tăng trưởng dân số, lãi suất ngân hàng.`,
-    sample_problems: [
+    glossary: [
       {
-        problem_en: 'Find the number of integral values of $m \\in [-10; 10]$ such that $\\log_2^2 x - (m + 2)\\log_2 x + 2m \\le 0$ has exactly 4 integer solutions for $x$.',
-        problem_vi: 'Tìm số giá trị nguyên của tham số $m \\in [-10; 10]$ để bất phương trình có đúng 4 nghiệm nguyên $x$.',
-        solution_en: 'Factoring yields $(\\log_2 x - 2)(\\log_2 x - m) \\le 0$. Examining intervals of $m$ reveals exactly 2 integer values of $m$.',
-        solution_vi: 'Bất phương trình tương đương $(\\log_2 x - 2)(\\log_2 x - m) \\le 0$. Xét khoảng giá trị nguyên $x$ ta tìm được đúng 2 giá trị nguyên của $m$.',
-        answer: '2'
+        term_en: 'exponential function',
+        pronunciation: '/ˌɛkspoʊˈnɛnʃəl ˈfʌŋkʃən/',
+        term_vi: 'hàm số mũ',
+        definition: 'A function of the form $f(x) = a^x$, where base $a > 0$ and $a \\ne 1$. Strictly increasing when $a > 1$.',
+        example: '$f(x) = 2^x$ is strictly increasing across all real numbers $\\mathbb{R}$.'
+      },
+      {
+        term_en: 'logarithmic function',
+        pronunciation: '/ˌlɔːɡəˈrɪðmɪk ˈfʌŋkʃən/',
+        term_vi: 'hàm số logarit',
+        definition: 'The inverse function of exponentiation: $y = \\log_a x \\iff a^y = x$ for $x > 0, a > 0, a \\ne 1$.',
+        example: '$\\log_2 16 = 4$ because $2^4 = 16$.'
+      },
+      {
+        term_en: 'parameter',
+        pronunciation: '/pəˈræmɪtər/',
+        term_vi: 'tham số (m)',
+        definition: 'A constant variable in an equation whose numerical value controls the number and nature of roots.',
+        example: 'Find all integral values of parameter m such that the equation has exactly 3 distinct roots.'
+      },
+      {
+        term_en: 'domain of definition',
+        pronunciation: '/doʊˈmeɪn əv ˌdɛfəˈnɪʃən/',
+        term_vi: 'tập xác định',
+        definition: 'The complete set of input values x for which the mathematical expression is legitimate and non-zero.',
+        example: 'The domain of $\\log_3(x^2 - 4)$ is $(-\\infty, -2) \\cup (2, +\\infty)$.'
+      },
+      {
+        term_en: 'compound interest',
+        pronunciation: '/ˈkɑːmpaʊnd ˈɪntrəst/',
+        term_vi: 'lãi kép',
+        definition: 'Interest calculated on the initial principal plus all previously accumulated interest: $A = P(1 + r)^n$.',
+        example: 'An investment with annual compound interest rate $r = 7\\%$ doubles in approximately 10 years.'
+      },
+      {
+        term_en: 'strictly monotonic',
+        pronunciation: '/ˈstrɪktli ˌmɑːnəˈtɑːnɪk/',
+        term_vi: 'đơn điệu ngặt (đồng biến/nghịch biến)',
+        definition: 'A property of function where $f(u) = f(v) \\iff u = v$, enabling rapid solution of transcendental equations.',
+        example: 'Since $f(t) = t + 3^t$ is strictly monotonic, $f(x^2) = f(2x) \\iff x^2 = 2x$.'
       }
     ]
   },
@@ -96,13 +189,48 @@ export const HAIPHONG_SPECIAL_TOPICS: OlympiadSpecialTopic[] = [
 2. **Thiết lập hệ bất phương trình:** Chuyển đổi các giới hạn về thời gian, nhân lực, vốn đầu tư thành các bất phương trình bậc nhất $a_i x + b_i y \\le c_i$.
 3. **Xác định các đỉnh của miền nghiệm:** Giải các hệ phương trình 2 ẩn để tìm tọa độ các giao điểm.
 4. **Đánh giá hàm mục tiêu:** Thay tọa độ các đỉnh vào $F(x, y) = ax + by$ để tìm GTLN hoặc GTNN.`,
-    sample_problems: [
+    glossary: [
       {
-        problem_en: 'A factory produces two products A and B. A needs 2h on machine 1, 1h on machine 2 (profit $40). B needs 1h on machine 1, 3h on machine 2 (profit $50). Machine 1 runs ≤ 80h/week, machine 2 ≤ 90h/week. What is the maximum weekly profit?',
-        problem_vi: 'Xưởng sản xuất 2 sản phẩm A và B. Mỗi sp A cần 2h máy 1, 1h máy 2 (lãi 40$). Mỗi sp B cần 1h máy 1, 3h máy 2 (lãi 50$). Máy 1 chạy ≤ 80h/tuần, máy 2 ≤ 90h/tuần. Lợi nhuận tối đa hàng tuần là bao nhiêu?',
-        solution_en: 'Vertices of feasible region: $(0, 0), (40, 0), (30, 20), (0, 30)$. Profit $F(30, 20) = 40(30) + 50(20) = $2200.',
-        solution_vi: 'Các đỉnh của miền nghiệm: $(0; 0), (40; 0), (30; 20), (0; 30)$. Lợi nhuận tại $(30; 20)$ là $F = 40(30) + 50(20) = 2200$ USD.',
-        answer: '2200'
+        term_en: 'linear programming',
+        pronunciation: '/ˈlɪniər ˈproʊɡræmɪŋ/',
+        term_vi: 'quy hoạch tuyến tính',
+        definition: 'A mathematical optimization method for maximizing or minimizing a linear objective function under linear constraints.',
+        example: 'Solving a linear programming model to maximize factory profit under warehouse and raw material limits.'
+      },
+      {
+        term_en: 'feasible region',
+        pronunciation: '/ˈfiːzəbəl ˈriːdʒən/',
+        term_vi: 'miền nghiệm khả thi',
+        definition: 'The set of all points $(x, y)$ in the Cartesian plane satisfying all simultaneous linear inequality constraints.',
+        example: 'The feasible region formed by the constraints is a bounded convex polygon.'
+      },
+      {
+        term_en: 'objective function',
+        pronunciation: '/əbˈdʒɛktɪv ˈfʌŋkʃən/',
+        term_vi: 'hàm mục tiêu',
+        definition: 'The linear expression $F(x, y) = ax + by + c$ whose value must be optimized (maximized or minimized).',
+        example: 'Maximize the objective profit function $F(x, y) = 40x + 50y$.'
+      },
+      {
+        term_en: 'vertex / vertices',
+        pronunciation: '/ˈvɜːrtɛks/',
+        term_vi: 'đỉnh của miền nghiệm đa giác',
+        definition: 'The corner intersection points of bounding constraint lines in the feasible region.',
+        example: 'The optimal value of the linear objective function always occurs at one of the vertices of the feasible region.'
+      },
+      {
+        term_en: 'linear constraint',
+        pronunciation: '/ˈlɪniər kənˈstreɪnt/',
+        term_vi: 'ràng buộc tuyến tính',
+        definition: 'A condition on variables represented by a linear inequality such as $a x + b y \\le c$.',
+        example: 'Machine time constraint: $2x + 3y \\le 120$ hours.'
+      },
+      {
+        term_en: 'convex polygon',
+        pronunciation: '/ˈkɑːnvɛks ˈpɑːliɡɑːn/',
+        term_vi: 'đa giác lồi',
+        definition: 'A polygon where every interior line segment between any two points lies completely within the interior.',
+        example: 'The feasible region of a solvable system of linear inequalities is always a convex polygon.'
       }
     ]
   },
@@ -122,13 +250,48 @@ export const HAIPHONG_SPECIAL_TOPICS: OlympiadSpecialTopic[] = [
     content_markdown: `### I. Kỹ năng trọng tâm
 - **Parabol thực tế:** Cổng vòm parabol, quỹ đạo chuyển động ném xiên trong Vật lý. Gắn hệ trục tọa độ tại đỉnh hoặc chân vòm để lập phương trình $y = ax^2 + bx + c$.
 - **Lượng giác:** Đưa phương trình về dạng tích hoặc phương trình thuần nhất bậc hai đối với $\\sin x$ và $\\cos x$.`,
-    sample_problems: [
+    glossary: [
       {
-        problem_en: 'Find the range of the function $y = 3\\sin(2x) - 4\\cos(2x) + 1$.',
-        problem_vi: 'Tìm tập giá trị của hàm số $y = 3\\sin(2x) - 4\\cos(2x) + 1$.',
-        solution_en: 'The amplitude is $\\sqrt{3^2 + 4^2} = 5$. Thus $-5 + 1 \\le y \\le 5 + 1 \\implies y \\in [-4; 6]$.',
-        solution_vi: 'Biên độ hàm số là $\\sqrt{3^2 + 4^2} = 5$. Vậy $-5 + 1 \\le y \\le 5 + 1 \\implies [-4; 6]$.',
-        answer: '[-4; 6]'
+        term_en: 'parabola',
+        pronunciation: '/pəˈræbələ/',
+        term_vi: 'đường parabol',
+        definition: 'A symmetrical U-shaped plane curve that is the graph of a quadratic function $y = ax^2 + bx + c$.',
+        example: 'The trajectory of water from a fountain models a downward-opening parabola.'
+      },
+      {
+        term_en: 'vertex of parabola',
+        pronunciation: '/ˈvɜːrtɛks əv pəˈræbələ/',
+        term_vi: 'đỉnh parabol',
+        definition: 'The maximum or minimum point of a parabola, with coordinates $I\\left(-\\frac{b}{2a}, -\\frac{\\Delta}{4a}\\right)$.',
+        example: 'The maximum height of the parabolic arch occurs exactly at its vertex.'
+      },
+      {
+        term_en: 'axis of symmetry',
+        pronunciation: '/ˈæksɪs əv ˈsɪmɪtri/',
+        term_vi: 'trục đối xứng',
+        definition: 'The vertical line $x = -\\frac{b}{2a}$ that divides a parabola into two congruent, mirror halves.',
+        example: 'Parabola $y = x^2 - 4x + 3$ has axis of symmetry $x = 2$.'
+      },
+      {
+        term_en: 'amplitude',
+        pronunciation: '/ˈæmplɪtuːd/',
+        term_vi: 'biên độ dao động',
+        definition: 'The maximum absolute value of a periodic trigonometric expression; for $a\\sin x + b\\cos x$, amplitude is $\\sqrt{a^2 + b^2}$.',
+        example: 'The expression $3\\sin x - 4\\cos x$ has amplitude $\\sqrt{3^2 + 4^2} = 5$.'
+      },
+      {
+        term_en: 'trigonometric identity',
+        pronunciation: '/ˌtrɪɡənəˈmɛtrɪk aɪˈdɛntəti/',
+        term_vi: 'hằng đẳng thức lượng giác',
+        definition: 'An equation involving trigonometric functions that is true for every single value in its domain.',
+        example: '$\\sin^2 x + \\cos^2 x = 1$ and $\\sin 2x = 2\\sin x \\cos x$.'
+      },
+      {
+        term_en: 'auxiliary angle method',
+        pronunciation: '/ɔːɡˈzɪliəri ˈæŋɡəl ˈmɛθəd/',
+        term_vi: 'phương pháp góc phụ',
+        definition: 'Dividing $a\\sin x + b\\cos x$ by $\\sqrt{a^2 + b^2}$ to transform it into $\\sqrt{a^2 + b^2}\\sin(x + \\alpha)$.',
+        example: 'Solve $a\\sin x + b\\cos x = c$ by comparing $c^2$ with $a^2 + b^2$.'
       }
     ]
   },
@@ -152,13 +315,48 @@ export const HAIPHONG_SPECIAL_TOPICS: OlympiadSpecialTopic[] = [
   1. Tìm thiết diện qua một điểm và vuông góc với một cạnh của hình chóp/lăng trụ.
   2. Tính sin/cos của góc giữa đường thẳng và mặt phẳng.
   3. Khoảng cách giữa 2 đường chéo nhau thuộc 2 đáy song song.`,
-    sample_problems: [
+    glossary: [
       {
-        problem_en: 'Pyramid $S.ABC$ with $SA \\perp (ABC), SA = 4$, $\\Delta ABC$ right-angled at $B$ with $AB = 3, BC = 4$. Find $\\sin$ of angle between $SC$ and $(SAB)$.',
-        problem_vi: 'Hình chóp $S.ABC$ có $SA \\perp (ABC), SA = 4$, $\\Delta ABC$ vuông tại $B$ có $AB = 3, BC = 4$. Tính sin của góc giữa $SC$ và $(SAB)$.',
-        solution_en: 'Since $BC \\perp AB$ and $BC \\perp SA$, $BC \\perp (SAB)$. Projection is $SB = 5$. $SC = \\sqrt{5^2 + 4^2} = \\sqrt{41}$. $\\sin = \\frac{BC}{SC} = \\frac{4}{\\sqrt{41}} \\approx 0.62$.',
-        solution_vi: 'Vì $BC \\perp (SAB)$ nên hình chiếu của $SC$ lên $(SAB)$ là $SB = 5$. Cạnh huyền $SC = \\sqrt{41}$. Suy ra $\\sin = \\frac{4}{\\sqrt{41}} \\approx 0.62$.',
-        answer: '0.62 (hoặc 4/\\sqrt{41})'
+        term_en: 'perpendicularity',
+        pronunciation: '/ˌpɜːrpənˈdɪkjələr/',
+        term_vi: 'quan hệ vuông góc',
+        definition: 'A line is perpendicular to a plane if and only if it is perpendicular to every line lying in that plane.',
+        example: '$d \\perp (P) \\iff d \\perp a$ and $d \\perp b$ where a, b are two intersecting lines in (P).'
+      },
+      {
+        term_en: 'skew lines',
+        pronunciation: '/skjuː laɪnz/',
+        term_vi: 'hai đường thẳng chéo nhau',
+        definition: 'Two lines in 3-dimensional space that are neither intersecting nor parallel.',
+        example: 'Opposite edges in a regular tetrahedron are skew lines.'
+      },
+      {
+        term_en: 'orthogonal projection',
+        pronunciation: '/ɔːrˈθɑːɡənəl prəˈdʒɛkʃən/',
+        term_vi: 'hình chiếu vuông góc',
+        definition: 'The perpendicular projection of a spatial geometric object onto a target reference plane.',
+        example: 'Point H is the orthogonal projection of top vertex S onto the base plane (ABC).'
+      },
+      {
+        term_en: 'cross-section',
+        pronunciation: '/ˈkrɔːs ˌsɛkʃən/',
+        term_vi: 'thiết diện',
+        definition: 'The 2D plane geometric polygon produced when a 3D solid is sliced by a cutting plane.',
+        example: 'Find the area of the triangular cross-section of the pyramid formed by plane $(\\alpha)$.'
+      },
+      {
+        term_en: 'dihedral angle',
+        pronunciation: '/daɪˈhiːdrəl ˈæŋɡəl/',
+        term_vi: 'góc nhị diện (góc giữa hai mặt phẳng)',
+        definition: 'The angle formed by two intersecting planes, measured perpendicular to their line of intersection.',
+        example: 'Calculate the measure of the dihedral angle between lateral face (SAB) and base (ABC).'
+      },
+      {
+        term_en: 'distance between skew lines',
+        pronunciation: '/ˈdɪstəns bɪˈtwiːn skjuː laɪnz/',
+        term_vi: 'khoảng cách giữa hai đường thẳng chéo nhau',
+        definition: 'The length of the unique shortest line segment perpendicular to both skew lines.',
+        example: 'Distance $d(a, b) = d(a, (Q))$ where plane (Q) contains line b and is parallel to line a.'
       }
     ]
   },
@@ -181,13 +379,48 @@ export const HAIPHONG_SPECIAL_TOPICS: OlympiadSpecialTopic[] = [
 1. **Cầu vòm nửa Elip:** Trục lớn $2a$ là chiều dài nhịp cầu, bán trục bé $b$ là chiều cao tối đa tại trung tâm. Tính chiều cao tại một vị trí cách tâm khoảng cách $x_0$.
 2. **Phòng thì thầm (Whispering Gallery):** Hai người đứng tại hai tiêu điểm $F_1, F_2$ có thể thì thầm nghe thấy nhau. Chiều cao trần ở chính giữa là $b = \\sqrt{a^2 - c^2}$.
 3. **Chảo parabol thu sóng:** Lập phương trình $x^2 = 4py$ từ bán kính miệng chảo và độ sâu, từ đó xác định vị trí đặt đầu thu tín hiệu tại tiêu điểm $F(0, p)$.`,
-    sample_problems: [
+    glossary: [
       {
-        problem_en: 'A whispering gallery has an elliptical ceiling with major axis 50m and distance between foci 40m. How high is the ceiling at the center?',
-        problem_vi: 'Một phòng thì thầm có trần dạng elip trục lớn 50m và tiêu cự 40m. Chiều cao trần tại tâm phòng là bao nhiêu mét?',
-        solution_en: 'Semi-major axis $a = 25$, semi-focal distance $c = 20$. Height is $b = \\sqrt{25^2 - 20^2} = \\sqrt{225} = 15$ meters.',
-        solution_vi: 'Bán trục lớn $a = 25$m, bán tiêu cự $c = 20$m. Chiều cao trần tại tâm chính là $b = \\sqrt{25^2 - 20^2} = 15$ mét.',
-        answer: '15'
+        term_en: 'conic section',
+        pronunciation: '/ˈkɑːnɪk ˈsɛkʃən/',
+        term_vi: 'đường conic',
+        definition: 'Any curve formed by the intersection of the surface of a cone with a flat plane: ellipse, hyperbola, or parabola.',
+        example: 'The eccentricity e classifies the conic: $e < 1$ (ellipse), $e = 1$ (parabola), $e > 1$ (hyperbola).'
+      },
+      {
+        term_en: 'ellipse',
+        pronunciation: '/ɪˈlɪps/',
+        term_vi: 'đường elip',
+        definition: 'The locus of points P where the sum of distances to two fixed foci is constant: $PF_1 + PF_2 = 2a$.',
+        example: 'Standard equation: $\\frac{x^2}{a^2} + \\frac{y^2}{b^2} = 1$ where $c^2 = a^2 - b^2$.'
+      },
+      {
+        term_en: 'hyperbola',
+        pronunciation: '/haɪˈpɜːrbələ/',
+        term_vi: 'đường hypebol',
+        definition: 'The locus of points P where the absolute difference of distances to two fixed foci is constant: $|PF_1 - PF_2| = 2a$.',
+        example: 'Standard equation: $\\frac{x^2}{a^2} - \\frac{y^2}{b^2} = 1$ with asymptotes $y = \\pm \\frac{b}{a}x$.'
+      },
+      {
+        term_en: 'focal length / foci',
+        pronunciation: '/ˈfoʊkəl lɛŋkθ/',
+        term_vi: 'tiêu cự / tiêu điểm',
+        definition: 'Foci are the fixed reference points $F_1, F_2$ inside a conic; the focal length is the distance $2c$ between them.',
+        example: 'The distance between the two foci of the whispering gallery is $2c = 40$ meters.'
+      },
+      {
+        term_en: 'whispering gallery',
+        pronunciation: '/ˈwɪspərɪŋ ˈɡæləri/',
+        term_vi: 'phòng thì thầm (ứng dụng tiêu điểm elip)',
+        definition: 'An elliptical chamber where a whisper originating at one focus is reflected and clearly heard at the other focus.',
+        example: 'Sound waves emitted at focus $F_1$ reflect off the elliptical ceiling directly to focus $F_2$.'
+      },
+      {
+        term_en: 'asymptote',
+        pronunciation: '/ˈæsɪmptoʊt/',
+        term_vi: 'đường tiệm cận',
+        definition: 'A straight line that a hyperbolic curve approaches infinitely closely without ever intersecting.',
+        example: 'The hyperbola $\\frac{x^2}{9} - \\frac{y^2}{16} = 1$ has asymptotes $y = \\pm \\frac{4}{3}x$.'
       }
     ]
   },
@@ -207,13 +440,48 @@ export const HAIPHONG_SPECIAL_TOPICS: OlympiadSpecialTopic[] = [
     content_markdown: `### I. Ứng dụng thực tế của Hệ thức lượng
 - Đo chiều cao tháp/cột cờ không thể tiếp cận chân tháp bằng giác kế (2 góc ngắm).
 - Đo khoảng cách giữa hai điểm qua hồ nước hoặc chướng ngại vật bằng định lý Cosin.`,
-    sample_problems: [
+    glossary: [
       {
-        problem_en: 'In triangle $ABC$, sides are $a = 7, b = 8, c = 5$. Find the measure of angle $\\widehat{A}$.',
-        problem_vi: 'Trong tam giác $ABC$, cho các cạnh $a = 7, b = 8, c = 5$. Tính số đo của góc $\\widehat{A}$.',
-        solution_en: 'By Cosine Rule: $\\cos A = \\frac{8^2 + 5^2 - 7^2}{2 \\times 8 \\times 5} = \\frac{40}{80} = \\frac{1}{2} \\implies \\widehat{A} = 60^\\circ$.',
-        solution_vi: 'Áp dụng định lý côsin: $\\cos A = \\frac{64 + 25 - 49}{80} = \\frac{1}{2} \\implies \\widehat{A} = 60^\\circ$.',
-        answer: '60°'
+        term_en: 'Law of Cosines',
+        pronunciation: '/lɔː əv ˈkoʊsaɪnz/',
+        term_vi: 'định lý côsin',
+        definition: 'A fundamental theorem relating the three sides of a triangle to the cosine of one of its angles: $a^2 = b^2 + c^2 - 2bc\\cos A$.',
+        example: 'Apply the Law of Cosines to find the distance across an impassable lake.'
+      },
+      {
+        term_en: 'Law of Sines',
+        pronunciation: '/lɔː əv saɪnz/',
+        term_vi: 'định lý sin',
+        definition: 'The ratio of each side of a triangle to the sine of its opposite angle equals the diameter of circumcircle: $\\frac{a}{\\sin A} = 2R$.',
+        example: 'Use the Law of Sines to compute circumradius R of the triangle.'
+      },
+      {
+        term_en: 'Heron\'s formula',
+        pronunciation: '/ˈhɛrənz ˈfɔːrmjələ/',
+        term_vi: 'công thức Hê-rông (diện tích tam giác)',
+        definition: 'Calculates the area of a triangle given all three side lengths and semi-perimeter p: $S = \\sqrt{p(p-a)(p-b)(p-c)}$.',
+        example: 'For sides 5, 7, 8: semi-perimeter $p = 10$, so $S = \\sqrt{10(5)(3)(2)} = 10\\sqrt{3}$.'
+      },
+      {
+        term_en: 'circumradius',
+        pronunciation: '/ˈsɜːrkəmˌreɪdiəs/',
+        term_vi: 'bán kính đường tròn ngoại tiếp (R)',
+        definition: 'The radius of the unique circle passing through all three vertices of a triangle: $R = \\frac{abc}{4S}$.',
+        example: 'In a right-angled triangle, the circumradius equals half the hypotenuse.'
+      },
+      {
+        term_en: 'inradius',
+        pronunciation: '/ˈɪnˌreɪdiəs/',
+        term_vi: 'bán kính đường tròn nội tiếp (r)',
+        definition: 'The radius of the inscribed circle tangent to all three sides of a triangle: $r = \\frac{S}{p}$.',
+        example: 'The inradius of a triangle with area $S = 24$ and perimeter $2p = 24$ is $r = 2$.'
+      },
+      {
+        term_en: 'theodolite',
+        pronunciation: '/θiˈɑːdəlaɪt/',
+        term_vi: 'giác kế / máy kinh vĩ',
+        definition: 'A precision surveying instrument used for measuring angles in the horizontal and vertical planes.',
+        example: 'Surveyors use a theodolite to measure the elevation angle to the summit of a mountain.'
       }
     ]
   },
@@ -238,13 +506,41 @@ export const HAIPHONG_SPECIAL_TOPICS: OlympiadSpecialTopic[] = [
 2. **Xét số dư và tính chẵn lẻ:**
    - Trong không gian 2D: $(x, y) \\pmod 2$ có $2^2 = 4$ trạng thái $\\implies 5$ điểm nguyên chắc chắn có 2 điểm có trung điểm nguyên.
    - Trong không gian 3D: $(x, y, z) \\pmod 2$ có $2^3 = 8$ trạng thái $\\implies 9$ điểm nguyên chắc chắn có 2 điểm có trung điểm nguyên.`,
-    sample_problems: [
+    glossary: [
       {
-        problem_en: 'What is the minimum number of points needed inside an equilateral triangle of side length 1 to ensure at least two points are at distance strictly less than 1/4?',
-        problem_vi: 'Cần tối thiểu bao nhiêu điểm đặt trong tam giác đều cạnh 1 để chắc chắn có ít nhất 2 điểm cách nhau một khoảng nhỏ hơn 1/4?',
-        solution_en: 'Divide into $4^2 = 16$ small equilateral triangles of side length $1/4$. By Pigeonhole, $16 + 1 = 17$ points are required.',
-        solution_vi: 'Chia thành $4^2 = 16$ tam giác đều cạnh $1/4$. Theo Dirichlet, cần $16 + 1 = 17$ điểm.',
-        answer: '17'
+        term_en: 'Pigeonhole Principle',
+        pronunciation: '/ˈpɪdʒɪnhoʊl ˈprɪnsəpəl/',
+        term_vi: 'nguyên lý Dirichlet (nguyên lý chuồng - thỏ)',
+        definition: 'If n items are placed into m pigeonholes with $n > m$, then at least one pigeonhole must contain more than one item.',
+        example: 'By the Pigeonhole Principle, among 13 randomly selected individuals, at least two share the same birth month.'
+      },
+      {
+        term_en: 'generalized Pigeonhole Principle',
+        pronunciation: '/ˈdʒɛnərəlaɪzd .../',
+        term_vi: 'nguyên lý Dirichlet mở rộng',
+        definition: 'If n items are distributed into k containers, at least one container holds at least $\\lceil n/k \\rceil$ items.',
+        example: 'If 50 pigeons inhabit 7 pigeonholes, at least one pigeonhole must contain $\\lceil 50/7 \\rceil = 8$ pigeons.'
+      },
+      {
+        term_en: 'lattice point',
+        pronunciation: '/ˈlætɪs pɔɪnt/',
+        term_vi: 'điểm nguyên',
+        definition: 'A point in Cartesian coordinate space whose coordinates are all integers: $(x, y) \\in \\mathbb{Z}^2$.',
+        example: 'Among any 5 lattice points in the plane, at least one pair has an integer midpoint.'
+      },
+      {
+        term_en: 'partition',
+        pronunciation: '/pɑːrˈtɪʃən/',
+        term_vi: 'sự phân hoạch',
+        definition: 'A division of a geometric region or set into non-overlapping smaller cells whose union is the whole set.',
+        example: 'Partitioning an equilateral triangle into 16 smaller equilateral triangles of side 1/4.'
+      },
+      {
+        term_en: 'extremal principle',
+        pronunciation: '/ɛkˈstriːməl ˈprɪnsəpəl/',
+        term_vi: 'nguyên lý cực hạn',
+        definition: 'A proof technique that focuses on the element with the maximum or minimum value in a finite discrete system.',
+        example: 'Consider the pair of points achieving the strictly minimal Euclidean distance in the set.'
       }
     ]
   },
@@ -265,13 +561,41 @@ export const HAIPHONG_SPECIAL_TOPICS: OlympiadSpecialTopic[] = [
 - Bài toán biến đổi số trên bảng (xóa 2 số thay bằng 1 số).
 - Bài toán trò chơi và lát gạch bàn cờ (tô màu xen kẽ).
 - **Chiến lược:** Luôn tìm một biểu thức đại số $I(S)$ sao cho $I(S_{k+1}) \\equiv I(S_k) \\pmod m$.`,
-    sample_problems: [
+    glossary: [
       {
-        problem_en: 'Numbers 1 to 2025 are on a board. Repeatedly replace two numbers a, b with |a - b| until 1 number remains. What is the parity of the final number (1 for odd, 0 for even)?',
-        problem_vi: 'Trên bảng viết các số từ 1 đến 2025. Mỗi bước xóa a, b thay bằng |a-b| đến khi còn 1 số. Xác định tính chẵn lẻ của số cuối (1 nếu lẻ, 0 nếu chẵn)?',
-        solution_en: 'Sum modulo 2 is invariant because $(a + b) - |a - b| = 2\\min(a, b) \\equiv 0 \\pmod 2$. The initial sum $S = 2025 \\times 1013$ is odd, so the final number is always odd. Enter 1.',
-        solution_vi: 'Tính chẵn lẻ của tổng là bất biến modulo 2 vì độ giảm của tổng là $2\\min(a, b)$ chẵn. Tổng ban đầu $S = 2025 \\times 1013$ là số lẻ. Do đó số cuối cùng luôn là số lẻ. Nhập 1.',
-        answer: '1'
+        term_en: 'invariant',
+        pronunciation: '/ɪnˈvɛriənt/',
+        term_vi: 'đại lượng bất biến',
+        definition: 'A property or numerical value of a mathematical system that remains strictly unchanged under allowable moves or transformations.',
+        example: 'The parity of the sum of integers written on the board is an invariant modulo 2.'
+      },
+      {
+        term_en: 'monovariant',
+        pronunciation: '/ˌmɑːnəˈvɛriənt/',
+        term_vi: 'đại lượng đơn biến (bán bất biến)',
+        definition: 'A non-negative quantity that changes monotonically (strictly decreases or increases) after each operational step.',
+        example: 'A strictly decreasing integer monovariant bounded below by 0 guarantees the algorithm must terminate.'
+      },
+      {
+        term_en: 'parity',
+        pronunciation: '/ˈpærəti/',
+        term_vi: 'tính chẵn lẻ',
+        definition: 'The fundamental mathematical property of an integer of being either even ($2k$) or odd ($2k+1$).',
+        example: 'The parity of the sum of two odd numbers is always even.'
+      },
+      {
+        term_en: 'congruence / modulo',
+        pronunciation: '/ˈkɑːŋɡruəns/',
+        term_vi: 'đồng dư thức / mô-đun',
+        definition: '$a \\equiv b \\pmod m$ signifies that $m$ divides the difference $(a - b)$ with remainder 0.',
+        example: '$17 \\equiv 5 \\pmod 6$ because $17 - 5 = 12$ is divisible by 6.'
+      },
+      {
+        term_en: 'chessboard coloring',
+        pronunciation: '/ˈtʃɛsbɔːrd ˈkʌlərɪŋ/',
+        term_vi: 'phương pháp tô màu bàn cờ',
+        definition: 'Assigning alternating colors (e.g., black and white) to grid cells to prove the impossibility of certain tiling configurations.',
+        example: 'A $1 \\times 2$ domino always covers exactly one white square and one black square.'
       }
     ]
   },
@@ -292,13 +616,48 @@ export const HAIPHONG_SPECIAL_TOPICS: OlympiadSpecialTopic[] = [
     content_markdown: `### I. Phương pháp đếm tổ hợp nâng cao
 - **Phương pháp vách ngăn (Stars and Bars):** Số nghiệm nguyên dương của phương trình $x_1 + x_2 + \\dots + x_k = n$ là $C_{n-1}^{k-1}$.
 - **Đếm bằng phần bù:** Khi biến cố $A$ có quá nhiều trường hợp phức tạp, hãy đếm biến cố đối $\\bar{A}$.`,
-    sample_problems: [
+    glossary: [
       {
-        problem_en: 'How many 4-digit numbers formed from {1, 2, 3, 4, 5, 6} have digits in strictly increasing order?',
-        problem_vi: 'Có bao nhiêu số tự nhiên 4 chữ số từ {1, 2, 3, 4, 5, 6} có các chữ số theo thứ tự tăng dần nghiêm ngặt?',
-        solution_en: 'Any selection of 4 distinct digits can be arranged in strictly increasing order in only 1 way. Result: $C_6^4 = 15$.',
-        solution_vi: 'Mỗi cách chọn 4 chữ số phân biệt chỉ xếp được duy nhất 1 số tăng dần. Số cách chọn là $C_6^4 = 15$.',
-        answer: '15'
+        term_en: 'permutation',
+        pronunciation: '/ˌpɜːrmjuˈteɪʃən/',
+        term_vi: 'hoán vị / chỉnh hợp',
+        definition: 'An ordered arrangement of elements chosen from a set: $P(n, k) = \\frac{n!}{(n - k)!}$.',
+        example: 'The number of permutations of 5 students seated in a row is $5! = 120$.'
+      },
+      {
+        term_en: 'combination',
+        pronunciation: '/ˌkɑːmbɪˈneɪʃən/',
+        term_vi: 'tổ hợp',
+        definition: 'An unordered selection of k distinct items from a collection of n items: $C_n^k = \\binom{n}{k} = \\frac{n!}{k!(n - k)!}$.',
+        example: 'Selecting 3 contestants out of 10 gives $\\binom{10}{3} = 120$ combinations.'
+      },
+      {
+        term_en: 'sample space',
+        pronunciation: '/ˈsæmpəl speɪs/',
+        term_vi: 'không gian mẫu (\\Omega)',
+        definition: 'The comprehensive set of all possible outcomes of a random probability experiment.',
+        example: 'When tossing a fair coin twice, the sample space is $\\Omega = \\{HH, HT, TH, TT\\}$.'
+      },
+      {
+        term_en: 'independent events',
+        pronunciation: '/ˌɪndɪˈpɛndənt ɪˈvɛnts/',
+        term_vi: 'các biến cố độc lập',
+        definition: 'Two events A and B where the occurrence of A does not alter the probability of B: $P(A \\cap B) = P(A) \\cdot P(B)$.',
+        example: 'Rolling an even number on a die and flipping heads on a coin are independent events.'
+      },
+      {
+        term_en: 'complementary event',
+        pronunciation: '/ˌkɑːmplɪˈmɛntəri ɪˈvɛnt/',
+        term_vi: 'biến cố đối (\\bar{A})',
+        definition: 'The event that occurs if and only if event A does not occur: $P(\\bar{A}) = 1 - P(A)$.',
+        example: 'Getting at least one six when throwing 3 dice is easily calculated via its complement: $1 - (5/6)^3$.'
+      },
+      {
+        term_en: 'stars and bars',
+        pronunciation: '/stɑːrz ænd bɑːrz/',
+        term_vi: 'phương pháp vách ngăn',
+        definition: 'A visual combinatorial method used to count the number of non-negative integer solutions to $x_1 + x_2 + \\dots + x_k = n$.',
+        example: 'The number of ways to distribute 10 identical candies among 3 children is $\\binom{10 + 3 - 1}{3 - 1} = \\binom{12}{2} = 66$.'
       }
     ]
   },
@@ -321,13 +680,48 @@ export const HAIPHONG_SPECIAL_TOPICS: OlympiadSpecialTopic[] = [
 1. **Giá trị đại diện:** $c_i = \\frac{u_i + u_{i+1}}{2}$.
 2. **Xác định nhóm chứa trung vị hoặc tứ phân vị:** Lập cột tần số tích lũy $cf_i$ để xác định nhóm chứa vị trí $\\frac{n}{2}$ (cho $M_e$) hoặc $\\frac{n}{4}$ (cho $Q_1$).
 3. **Độ chính xác:** Tính toán cẩn thận phần thập phân để điền đúng ở câu trả lời ngắn Phần II.`,
-    sample_problems: [
+    glossary: [
       {
-        problem_en: 'For grouped data with $n = 100$, group $[20; 30)$ contains $Q_1$ with frequency 25 and prior cumulative frequency 15. Find $Q_1$.',
-        problem_vi: 'Mẫu ghép nhóm $n = 100$, nhóm chứa $Q_1$ là $[20; 30)$ có tần số 25, tích lũy trước đó là 15. Tính $Q_1$.',
-        solution_en: '$Q_1 = 20 + \\frac{25 - 15}{25} \\times 10 = 20 + 4 = 24.0$.',
-        solution_vi: '$Q_1 = 20 + \\frac{25 - 15}{25} \\cdot 10 = 24.0$.',
-        answer: '24.0'
+        term_en: 'grouped data',
+        pronunciation: '/ɡruːpt ˈdeɪtə/',
+        term_vi: 'mẫu số liệu ghép nhóm',
+        definition: 'Continuous or discrete data organized into frequency classes or intervals $[u_i; u_{i+1})$ rather than individual values.',
+        example: 'Height distribution of 100 students grouped into 5-cm intervals.'
+      },
+      {
+        term_en: 'representative value',
+        pronunciation: '/ˌrɛprɪˈzɛntətɪv ˈvæljuː/',
+        term_vi: 'giá trị đại diện của nhóm (c_i)',
+        definition: 'The midpoint of a class interval: $c_i = \\frac{u_i + u_{i+1}}{2}$.',
+        example: 'The representative value of class interval $[20; 30)$ is $c_i = 25$.'
+      },
+      {
+        term_en: 'median of grouped data',
+        pronunciation: '/ˈmiːdiən əv ɡruːpt ˈdeɪtə/',
+        term_vi: 'trung vị của mẫu ghép nhóm (M_e)',
+        definition: 'The statistical value that divides the grouped dataset exactly in half ($50\\%$ above and $50\\%$ below).',
+        example: '$M_e = u_m + \\frac{n/2 - C}{n_m} \\cdot h$ where $u_m$ is the lower class boundary of the median group.'
+      },
+      {
+        term_en: 'quartiles',
+        pronunciation: '/ˈkwɔːrtaɪlz/',
+        term_vi: 'các tứ phân vị (Q1, Q2, Q3)',
+        definition: 'Values that partition sorted numerical data into four equal quarters: $Q_1$ (25th percentile), $Q_2$ (median), $Q_3$ (75th percentile).',
+        example: 'The first quartile $Q_1$ denotes that $25\\%$ of observations lie below this threshold.'
+      },
+      {
+        term_en: 'mode of grouped data',
+        pronunciation: '/moʊd əv ɡruːpt ˈdeɪtə/',
+        term_vi: 'mốt của mẫu số liệu ghép nhóm (M_o)',
+        definition: 'The value that occurs with greatest frequency density in a continuous grouped distribution.',
+        example: 'Calculated using the modal interval containing highest absolute frequency.'
+      },
+      {
+        term_en: 'standard deviation',
+        pronunciation: '/ˈstændərd ˌdiːviˈeɪʃən/',
+        term_vi: 'độ lệch chuẩn (s = \\sqrt{s^2})',
+        definition: 'A measure of the dispersion or spread of values around the arithmetic mean; square root of sample variance.',
+        example: 'A low standard deviation indicates that data points cluster tightly around the mean $\\bar{x}$.'
       }
     ]
   }
