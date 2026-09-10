@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   BookOpen,
   Search,
@@ -17,6 +17,7 @@ import {
 import { VocabWord, MathStrand } from '../../types';
 import { OLYMPIAD_VOCABULARY } from '../../data/olympiadVocabulary';
 import { storageService } from '../../services/storageService';
+import { MathRenderer } from '../MathRenderer';
 
 export const InteractiveVocabModal: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'dictionary' | 'flashcards'>('dictionary');
@@ -226,7 +227,7 @@ export const InteractiveVocabModal: React.FC = () => {
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-base font-bold text-teal-600 dark:text-teal-400">
-                          {word.term_en}
+                          <MathRenderer content={word.term_en} inline />
                         </span>
                         <button
                           onClick={() => handleSpeak(word.term_en)}
@@ -256,18 +257,19 @@ export const InteractiveVocabModal: React.FC = () => {
                     </button>
                   </div>
 
-                  <div className="mt-2 text-sm font-bold text-slate-900 dark:text-white">
-                    👉 {word.term_vi}
+                  <div className="mt-2 text-sm font-bold text-slate-900 dark:text-white flex items-baseline gap-1">
+                    <span>👉</span> <MathRenderer content={word.term_vi} inline />
                   </div>
 
-                  <p className="text-xs text-slate-600 dark:text-slate-300 mt-2 leading-relaxed">
-                    {word.definition}
-                  </p>
+                  <div className="text-xs text-slate-600 dark:text-slate-300 mt-2 leading-relaxed">
+                    <MathRenderer content={word.definition} inline />
+                  </div>
                 </div>
 
                 {word.example && (
                   <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-700 text-[11px] text-slate-500 dark:text-slate-400 italic">
-                    <strong>Ví dụ:</strong> {word.example}
+                    <strong className="not-italic text-teal-600 dark:text-teal-400 font-semibold">Ví dụ: </strong>
+                    <MathRenderer content={word.example} inline />
                   </div>
                 )}
               </div>
@@ -301,7 +303,7 @@ export const InteractiveVocabModal: React.FC = () => {
                   {currentCard.strand || 'Math Olympiad'}
                 </span>
                 <h3 className="text-3xl font-black text-slate-900 dark:text-white">
-                  {currentCard.term_en}
+                  <MathRenderer content={currentCard.term_en} inline />
                 </h3>
                 {currentCard.pronunciation && (
                   <p className="text-sm font-mono text-teal-600 dark:text-teal-400">
@@ -328,7 +330,7 @@ export const InteractiveVocabModal: React.FC = () => {
               <div className="space-y-4 animate-in fade-in flex flex-col items-center">
                 <div className="flex items-center gap-2">
                   <h3 className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
-                    {currentCard.term_vi}
+                    <MathRenderer content={currentCard.term_vi} inline />
                   </h3>
                   <button
                     type="button"
@@ -342,12 +344,13 @@ export const InteractiveVocabModal: React.FC = () => {
                     <Volume2 className="w-4 h-4" />
                   </button>
                 </div>
-                <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed max-w-md">
-                  {currentCard.definition}
-                </p>
+                <div className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed max-w-md text-center">
+                  <MathRenderer content={currentCard.definition} inline />
+                </div>
                 {currentCard.example && (
                   <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-700/60 text-xs italic text-slate-600 dark:text-slate-300">
-                    <strong>Ví dụ:</strong> {currentCard.example}
+                    <strong className="not-italic font-semibold text-teal-600 dark:text-teal-400">Ví dụ: </strong>
+                    <MathRenderer content={currentCard.example} inline />
                   </div>
                 )}
               </div>

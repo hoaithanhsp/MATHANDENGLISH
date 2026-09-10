@@ -576,7 +576,7 @@ export const StudyAssistant: React.FC<StudyAssistantProps> = ({
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex items-center gap-2">
                                 <span className="font-bold text-teal-600 dark:text-teal-400 text-sm">
-                                  {item.term_en}
+                                  <MathRenderer content={item.term_en} inline />
                                 </span>
                                 <button
                                   type="button"
@@ -589,7 +589,7 @@ export const StudyAssistant: React.FC<StudyAssistantProps> = ({
                               </div>
 
                               <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">
-                                {item.term_vi}
+                                <MathRenderer content={item.term_vi} inline />
                               </span>
                             </div>
 
@@ -599,9 +599,9 @@ export const StudyAssistant: React.FC<StudyAssistantProps> = ({
                               </div>
                             )}
 
-                            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                              {item.definition}
-                            </p>
+                            <div className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                              <MathRenderer content={item.definition} inline />
+                            </div>
 
                             {item.example && (
                               <div className="text-[11px] text-slate-600 dark:text-slate-400 italic bg-white dark:bg-slate-800 p-2.5 rounded-lg border border-slate-200/70 dark:border-slate-700/70">
@@ -736,7 +736,7 @@ export const StudyAssistant: React.FC<StudyAssistantProps> = ({
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex items-center gap-1.5">
                                 <span className="font-bold text-teal-600 dark:text-teal-400 text-xs sm:text-sm">
-                                  {item.term_en}
+                                  <MathRenderer content={item.term_en} inline />
                                 </span>
                                 <button
                                   type="button"
@@ -747,12 +747,12 @@ export const StudyAssistant: React.FC<StudyAssistantProps> = ({
                                 </button>
                               </div>
                               <span className="text-xs text-slate-600 dark:text-slate-300 font-medium">
-                                {item.term_vi}
+                                <MathRenderer content={item.term_vi} inline />
                               </span>
                             </div>
-                            <p className="text-xs text-slate-600 dark:text-slate-300">
-                              {item.definition}
-                            </p>
+                            <div className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                              <MathRenderer content={item.definition} inline />
+                            </div>
                             {item.example && (
                               <div className="text-[11px] text-slate-500 dark:text-slate-400 italic bg-white dark:bg-slate-800 p-2 rounded-lg border border-slate-200/60 dark:border-slate-700/60">
                                 <strong>Ví dụ: </strong>
@@ -1001,7 +1001,7 @@ export const StudyAssistant: React.FC<StudyAssistantProps> = ({
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-center gap-1.5">
                             <span className="font-bold text-teal-600 dark:text-teal-400 text-xs sm:text-sm">
-                              {item.term_en}
+                              <MathRenderer content={item.term_en} inline />
                             </span>
                             <button
                               type="button"
@@ -1012,12 +1012,12 @@ export const StudyAssistant: React.FC<StudyAssistantProps> = ({
                             </button>
                           </div>
                           <span className="text-xs text-slate-600 dark:text-slate-300 font-medium">
-                            {item.term_vi}
+                            <MathRenderer content={item.term_vi} inline />
                           </span>
                         </div>
-                        <p className="text-xs text-slate-600 dark:text-slate-300">
-                          {item.definition}
-                        </p>
+                        <div className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                          <MathRenderer content={item.definition} inline />
+                        </div>
                         {item.example && (
                           <div className="text-[11px] text-slate-500 dark:text-slate-400 italic bg-white dark:bg-slate-800 p-2 rounded-lg border border-slate-200/60 dark:border-slate-700/60">
                             <strong>Ví dụ: </strong>
