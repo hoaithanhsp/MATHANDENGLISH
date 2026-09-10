@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   FileText,
   Copy,
@@ -13,12 +13,14 @@ import {
   CheckCircle2,
   Eye,
   Plus,
-  Languages
+  Languages,
+  Radio
 } from 'lucide-react';
 import { Exam, Question } from '../../types';
 import { exportExamToDocx } from '../../utils/docxExport';
 import { printExamOrNotes, printHaiPhongExam } from '../../utils/printPdf';
 import MathRenderer from '../MathRenderer';
+import { LiveMonitorPanel } from './LiveMonitorPanel';
 
 interface ExamManagementProps {
   exams: Exam[];
@@ -302,6 +304,17 @@ export const ExamManagement: React.FC<ExamManagementProps> = ({
                   </button>
                 </div>
               </div>
+
+              {/* Live Monitor Panel */}
+              {selectedExam.is_published && (
+                <div className="p-4 rounded-xl bg-gradient-to-r from-indigo-50/70 to-blue-50/70 dark:from-indigo-950/30 dark:to-blue-950/30 border border-indigo-100 dark:border-indigo-900/40">
+                  <h4 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5 mb-3">
+                    <Radio className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                    📡 Giám sát phòng thi (Realtime)
+                  </h4>
+                  <LiveMonitorPanel exam={selectedExam} />
+                </div>
+              )}
 
               {/* Export Actions & View Solutions toggle */}
               <div className="flex flex-wrap items-center justify-between gap-3 pt-1">

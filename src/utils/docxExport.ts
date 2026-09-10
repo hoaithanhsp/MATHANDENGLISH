@@ -9,6 +9,23 @@ import {
 } from 'docx';
 import { Exam, Question } from '../types';
 
+/**
+ * Ensure LaTeX expressions are wrapped in $...$ delimiters.
+ * Detects common LaTeX commands (\\frac, \\sqrt, \\sin, \\triangle, etc.)
+ * that appear without $ delimiters and wraps them.
+ */
+function ensureLatexDelimiters(text: string): string {
+  if (!text) return text;
+  // If text already has $ delimiters, return as-is
+  if (text.includes('$')) return text;
+  // Check if text contains LaTeX commands
+  const hasLatex = /\\(?:frac|sqrt|sin|cos|tan|log|ln|lim|sum|prod|int|infty|alpha|beta|gamma|delta|theta|pi|sigma|omega|triangle|angle|perp|parallel|cdot|times|div|pm|mp|leq|geq|neq|approx|equiv|subset|supset|cup|cap|in|notin|forall|exists|mathbb|mathrm|text|overline|underline|vec|hat|bar|tilde|left|right|binom|begin|end)/i.test(text);
+  if (hasLatex) {
+    return `$${text}$`;
+  }
+  return text;
+}
+
 interface ExportDocxOptions {
   includeSolutions: boolean;
   exam: Exam;
@@ -225,7 +242,7 @@ function formatQuestionDocx(q: Question, mode: 'bilingual' | 'english_only', inc
         new Paragraph({
           children: [
             new TextRun({
-              text: `    ${opt.startsWith(label) ? opt : `${label}. ${opt}`}`,
+              text: `    ${opt.startsWith(label) ? ensureLatexDelimiters(opt) : `${label}. ${ensureLatexDelimiters(opt)}`}`,
               size: 20,
             }),
           ],
@@ -247,7 +264,7 @@ function formatQuestionDocx(q: Question, mode: 'bilingual' | 'english_only', inc
             size: 20,
           }),
           new TextRun({
-            text: `${q.correct_answer}`,
+            text: `${ensureLatexDelimiters(q.correct_answer)}`,
             bold: true,
             size: 20,
           }),
@@ -262,7 +279,7 @@ function formatQuestionDocx(q: Question, mode: 'bilingual' | 'english_only', inc
             size: 20,
           }),
           new TextRun({
-            text: q.solution_en,
+            text: ensureLatexDelimiters(q.solution_en),
             size: 20,
           }),
         ],

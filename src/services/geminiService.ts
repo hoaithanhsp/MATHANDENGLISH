@@ -229,36 +229,68 @@ III. ACADEMIC ENGLISH & Olympiad STYLE:
 - Key vocabulary: feasible region, objective function, linear programming, arithmetic/geometric progression, recurrence relation, squeeze theorem, conic sections, whispering gallery, skew lines, cross-section, pigeonhole principle, invariant, monovariant, grouped data, quartiles, modal group.
 
 IV. MATHEMATICAL FORMATTING (KaTeX):
-- All formulas must use standard LaTeX: '$...$' for inline and '$$...$$' for display.
-- Properly escape backslashes in JSON strings: "\\\\frac{a}{b}", "\\\\sqrt{x}", "\\\\lim_{n \\\\to \\\\infty}", "\\\\sin(2x)".
-- The JSON output must parse cleanly via JSON.parse().`;
+- All formulas MUST use standard LaTeX delimiters: '$...$' for inline and '$$...$$' for display.
+- ABSOLUTELY NEVER use placeholder tokens like %%%MATHPLACEHOLDER%%% or similar. ALWAYS write the actual LaTeX formula inline.
+- In JSON strings, double-escape all LaTeX backslashes: use \\\\frac{a}{b} (4 backslashes in source) so that after JSON parse it becomes \\frac{a}{b}.
+- Example correct JSON value: "Find $\\\\frac{a}{b}$ when $\\\\sqrt{x} = 3$"
+- NEVER replace formulas with placeholders — always embed the actual math expression.
+- The response must be a valid JSON array/object wrapped in ${'```'}json ... ${'```'} code fences.`;
 
 // ============================================================
-// SANITIZE LATEX IN JSON — CRITICAL FIX
-// Prevents JSON.parse from destroying LaTeX commands:
-//   \frac → \f = form feed (U+000C) + "rac"  ❌
-//   \beta → \b = backspace (U+0008) + "eta"   ❌
-//   \text → \t = tab (U+0009) + "ext"          ❌
-//   \right → \r = carriage return + "ight"     ❌
-//   \newcommand → \n = newline + "ewcommand"   ❌
+// EXTRACT & PARSE JSON FROM TEXT RESPONSE
+// Since we don't use responseMimeType: 'application/json',
+// Gemini returns text that may contain ```json...``` code fences.
+// This approach preserves LaTeX formulas perfectly because Gemini
+// writes them naturally without being constrained by JSON mode.
 // ============================================================
+
+/**
+ * Sanitize LaTeX backslashes that would be destroyed by JSON.parse.
+ * \frac → \f = form feed ❌ | \beta → \b = backspace ❌
+ * \text → \t = tab ❌      | \right → \r = CR ❌
+ * \newcommand → \n = LF ❌
+ */
 function sanitizeLatexInJson(jsonText: string): string {
-  // Protect already-escaped sequences (\\frac is valid JSON for literal \frac)
-  // but single \frac in JSON text would be misinterpreted.
-  // Strategy: ensure ALL \letter patterns are double-escaped for JSON.
-  // (?<!\\) = not already escaped, \\([a-zA-Z]) = backslash + letter
   return jsonText.replace(/(?<!\\)\\([a-zA-Z])/g, '\\\\$1');
 }
 
+/**
+ * Extract JSON from Gemini's text response and parse safely.
+ * Handles: raw JSON, ```json fenced, ```fenced, mixed text with JSON.
+ */
 function safeJsonParse(text: string): any {
+  // Step 1: Try direct parse (in case text is already valid JSON)
   const sanitized = sanitizeLatexInJson(text);
   try {
     return JSON.parse(sanitized);
-  } catch {
-    // Fallback: strip markdown code fences and retry
-    const cleaned = sanitized.replace(/```json\s*|```/g, '').trim();
-    return JSON.parse(cleaned);
+  } catch { /* continue */ }
+
+  // Step 2: Strip markdown code fences
+  const fenceMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+  if (fenceMatch) {
+    const extracted = sanitizeLatexInJson(fenceMatch[1].trim());
+    try {
+      return JSON.parse(extracted);
+    } catch { /* continue */ }
   }
+
+  // Step 3: Find JSON array or object boundaries
+  const jsonStart = text.search(/[\[{]/);
+  const jsonEndBracket = text.lastIndexOf(']');
+  const jsonEndBrace = text.lastIndexOf('}');
+  const jsonEnd = Math.max(jsonEndBracket, jsonEndBrace);
+  if (jsonStart >= 0 && jsonEnd > jsonStart) {
+    const extracted = sanitizeLatexInJson(text.slice(jsonStart, jsonEnd + 1));
+    try {
+      return JSON.parse(extracted);
+    } catch { /* continue */ }
+  }
+
+  // Step 4: Last resort — aggressive cleanup
+  const cleaned = sanitizeLatexInJson(
+    text.replace(/```json\s*|```/g, '').trim()
+  );
+  return JSON.parse(cleaned);
 }
 
 // ============================================================
@@ -327,12 +359,17 @@ A valid JSON array containing ${questionCount} question objects:
   }
 ]
 
-CRITICAL: Return ONLY the valid JSON array. Ensure all JSON string quotes and LaTeX backslashes are properly escaped.`;
+CRITICAL FORMATTING RULES:
+- Wrap your output inside \`\`\`json ... \`\`\` code fences.
+- Write ALL math formulas DIRECTLY using LaTeX $...$ inline. NEVER use placeholder tokens like %%%MATHPLACEHOLDER%%%.
+- In JSON strings, escape LaTeX backslashes properly: "\\\\frac{a}{b}", "\\\\sqrt{x}", "\\\\sin(2x)".
+- Each formula must be wrapped in $ delimiters: "$\\\\frac{a}{b}$", "$\\\\triangle ABC$".
+- Options must also have proper LaTeX: "A. $6\\\\sqrt{5}$", NOT "A. 6\\sqrt{5}".`;
 
   const result = await generateContentWithFallback({
     contents: userPrompt,
     systemInstruction: HAIPHONG_SYSTEM_INSTRUCTION,
-    responseMimeType: 'application/json',
+    // NO responseMimeType — allows Gemini to write LaTeX naturally
     maxOutputTokens: 32768,
     onModelSwitch,
   });
@@ -360,12 +397,13 @@ Generate a comprehensive lesson in JSON format with:
 3. "methods": Array of typical problem-solving methods:
    [{ "name_en": string, "name_vi": string, "steps": string[], "sample_problem": string (with math symbols in $...$), "solution": string (detailed step-by-step) }]
 
-Return ONLY valid JSON matching this schema.`;
+Return ONLY valid JSON matching this schema, wrapped in \`\`\`json ... \`\`\` code fences.
+Write ALL math directly as LaTeX in $...$ — NEVER use placeholders.`;
 
   const result = await generateContentWithFallback({
     contents: prompt,
     systemInstruction: HAIPHONG_SYSTEM_INSTRUCTION,
-    responseMimeType: 'application/json',
+    // NO responseMimeType — allows Gemini to write LaTeX naturally
     maxOutputTokens: 32768,
     onModelSwitch,
   });
@@ -393,12 +431,14 @@ CRITICAL RULES:
 6. Each question must have: id, part ("PART_1" or "PART_2"), order_index, strand, topic, difficulty, question_en, question_vi, correct_answer, solution_en, solution_vi.
 7. MCQ options format (English only, do NOT translate): ["A. ...", "B. ...", "C. ...", "D. ..."]
 
-Output: JSON array of ${count} question objects.`;
+Output: JSON array of ${count} question objects wrapped in \`\`\`json ... \`\`\` code fences.
+Write ALL math formulas DIRECTLY using $...$ LaTeX. NEVER use placeholder tokens.
+Escape LaTeX backslashes in JSON strings: "\\\\frac{a}{b}", "$\\\\sqrt{x}$".`;
 
   const result = await generateContentWithFallback({
     contents: prompt,
     systemInstruction: HAIPHONG_SYSTEM_INSTRUCTION,
-    responseMimeType: 'application/json',
+    // NO responseMimeType — allows Gemini to write LaTeX naturally
     maxOutputTokens: 12288,
     onModelSwitch,
   });
@@ -444,7 +484,7 @@ Output JSON format (single question object):
   const result = await generateContentWithFallback({
     contents: prompt,
     systemInstruction: HAIPHONG_SYSTEM_INSTRUCTION,
-    responseMimeType: 'application/json',
+    // NO responseMimeType — allows Gemini to write LaTeX naturally
     maxOutputTokens: 8192,
     onModelSwitch,
   });
@@ -509,7 +549,7 @@ Return ONLY a JSON object with this exact schema:
   const result = await generateContentWithFallback({
     contents: prompt,
     systemInstruction: `You are an elite IMO reviewer and mathematical editor. Return valid JSON only. Keep LaTeX in standard $...$ and $$...$$.`,
-    responseMimeType: 'application/json',
+    // NO responseMimeType — allows Gemini to write LaTeX naturally
     maxOutputTokens: 8192,
     thinkingLevel: 'low',
     onModelSwitch,

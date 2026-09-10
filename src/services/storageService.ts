@@ -4,7 +4,7 @@
  * Khi Firebase đã config → lưu lên Firebase + cache localStorage
  */
 
-import { Exam, Assignment, StudentStudyNote, Profile, UserRole, MistakeEntry, MistakeReason, VocabWord } from '../types';
+import { Exam, Assignment, ExamSession, StudentStudyNote, Profile, UserRole, MistakeEntry, MistakeReason, VocabWord } from '../types';
 import { CHAPTER_STUDY_NOTES } from '../data/chapterStudyNotes';
 import { ALL_HAIPHONG_PRELOADED_EXAMS } from '../data/haiPhongExams';
 import {
@@ -304,6 +304,73 @@ export const storageService = {
         callback(list);
       }
     });
+  },
+
+  // ========================================
+  // Exam Sessions (Live Monitoring)
+  // ========================================
+  async saveExamSession(session: ExamSession): Promise<void> {
+    if (isFirebaseConfigured()) {
+      await fbSet(`exam_sessions/${session.exam_id}/${session.id}`, session);
+    }
+  },
+
+  async updateExamSessionProgress(examId: string, sessionId: string, answeredCount: number): Promise<void> {
+    if (isFirebaseConfigured()) {
+      await fbSet(`exam_sessions/${examId}/${sessionId}/answered_count`, answeredCount);
+      await fbSet(`exam_sessions/${examId}/${sessionId}/last_active_at`, new Date().toISOString());
+    }
+  },
+
+  async completeExamSession(examId: string, sessionId: string, result: {
+    score: number;
+    correct_count: number;
+    wrong_count: number;
+    answers: Record<string, string>;
+    tab_switch_count: number;
+  }): Promise<void> {
+    if (isFirebaseConfigured()) {
+      const now = new Date().toISOString();
+      await fbSet(`exam_sessions/${examId}/${sessionId}/status`, 'completed');
+      await fbSet(`exam_sessions/${examId}/${sessionId}/submitted_at`, now);
+      await fbSet(`exam_sessions/${examId}/${sessionId}/last_active_at`, now);
+      await fbSet(`exam_sessions/${examId}/${sessionId}/score`, result.score);
+      await fbSet(`exam_sessions/${examId}/${sessionId}/correct_count`, result.correct_count);
+      await fbSet(`exam_sessions/${examId}/${sessionId}/wrong_count`, result.wrong_count);
+      await fbSet(`exam_sessions/${examId}/${sessionId}/answers`, result.answers);
+      await fbSet(`exam_sessions/${examId}/${sessionId}/tab_switch_count`, result.tab_switch_count);
+    }
+  },
+
+  onExamSessionsChanged(examId: string, callback: (sessions: ExamSession[]) => void): () => void {
+    if (!isFirebaseConfigured()) return () => {};
+
+    return fbOnValue(`exam_sessions/${examId}`, (data) => {
+      if (data) {
+        const sessions = Object.values(data) as ExamSession[];
+        callback(sessions);
+      } else {
+        callback([]);
+      }
+    });
+  },
+
+  async getExamSessions(examId: string): Promise<ExamSession[]> {
+    if (!isFirebaseConfigured()) return [];
+    const data = await fbGet<Record<string, ExamSession>>(`exam_sessions/${examId}`);
+    return data ? Object.values(data) : [];
+  },
+
+  /** Lấy tất cả sessions của tất cả exams (cho lịch sử học tập) */
+  async getAllExamSessions(): Promise<ExamSession[]> {
+    if (!isFirebaseConfigured()) return [];
+    const data = await fbGet<Record<string, Record<string, ExamSession>>>('exam_sessions');
+    if (!data) return [];
+    const all: ExamSession[] = [];
+    for (const examSessions of Object.values(data)) {
+      all.push(...Object.values(examSessions));
+    }
+    return all;
   },
 
   // ========================================

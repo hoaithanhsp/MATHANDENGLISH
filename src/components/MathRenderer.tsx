@@ -1,4 +1,4 @@
-﻿import React, { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import katex from 'katex';
 
 interface MathRendererProps {
@@ -20,11 +20,16 @@ export const MathRenderer: React.FC<MathRendererProps> = ({ content, className =
   const renderedHtml = useMemo(() => {
     if (!content) return '';
 
+    // Step 0: Clean up Gemini-generated MATHPLACEHOLDER tokens (bug from JSON mode)
+    // These are %%%MATHPLACEHOLDER0%%%, %%%MATHPLACEHOLDER1%%%, etc. (NO underscore)
+    // They appear when Gemini couldn't escape LaTeX in JSON mode.
+    let cleanedContent = content.replace(/%%%MATHPLACEHOLDER\d+%%%/g, '[formula]');
+
     // Step 1: Extract and render KaTeX formulas to protected placeholders
     const mathTokens: string[] = [];
     const tokenRegex = /(\$\$[\s\S]+?\$\$|\\\[[\s\S]+?\\\]|\$[^\$\n]+?\$|\\\([^\n]+?\\\))/g;
 
-    const textWithPlaceholders = content.replace(tokenRegex, (match) => {
+    const textWithPlaceholders = cleanedContent.replace(tokenRegex, (match) => {
       const isBlock = (match.startsWith('$$') && match.endsWith('$$')) || (match.startsWith('\\[') && match.endsWith('\\]'));
       const isParenInline = match.startsWith('\\(') && match.endsWith('\\)');
 

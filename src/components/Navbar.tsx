@@ -19,6 +19,7 @@ import {
   Languages,
   Radar,
   PenTool,
+  BarChart3,
 } from 'lucide-react';
 import { Profile, UserRole } from '../types';
 
@@ -115,6 +116,17 @@ export const Navbar: React.FC<NavbarProps> = ({
                 >
                   <Radar className="w-3.5 h-3.5 text-teal-500" />
                   Radar năng lực K11
+                </button>
+                <button
+                  onClick={() => setActiveTab('teacher_history')}
+                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    activeTab === 'teacher_history'
+                      ? 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 font-semibold'
+                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <BarChart3 className="w-3.5 h-3.5 text-indigo-500" />
+                  Lịch sử học tập
                 </button>
                 <button
                   onClick={() => setActiveTab('matrix_guide')}
@@ -343,6 +355,16 @@ export const Navbar: React.FC<NavbarProps> = ({
                 }`}
               >
                 Radar K11
+              </button>
+              <button
+                onClick={() => setActiveTab('teacher_history')}
+                className={`px-2.5 py-1 text-xs whitespace-nowrap rounded-lg ${
+                  activeTab === 'teacher_history'
+                    ? 'bg-teal-600 text-white'
+                    : 'text-slate-600 dark:text-slate-300'
+                }`}
+              >
+                Lịch sử HS
               </button>
               <button
                 onClick={() => setActiveTab('matrix_guide')}

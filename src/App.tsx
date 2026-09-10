@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
 import { LoginScreen } from './components/LoginScreen';
 import { ExamGenerator } from './components/TeacherView/ExamGenerator';
@@ -13,6 +13,7 @@ import { MistakeNotebook } from './components/StudentView/MistakeNotebook';
 import { InteractiveVocabModal } from './components/StudentView/InteractiveVocabModal';
 import { OlympicProofStudio } from './components/StudentView/OlympicProofStudio';
 import { TeamCompetencyRadar } from './components/TeacherView/TeamCompetencyRadar';
+import { StudentLearningHistory } from './components/TeacherView/StudentLearningHistory';
 import { JoinExamModal } from './components/StudentView/JoinExamModal';
 import { SchemaModal } from './components/SchemaModal';
 import { SettingsModal } from './components/SettingsModal';
@@ -275,6 +276,9 @@ export default function App() {
                 )}
                 {activeTab === 'teacher_radar' && (
                   <TeamCompetencyRadar assignments={assignments} exams={exams} />
+                )}
+                {activeTab === 'teacher_history' && (
+                  <StudentLearningHistory assignments={assignments} exams={exams} />
                 )}
                 {activeTab === 'matrix_guide' && <MatrixGuide />}
                 {activeTab === 'student_notes' && (

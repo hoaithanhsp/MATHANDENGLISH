@@ -69,6 +69,24 @@ export interface Assignment {
   created_at: string;
 }
 
+export interface ExamSession {
+  id: string;
+  exam_id: string;
+  student_id: string;
+  student_name: string;
+  status: 'in_progress' | 'completed';
+  started_at: string;
+  last_active_at: string;
+  answered_count: number;
+  total_questions: number;
+  submitted_at?: string;
+  score?: number;
+  correct_count?: number;
+  wrong_count?: number;
+  answers?: Record<string, string>;
+  tab_switch_count?: number;
+}
+
 export interface ProofProblem {
   id: string;
   title: string;

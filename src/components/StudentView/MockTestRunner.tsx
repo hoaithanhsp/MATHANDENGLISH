@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Clock,
   AlertCircle,
@@ -19,7 +19,7 @@ import {
   BookmarkPlus,
   HelpCircle
 } from 'lucide-react';
-import { Exam, Question, Assignment, MistakeEntry, MistakeReason } from '../../types';
+import { Exam, Question, Assignment, ExamSession, MistakeEntry, MistakeReason } from '../../types';
 import MathRenderer from '../MathRenderer';
 import { isMathAnswerCorrect } from '../../utils/mathAnswerEvaluator';
 import { storageService } from '../../services/storageService';
@@ -65,6 +65,8 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
 
   const notified15m = useRef(false);
   const notified5m = useRef(false);
+  const sessionIdRef = useRef(`session-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+  const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Web Audio chime helper
   const playAlertChime = (freq = 520, count = 2) => {
@@ -110,6 +112,34 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
       return () => clearTimeout(t);
     }
   }, [exam.id, studentKey, totalQuestions]);
+
+  // 1b. Create exam session on Firebase for Live Monitoring
+  useEffect(() => {
+    const session: ExamSession = {
+      id: sessionIdRef.current,
+      exam_id: exam.id,
+      student_id: studentId || 'student-hp-01',
+      student_name: studentName || 'Học sinh',
+      status: 'in_progress',
+      started_at: new Date().toISOString(),
+      last_active_at: new Date().toISOString(),
+      answered_count: 0,
+      total_questions: totalQuestions,
+    };
+    storageService.saveExamSession(session);
+
+    // Heartbeat every 30s
+    heartbeatRef.current = setInterval(() => {
+      if (!isSubmitted) {
+        const count = Object.keys(answers).filter((k) => (answers[k] || '').trim() !== '').length;
+        storageService.updateExamSessionProgress(exam.id, sessionIdRef.current, count);
+      }
+    }, 30000);
+
+    return () => {
+      if (heartbeatRef.current) clearInterval(heartbeatRef.current);
+    };
+  }, [exam.id]);
 
   // 2. Continuous Auto-save every state change
   useEffect(() => {
@@ -290,6 +320,16 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
 
     setSubmittedAssignment(newAssignment);
     onFinishExam(newAssignment);
+
+    // Update exam session on Firebase with results
+    if (heartbeatRef.current) clearInterval(heartbeatRef.current);
+    storageService.completeExamSession(exam.id, sessionIdRef.current, {
+      score: finalScore,
+      correct_count: correctCount,
+      wrong_count: totalQuestions - correctCount,
+      answers,
+      tab_switch_count: tabSwitchCount,
+    });
   };
 
   // Update mistake reason from post-exam screen
