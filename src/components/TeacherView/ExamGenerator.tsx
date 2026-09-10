@@ -14,7 +14,8 @@ import {
   RotateCw,
   PlusCircle,
   Trash2,
-  Languages
+  Languages,
+  Play
 } from 'lucide-react';
 import { Exam, Question, ExamMode, ExamType, MathStrand, CognitiveLevel } from '../../types';
 import MathRenderer from '../MathRenderer';
@@ -25,11 +26,22 @@ import { generateExam, regenerateSingleQuestion } from '../../services/geminiSer
 interface ExamGeneratorProps {
   onSaveExam: (exam: Exam) => void;
   onNavigateToBank: () => void;
+  isStudentMode?: boolean;
+  onStartTestNow?: (exam: Exam) => void;
 }
 
-export const ExamGenerator: React.FC<ExamGeneratorProps> = ({ onSaveExam, onNavigateToBank }) => {
+export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
+  onSaveExam,
+  onNavigateToBank,
+  isStudentMode = false,
+  onStartTestNow,
+}) => {
   // Input states
-  const [examTitle, setExamTitle] = useState('Đề Thi Tuyển Chọn Đội Tuyển HSG Toán THPT (Mới)');
+  const [examTitle, setExamTitle] = useState(
+    isStudentMode
+      ? 'Đề Tự Luyện HSG Toán Tiếng Anh (Cá Nhân)'
+      : 'Đề Thi Tuyển Chọn Đội Tuyển HSG Toán THPT (Mới)'
+  );
   const [mode, setMode] = useState<ExamMode>('bilingual');
   const [examType, setExamType] = useState<ExamType>('haiphong_matrix');
   const [questionCount, setQuestionCount] = useState<number>(22);
@@ -123,7 +135,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({ onSaveExam, onNavi
   };
 
   // Save current generated exam
-  const handleSaveExam = async () => {
+  const handleSaveExam = async (startNow = false) => {
     if (!generatedQuestions || generatedQuestions.length === 0) return;
 
     const examId = `exam-${Date.now()}`;
@@ -137,7 +149,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({ onSaveExam, onNavi
 
     const newExam: Exam = {
       id: examId,
-      title: examTitle.trim() || 'Đề Thi Tuyển Chọn Đội Tuyển HSG Toán THPT',
+      title: examTitle.trim() || (isStudentMode ? 'Đề Tự Luyện HSG Toán Tiếng Anh' : 'Đề Thi Tuyển Chọn Đội Tuyển HSG Toán THPT'),
       description: `Đề thi ${mode === 'bilingual' ? 'Song ngữ Anh - Việt' : 'Full Tiếng Anh'} chuẩn ma trận Sở GD&ĐT Hải Phòng. ${generatedQuestions.length} câu / 90 phút.`,
       mode,
       duration_minutes: 90,
@@ -150,9 +162,14 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({ onSaveExam, onNavi
 
     await Promise.resolve(onSaveExam(newExam));
     setSuccessSaved(true);
-    setTimeout(() => {
-      onNavigateToBank();
-    }, 1200);
+
+    if (startNow && onStartTestNow) {
+      onStartTestNow(newExam);
+    } else {
+      setTimeout(() => {
+        onNavigateToBank();
+      }, 1200);
+    }
   };
 
   // Export DOCX
@@ -169,7 +186,37 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({ onSaveExam, onNavi
       created_at: new Date().toISOString(),
       questions: generatedQuestions,
     };
-    await exportExamToDocx({ exam: tempExam, includeSolutions, mode });
+    await exportExamToDocx({ 
+      exam: tempExam, 
+      includeSolutions, 
+      includeVietnamese: mode === 'bilingual' 
+    });
+  };
+
+  // Add a new empty question
+  const handleAddQuestion = () => {
+    const newQ: Question = {
+      id: `q-custom-${Date.now()}`,
+      order_index: (generatedQuestions?.length || 0) + 1,
+      part: (generatedQuestions?.length || 0) < 12 ? 'PART_1' : 'PART_2',
+      strand: 'algebra_calculus',
+      topic: 'Custom Topic',
+      difficulty: 'application',
+      question_en: 'Enter your LaTeX math problem here: $f(x) = \\dots$',
+      question_vi: 'Nhập câu hỏi tiếng Việt có công thức LaTeX...',
+      options_en: ['A. ...', 'B. ...', 'C. ...', 'D. ...'],
+      correct_answer: 'A',
+      solution_en: 'Solution steps in English...',
+      solution_vi: 'Lời giải chi tiết...',
+    };
+    setGeneratedQuestions([...(generatedQuestions || []), newQ]);
+  };
+
+  // Delete a question
+  const handleDeleteQuestion = (index: number) => {
+    if (!generatedQuestions) return;
+    const updated = generatedQuestions.filter((_, i) => i !== index);
+    setGeneratedQuestions(updated);
   };
 
   // Update a single question field
@@ -186,10 +233,12 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({ onSaveExam, onNavi
       <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-4">
         <div>
           <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mb-1">
-            Chào mừng trở lại, Thầy Trần Hoài Thanh • THPT Khúc Thừa Dụ, TP.Hải Phòng
+            {isStudentMode
+              ? 'Phòng Tự Tạo Đề Ôn Luyện • Trợ lý AI Khảo Thí Sở GD&ĐT Hải Phòng'
+              : 'Chào mừng trở lại, Thầy Trần Hoài Thanh • THPT Khúc Thừa Dụ, TP.Hải Phòng'}
           </p>
           <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
-            Teacher Dashboard & AI Generator
+            {isStudentMode ? 'AI Exam Generator — Tự Tạo Đề Luyện Tập' : 'Teacher Dashboard & AI Generator'}
           </h2>
         </div>
         <div className="flex items-center gap-2.5">
@@ -199,29 +248,45 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({ onSaveExam, onNavi
             className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-200 dark:shadow-none transition flex items-center gap-1.5 disabled:opacity-50"
           >
             <Sparkles className="w-3.5 h-3.5" />
-            {isGenerating ? 'Đang tạo...' : '+ Generate New Exam'}
+            {isGenerating ? 'Đang tạo...' : isStudentMode ? '+ Tạo Đề Thi Mới' : '+ Generate New Exam'}
           </button>
         </div>
       </div>
 
-      {/* 3 Metric Cards matching Clean Minimalism Prototype */}
+      {/* 3 Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
         <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
-          <div className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1.5">Active Exams</div>
-          <div className="text-3xl font-black text-slate-900 dark:text-white">14</div>
-          <div className="text-emerald-500 text-xs font-medium mt-1">↑ 2 this week</div>
-        </div>
-        <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
-          <div className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1.5">Student Avg. Score</div>
-          <div className="text-3xl font-black text-slate-900 dark:text-white">
-            7.85<span className="text-lg text-slate-400 font-normal">/10</span>
+          <div className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1.5">
+            {isStudentMode ? 'Chuẩn Khảo Thí' : 'Active Exams'}
           </div>
-          <div className="text-emerald-500 text-xs font-medium mt-1">+0.4 performance</div>
+          <div className="text-3xl font-black text-slate-900 dark:text-white">
+            {isStudentMode ? 'Ma Trận HP' : '14'}
+          </div>
+          <div className="text-emerald-500 text-xs font-medium mt-1">
+            {isStudentMode ? '22 Câu / 90 Phút chuẩn Sở' : '↑ 2 this week'}
+          </div>
         </div>
         <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
-          <div className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1.5">AI Quests Today</div>
-          <div className="text-3xl font-black text-slate-900 dark:text-white">42</div>
-          <div className="text-indigo-500 text-xs font-medium mt-1">HP Matrix compliant</div>
+          <div className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1.5">
+            {isStudentMode ? 'Ngôn Ngữ Học Thuật' : 'Student Avg. Score'}
+          </div>
+          <div className="text-3xl font-black text-slate-900 dark:text-white">
+            {isStudentMode ? 'Bilingual & EN' : '7.85/10'}
+          </div>
+          <div className="text-emerald-500 text-xs font-medium mt-1">
+            {isStudentMode ? 'Chuẩn KaTeX & Thuật ngữ' : '+0.4 performance'}
+          </div>
+        </div>
+        <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+          <div className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1.5">
+            {isStudentMode ? 'Hỗ Trợ Lời Giải' : 'AI Quests Today'}
+          </div>
+          <div className="text-3xl font-black text-slate-900 dark:text-white">
+            {isStudentMode ? 'Instant AI' : '42'}
+          </div>
+          <div className="text-indigo-500 text-xs font-medium mt-1">
+            {isStudentMode ? 'Tự chấm & Lời giải chi tiết' : 'HP Matrix compliant'}
+          </div>
         </div>
       </div>
 
@@ -559,12 +624,23 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({ onSaveExam, onNavi
                     <FileText className="w-3.5 h-3.5" />
                     In Đáp Án (PDF)
                   </button>
+                  {onStartTestNow && (
+                    <button
+                      onClick={() => handleSaveExam(true)}
+                      className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition shadow-md shadow-indigo-200 dark:shadow-none"
+                    >
+                      <Play className="w-3.5 h-3.5 fill-current" />
+                      Vào Làm Bài Ngay
+                    </button>
+                  )}
                   <button
-                    onClick={handleSaveExam}
+                    onClick={() => handleSaveExam(false)}
                     className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition shadow-xs"
                   >
                     <Save className="w-3.5 h-3.5" />
-                    {successSaved ? 'Đã Lưu Vào Ngân Hàng!' : 'Lưu Vào Ngân Hàng Đề'}
+                    {successSaved
+                      ? isStudentMode ? 'Đã Lưu Vào Kho Đề!' : 'Đã Lưu Vào Ngân Hàng!'
+                      : isStudentMode ? 'Lưu Đề Tự Luyện' : 'Lưu Vào Ngân Hàng Đề'}
                   </button>
                 </div>
               )}

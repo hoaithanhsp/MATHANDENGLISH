@@ -192,32 +192,46 @@ export const generateContentWithFallback = async (
 };
 
 // ============================================================
-// HAIPHONG SYSTEM INSTRUCTION
+// HAIPHONG SYSTEM INSTRUCTION — CHUẨN QUYẾT ĐỊNH SỞ GD&ĐT HẢI PHÒNG 2025
 // ============================================================
-export const HAIPHONG_SYSTEM_INSTRUCTION = `You are an elite High School Math Olympiad author and pedagogue specialized in gifted student competitions (HSG môn Toán THPT bằng Tiếng Anh) following the exact examination matrix of Hai Phong Department of Education and Training (Sở GD&ĐT Hải Phòng).
+export const HAIPHONG_SYSTEM_INSTRUCTION = `You are an elite High School Math Olympiad author and pedagogue specialized in gifted student competitions (Kỳ thi chọn HSG môn Toán THPT bằng Tiếng Anh) following the exact examination framework and matrix issued by Hai Phong Department of Education and Training (Sở GD&ĐT Hải Phòng, Quyết định năm 2025).
 
-Contest Structure & Rules (MUST BE STRICTLY FOLLOWED):
-1. Standard Exam: 22 questions / 90 minutes.
-2. Two Parts:
-   - Part I (Questions 1 to 12): Multiple choice questions with 4 distinct options (A, B, C, D).
-   - Part II (Questions 13 to 22): Short-answer questions requiring a concise numerical value (integer, irreducible fraction 'a/b', or decimal).
-3. Cognitive Levels Distribution:
-   - 6 Understanding (Thông hiểu)
-   - 9 Application (Vận dụng)
-   - 7 Higher-order Thinking (Vận dụng cao)
-4. Three Strands:
-   - Strand 1: Algebra & Calculus (Đại số – Giải tích): 9 questions.
-   - Strand 2: Geometry & Measurement (Hình học và Đo lường): 9 questions.
-   - Strand 3: Statistics, Probability, Discrete & Number Theory: 4 questions.
-5. KaTeX Math Formatting (CRITICAL):
-   - All mathematical formulas MUST use standard LaTeX: '$...$' for inline formulas, '$$...$$' for display block formulas.
-   - In JSON strings, write standard valid JSON escape for LaTeX commands: "\\frac{a}{b}", "\\sin(x)", "\\sqrt{x}", "\\lim_{x \\to 0}".
-   - When parsed by JSON.parse(), this yields standard single-backslash LaTeX commands (\frac{a}{b}, \sin, etc.).
-   - NEVER use 4 backslashes ("\\\\\\\\"). Keep it standard valid JSON.
-6. Language:
-   - For bilingual mode: provide question_en and question_vi (translate ONLY the question prompt, do NOT translate options/answers). options_en MUST be in English only (do NOT translate options to Vietnamese). Also provide solution_en and solution_vi.
-   - For english_only: question_en, options_en, solution_en.
-7. Return clean JSON only without markdown code fences if possible, or standard JSON.`;
+I. CONTEST SPECIFICATIONS (SỞ GD&ĐT HẢI PHÒNG 2025):
+1. Name: Kỳ thi chọn HSG thành phố môn Toán và các môn KHTN bằng tiếng Anh – Cấp THPT.
+2. Structure: Exactly 22 questions | Duration: 90 minutes | Total Score: 10.00 points.
+3. Scope: THCS Mathematics + High School Grade 10 & 11 (Vietnam 2018 General Education Curriculum).
+4. Uniqueness Constraint: Questions must NOT replicate past questions released by Hai Phong DOET within the last 3 years.
+5. Cognitive Level Distribution (Toàn đề 22 câu):
+   - 8 Understanding (Thông hiểu - 36.4%): 5 in Part I, 3 in Part II.
+   - 9 Application (Vận dụng - 40.9%): 5 in Part I, 4 in Part II.
+   - 5 Higher-order Thinking (Vận dụng cao - 22.7%): 2 in Part I, 3 in Part II.
+
+II. DETAILED MATRIX & STRAND BREAKDOWN:
+PART I: 12 Multiple Choice Questions (Questions 1 to 12) - 4 options (A, B, C, D)
+- Questions 1 to 5: Algebra & Calculus (Đại số – Giải tích) [2 Understanding, 2 Application, 1 Advanced]
+  * Topics: System of linear inequalities & feasible regions; Quadratic functions (vertex, real-world parabolic arch); Trigonometric functions & equations (amplitude, range, auxiliary angle method); Arithmetic & geometric progressions; Limits of sequences/functions & continuity; Exponential & logarithmic functions/equations with parameters.
+- Questions 6 to 10: Geometry & Measurement (Hình học và Đo lường) [2 Understanding, 2 Application, 1 Advanced]
+  * Topics: Trigonometric relations in triangles (Law of Sines, Law of Cosines, Heron's formula, measurement problems); Coordinate geometry Oxy (lines, circles, conic sections: ellipse, hyperbola, parabola); Solid geometry: parallelism & perpendicularity (UP TO line perpendicular to plane: angles between lines, angle between line and plane, perpendicular cross-sections, distance between skew lines).
+- Questions 11 to 12: Statistics, Probability, Discrete & Number Theory [1 Understanding, 1 Application]
+  * Topics: Classical probability & counting principles; Grouped data statistics (modal group, mean, median, quartiles); Basic Pigeonhole Principle; Parity invariants.
+
+PART II: 10 Short-Answer Questions (Questions 13 to 22) - Numerical / Fraction / Decimal answers
+- Questions 13 to 16: Algebra & Calculus [1 Understanding, 1 Application, 2 Advanced]
+  * Trọng tâm VDC: Recurrence sequences $u_{n+1} = f(u_n)$, general terms, limits via Squeeze Theorem or Weierstrass monotone convergence; Parametric exponential/logarithmic inequalities with exact integer solution counting; Real-world linear programming profit/cost optimization.
+- Questions 17 to 20: Geometry & Measurement [1 Understanding, 2 Application, 1 Advanced]
+  * Trọng tâm: Real-world conic models (semi-ellipse arch bridge height, whispering gallery focal distance, parabolic satellite dish focus); Solid geometry angles, perpendicular sections, and tri-rectangular tetrahedrons (within scope up to line perpendicular to plane).
+- Questions 21 to 22: Statistics, Probability, Discrete & Number Theory [1 Application, 1 Advanced - HAI PHONG SIGNATURE PROBLEMS]
+  * Question 21: Real-world / Geometric Pigeonhole Principle (Nguyên lý Dirichlet chuồng - thỏ: points inside equilateral triangles $k^2+1$, unit squares, or 3D integer lattice points parity profiles $2^3+1 = 9$).
+  * Question 22: Invariance & Monovariants (Nguyên lý bất biến và đơn biến: blackboard number operations replacing $(a, b)$ with $|a-b|$ or $a+b-1$, mutilated chessboard domino tiling coloring invariants, game termination).
+
+III. ACADEMIC ENGLISH & Olympiad STYLE:
+- Use formal academic Olympiad English terminology (consistent with AMC, AIME, BMO, USAMO, Yufei Zhao MIT lectures, Evan Chen OTIS, Art of Problem Solving).
+- Key vocabulary: feasible region, objective function, linear programming, arithmetic/geometric progression, recurrence relation, squeeze theorem, conic sections, whispering gallery, skew lines, cross-section, pigeonhole principle, invariant, monovariant, grouped data, quartiles, modal group.
+
+IV. MATHEMATICAL FORMATTING (KaTeX):
+- All formulas must use standard LaTeX: '$...$' for inline and '$$...$$' for display.
+- Properly escape backslashes in JSON strings: "\\\\frac{a}{b}", "\\\\sqrt{x}", "\\\\lim_{n \\\\to \\\\infty}", "\\\\sin(2x)".
+- The JSON output must parse cleanly via JSON.parse().`;
 
 // ============================================================
 // HIGH-LEVEL API FUNCTIONS
@@ -241,18 +255,33 @@ export const generateExam = async (params: {
     onModelSwitch,
   } = params;
 
-  const userPrompt = `Task: Generate a high school math competition exam.
+  const userPrompt = `Task: Generate an authentic High School Math Olympiad examination strictly adhering to the 2025 Hai Phong Department of Education and Training (Sở GD&ĐT Hải Phòng) contest matrix.
 Exam Type: ${examType}
 Language Mode: ${mode}
-Number of questions: ${questionCount}
+Total Questions: ${questionCount}
 ${topicPrompt ? `Focus Topic / Custom Instruction: ${topicPrompt}` : ''}
 ${customDocumentText ? `Reference Material / Document Context:\n${customDocumentText.slice(0, 4000)}` : ''}
 
-CRITICAL BILINGUAL RULE:
-In bilingual mode, ONLY translate the question prompt into "question_vi". Do NOT translate multiple-choice options or short answers. Keep "options_en" in English only.
+CRITICAL RULES FOR HAI PHONG OLYMPIAD 2025 MATRIX:
+1. Question 1 to 12 MUST BE PART_1 (Multiple Choice with 4 options A, B, C, D in options_en).
+2. Question 13 to 22 MUST BE PART_2 (Short Answer with concise numerical or simplified fraction string in correct_answer).
+3. Exactly follow cognitive distribution:
+   - Part I (Q1-12): 5 Understanding, 5 Application, 2 Advanced.
+   - Part II (Q13-22): 3 Understanding, 4 Application, 3 Advanced (specifically Q15, Q16, Q20, Q22 as high-order thinking).
+4. Feature iconic Hai Phong competition problem types:
+   - Q3 or Q14: Real-world Linear Programming optimization (factory profit, working hours).
+   - Q8 or Q18: Real-world Conic sections (semi-ellipse arch bridge, whispering gallery, parabolic dish).
+   - Q15: Recurrence sequence & limit ($u_{n+1} = \\frac{u_n + a}{u_n + b}$ or $x_{n+1} = \\sqrt{x_n^2 + r^n}$).
+   - Q16: Parametric exponential or logarithmic equations/inequalities with integer solution count.
+   - Q21: Pigeonhole Principle (Dirichlet: points in equilateral triangle or 3D integer parity).
+   - Q22: Invariance Principle (Parity invariant of board numbers or mutilated chessboard domino coloring).
+5. In bilingual mode:
+   - "question_en" and "question_vi" must both be provided.
+   - For Part 1, "options_en" MUST BE IN ENGLISH ONLY. Do not translate options to Vietnamese.
+   - Both "solution_en" and "solution_vi" must provide complete, rigorous step-by-step mathematical reasoning.
 
 Output Schema:
-A valid JSON array containing ${questionCount} question objects with these exact properties:
+A valid JSON array containing ${questionCount} question objects:
 [
   {
     "order_index": number (1 to ${questionCount}),
@@ -260,17 +289,17 @@ A valid JSON array containing ${questionCount} question objects with these exact
     "strand": "algebra_calculus" or "geometry_measurement" or "statistics_discrete",
     "topic": string,
     "difficulty": "understanding" or "application" or "advanced",
-    "question_en": string (English question prompt using $...$ for math),
-    "question_vi": string (Vietnamese translation of the QUESTION STATEMENT ONLY. Null if english_only),
-    "options_en": ["A. ...", "B. ...", "C. ...", "D. ..."] (English only, null or omit for PART_2),
-    "correct_answer": string (For Part 1: "A", "B", "C", or "D". For Part 2: e.g. "42", "1/3", "-5.5"),
-    "acceptable_answers": string[] (e.g. ["1/3", "0.333"]),
-    "solution_en": string (detailed step-by-step solution with $...$),
-    "solution_vi": string (detailed step-by-step solution in Vietnamese)
+    "question_en": string (English problem statement with $...$),
+    "question_vi": string (Vietnamese translation of statement. Null if english_only),
+    "options_en": ["A. ...", "B. ...", "C. ...", "D. ..."] (English only for PART_1, null or omitted for PART_2),
+    "correct_answer": string (e.g. "A" / "B" / "C" / "D" for PART_1, or numerical string like "2200", "0.41", "15", "1", "0" for PART_2),
+    "acceptable_answers": string[],
+    "solution_en": string (complete step-by-step solution in English),
+    "solution_vi": string (complete step-by-step solution in Vietnamese)
   }
 ]
 
-CRITICAL: Return ONLY valid JSON array. Ensure all JSON string quotes and backslashes in LaTeX are properly escaped.`;
+CRITICAL: Return ONLY the valid JSON array. Ensure all JSON string quotes and LaTeX backslashes are properly escaped.`;
 
   const result = await generateContentWithFallback({
     contents: userPrompt,
@@ -288,6 +317,7 @@ CRITICAL: Return ONLY valid JSON array. Ensure all JSON string quotes and backsl
     return JSON.parse(cleaned);
   }
 };
+
 
 /** Generate study lesson for a topic */
 export const generateStudyLesson = async (params: {

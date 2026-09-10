@@ -13,12 +13,22 @@ import {
   HelpCircle,
   Lightbulb,
   Check,
-  RotateCw
+  RotateCw,
+  Award,
+  Calendar,
+  Target,
+  Layers,
+  ArrowRight
 } from 'lucide-react';
 import { StudentStudyNote, ExamMode, Question } from '../../types';
 import MathRenderer from '../MathRenderer';
 import { printExamOrNotes } from '../../utils/printPdf';
 import { CHAPTER_STUDY_NOTES } from '../../data/chapterStudyNotes';
+import {
+  HAIPHONG_SPECIAL_TOPICS,
+  HAIPHONG_12_WEEK_ROADMAP,
+  OlympiadSpecialTopic
+} from '../../data/haiPhongSpecialTopics';
 import { generateStudyLesson, generateTopicPractice } from '../../services/geminiService';
 
 interface StudyAssistantProps {
@@ -49,6 +59,8 @@ export const StudyAssistant: React.FC<StudyAssistantProps> = ({
   onSaveNote,
   onStartPracticeQuiz,
 }) => {
+  const [activeStudyTab, setActiveStudyTab] = useState<'haiphong_topics' | 'roadmap' | 'ai_assistant'>('haiphong_topics');
+  const [selectedHpTopic, setSelectedHpTopic] = useState<OlympiadSpecialTopic>(HAIPHONG_SPECIAL_TOPICS[0]);
   const [topicInput, setTopicInput] = useState('');
   const [mode, setMode] = useState<ExamMode>('bilingual');
   const [viewLayout, setViewLayout] = useState<'dual_column' | 'single_column'>('dual_column');
@@ -57,6 +69,7 @@ export const StudyAssistant: React.FC<StudyAssistantProps> = ({
   const [currentNote, setCurrentNote] = useState<StudentStudyNote>(CHAPTER_STUDY_NOTES[0]);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
+
 
   // Generate Lesson via API
   const handleGenerateLesson = async (topicToFetch?: string) => {
@@ -137,102 +150,432 @@ export const StudyAssistant: React.FC<StudyAssistantProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Search & Topic Control Card */}
-      <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-          <div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 mb-2">
-              <Sparkles className="w-3.5 h-3.5" />
-              AI Study Assistant for Math Olympiad
-            </div>
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-              Góc Tự Học Chuyên Đề HSG Toán Bằng Tiếng Anh
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              Nhập tên chuyên đề toán học để AI sinh bài giảng lý thuyết, thuật ngữ chuyên ngành và phương pháp giải mẫu.
-            </p>
-          </div>
-
-          {/* Mode Switcher */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setMode('bilingual')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition ${
-                mode === 'bilingual'
-                  ? 'bg-indigo-50 border-indigo-500 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300'
-                  : 'border-slate-200 dark:border-slate-700 text-slate-500'
-              }`}
-            >
-              🇻🇳 🇬🇧 Song Ngữ
-            </button>
-            <button
-              onClick={() => setMode('english_only')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition ${
-                mode === 'english_only'
-                  ? 'bg-indigo-50 border-indigo-500 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300'
-                  : 'border-slate-200 dark:border-slate-700 text-slate-500'
-              }`}
-            >
-              🇬🇧 Full English
-            </button>
-          </div>
-        </div>
-
-        {/* Input & Action */}
-        <div className="flex flex-col sm:flex-row gap-2.5">
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={topicInput}
-              onChange={(e) => setTopicInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleGenerateLesson()}
-              placeholder="VD: Pigeonhole Principle in Combinatorics, Conic Sections, Limits..."
-              className="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
+      {/* Main Tab Navigation */}
+      <div className="bg-white dark:bg-slate-800 p-2 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-1.5">
           <button
-            disabled={isLoading || !topicInput.trim()}
-            onClick={() => handleGenerateLesson()}
-            className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition shadow-xs flex items-center justify-center gap-1.5 disabled:opacity-50 shrink-0"
+            onClick={() => setActiveStudyTab('haiphong_topics')}
+            className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition ${
+              activeStudyTab === 'haiphong_topics'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+            }`}
           >
-            {isLoading ? (
-              <>
-                <RotateCw className="w-4 h-4 animate-spin" />
-                Đang Sinh Bài Giảng...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4" />
-                Sinh Bài Học AI
-              </>
-            )}
+            <Award className="w-4 h-4" />
+            11 Chuyên Đề VDC Hải Phòng 2025
+          </button>
+
+          <button
+            onClick={() => setActiveStudyTab('roadmap')}
+            className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition ${
+              activeStudyTab === 'roadmap'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+            }`}
+          >
+            <Calendar className="w-4 h-4" />
+            Lộ Trình Ôn Luyện 12 Tuần
+          </button>
+
+          <button
+            onClick={() => setActiveStudyTab('ai_assistant')}
+            className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition ${
+              activeStudyTab === 'ai_assistant'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+            }`}
+          >
+            <Sparkles className="w-4 h-4" />
+            Trợ Lý AI Tùy Biến
           </button>
         </div>
 
-        {/* Suggested Quick Topics */}
-        <div className="pt-2 flex flex-wrap items-center gap-1.5">
-          <span className="text-[11px] font-medium text-slate-400 mr-1">Gợi ý chuyên đề:</span>
-          {POPULAR_TOPICS.map((topic) => (
-            <button
-              key={topic}
-              onClick={() => {
-                setTopicInput(topic);
-                handleGenerateLesson(topic);
-              }}
-              className="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-slate-100 dark:bg-slate-750 text-slate-600 dark:text-slate-300 hover:bg-emerald-50 hover:text-emerald-700 dark:hover:bg-emerald-950/40 dark:hover:text-emerald-300 transition"
-            >
-              {topic.split('(')[0].trim()}
-            </button>
-          ))}
+        {/* Mode Switcher */}
+        <div className="flex items-center gap-1.5 px-2">
+          <button
+            onClick={() => setMode('bilingual')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
+              mode === 'bilingual'
+                ? 'bg-indigo-50 border-indigo-500 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300'
+                : 'border-slate-200 dark:border-slate-700 text-slate-500'
+            }`}
+          >
+            🇻🇳 🇬🇧 Song Ngữ
+          </button>
+          <button
+            onClick={() => setMode('english_only')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
+              mode === 'english_only'
+                ? 'bg-indigo-50 border-indigo-500 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300'
+                : 'border-slate-200 dark:border-slate-700 text-slate-500'
+            }`}
+          >
+            🇬🇧 English
+          </button>
         </div>
       </div>
 
-      {errorMsg && (
-        <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-300">
-          {errorMsg}
+      {/* TAB 1: 11 CHUYÊN ĐỀ VDC HẢI PHÒNG */}
+      {activeStudyTab === 'haiphong_topics' && (
+        <div className="space-y-6">
+          {/* Header Info */}
+          <div className="bg-gradient-to-r from-indigo-900 via-slate-900 to-emerald-950 p-6 rounded-2xl text-white shadow-sm border border-indigo-800/40">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-white/10 text-indigo-200 mb-3 border border-white/10">
+              <Target className="w-3.5 h-3.5 text-amber-400" />
+              Tài Liệu Độc Quyền — Bám Sát Ma Trận Sở GD&ĐT Hải Phòng 2025
+            </div>
+            <h3 className="text-xl font-bold">11 Chuyên Đề Trọng Tâm Vận Dụng Cao (VDC)</h3>
+            <p className="text-xs text-indigo-200/90 mt-1 max-w-3xl leading-relaxed">
+              Tổng hợp từ bộ tài liệu ôn thi học sinh giỏi thành phố: Dãy số truy hồi, Quy hoạch tuyến tính thực tế, Ba đường conic ứng dụng, Nguyên lý Dirichlet chuồng - thỏ và Nguyên lý bất biến.
+            </p>
+          </div>
+
+          {/* Topics Grid Selector */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {HAIPHONG_SPECIAL_TOPICS.map((top) => {
+              const isSelected = selectedHpTopic.id === top.id;
+              return (
+                <button
+                  key={top.id}
+                  onClick={() => setSelectedHpTopic(top)}
+                  className={`p-4 rounded-xl border text-left transition relative flex flex-col justify-between ${
+                    isSelected
+                      ? 'bg-indigo-50/90 dark:bg-indigo-950/50 border-indigo-500 shadow-xs ring-2 ring-indigo-500/20'
+                      : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-700'
+                  }`}
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-300">
+                        Chuyên đề {top.topic_number < 10 ? `0${top.topic_number}` : top.topic_number}
+                      </span>
+                      <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
+                        {top.exam_weight.split('(')[0]}
+                      </span>
+                    </div>
+                    <h4 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white leading-snug">
+                      {top.title_vi}
+                    </h4>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 italic">
+                      {top.title_en}
+                    </p>
+                  </div>
+                  <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between text-[11px] text-indigo-600 dark:text-indigo-400 font-semibold">
+                    <span>{isSelected ? 'Đang xem' : 'Xem chi tiết'}</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Selected Topic Content Display */}
+          {selectedHpTopic && (
+            <div className="space-y-6">
+              {/* Topic Detail Header */}
+              <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-indigo-600 text-white">
+                      Chuyên đề {selectedHpTopic.topic_number < 10 ? `0${selectedHpTopic.topic_number}` : selectedHpTopic.topic_number}
+                    </span>
+                    <span className="text-xs font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 px-3 py-1 rounded-lg border border-amber-200 dark:border-amber-800">
+                      {selectedHpTopic.exam_weight}
+                    </span>
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white mt-2">
+                    {selectedHpTopic.title_vi}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 italic">
+                    {selectedHpTopic.title_en}
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={async () => {
+                      setIsGeneratingQuiz(true);
+                      try {
+                        const raw = await generateTopicPractice({
+                          topic: `${selectedHpTopic.title_vi} (${selectedHpTopic.title_en})`,
+                          mode,
+                          count: 6,
+                        });
+                        const questions: Question[] = raw.map((q: any, i: number) => ({
+                          id: `quiz-hp-${Date.now()}-${i + 1}`,
+                          exam_id: `hp-practice-${Date.now()}`,
+                          part: q.part || (i < 4 ? 'PART_1' : 'PART_2'),
+                          order_index: i + 1,
+                          strand: selectedHpTopic.strand,
+                          topic: selectedHpTopic.title_vi,
+                          difficulty: q.difficulty || 'application',
+                          question_en: q.question_en || '',
+                          question_vi: q.question_vi || '',
+                          options_en: q.options_en || (q.part === 'PART_1' ? ['A', 'B', 'C', 'D'] : undefined),
+                          options_vi: q.options_vi || undefined,
+                          correct_answer: q.correct_answer || 'A',
+                          acceptable_answers: q.acceptable_answers || [],
+                          solution_en: q.solution_en || '',
+                          solution_vi: q.solution_vi || '',
+                        }));
+                        onStartPracticeQuiz(selectedHpTopic.title_vi, questions);
+                      } catch {
+                        // Fallback quiz from special topic sample problems
+                        const fallbackQuestions: Question[] = selectedHpTopic.sample_problems.map((p, i) => ({
+                          id: `fb-hp-${Date.now()}-${i + 1}`,
+                          exam_id: `hp-fb-${Date.now()}`,
+                          part: 'PART_2',
+                          order_index: i + 1,
+                          strand: selectedHpTopic.strand,
+                          topic: selectedHpTopic.title_vi,
+                          difficulty: 'advanced',
+                          question_en: p.problem_en,
+                          question_vi: p.problem_vi,
+                          correct_answer: p.answer || '1',
+                          acceptable_answers: [p.answer || '1'],
+                          solution_en: p.solution_en,
+                          solution_vi: p.solution_vi,
+                        }));
+                        onStartPracticeQuiz(selectedHpTopic.title_vi, fallbackQuestions);
+                      } finally {
+                        setIsGeneratingQuiz(false);
+                      }
+                    }}
+                    disabled={isGeneratingQuiz}
+                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-indigo-600 to-emerald-600 hover:from-indigo-700 hover:to-emerald-700 transition shadow-xs disabled:opacity-50"
+                  >
+                    {isGeneratingQuiz ? (
+                      <RotateCw className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <FileQuestion className="w-3.5 h-3.5" />
+                    )}
+                    Tạo Bài Tập Chuyên Đề & Làm Ngay
+                  </button>
+
+                  <button
+                    onClick={() => printExamOrNotes(`Chuyên đề ${selectedHpTopic.topic_number}: ${selectedHpTopic.title_vi}`)}
+                    className="p-2.5 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 transition border border-slate-200 dark:border-slate-700"
+                    title="In tài liệu chuyên đề này"
+                  >
+                    <Printer className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Key Formulas Section */}
+              <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-4">
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Lightbulb className="w-4 h-4 text-amber-500" />
+                  Các Công Thức & Định Lý Cốt Lõi (Key Formulas)
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {selectedHpTopic.key_formulas.map((form, idx) => (
+                    <div
+                      key={idx}
+                      className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/80 text-xs"
+                    >
+                      <MathRenderer content={form} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Theory Content */}
+              <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-4">
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <BookOpen className="w-4 h-4 text-emerald-600" />
+                  Lý Thuyết & Phương Pháp Giải Mẫu
+                </h4>
+                <div className="bg-slate-50/50 dark:bg-slate-900/40 p-5 rounded-xl border border-slate-200/70 dark:border-slate-800 leading-relaxed text-xs sm:text-sm">
+                  <MathRenderer content={selectedHpTopic.content_markdown} />
+                </div>
+              </div>
+
+              {/* Sample Problems */}
+              <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-4">
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-indigo-600" />
+                  Bài Tập Minh Họa Vận Dụng Cao (Sample Olympiad Problems)
+                </h4>
+                <div className="space-y-4">
+                  {selectedHpTopic.sample_problems.map((prob, idx) => (
+                    <div
+                      key={idx}
+                      className="p-5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-900/40 space-y-3"
+                    >
+                      <div className="space-y-1.5">
+                        <div className="text-xs sm:text-sm font-bold text-indigo-900 dark:text-indigo-300">
+                          <MathRenderer content={prob.problem_en} />
+                        </div>
+                        {prob.problem_vi && (
+                          <div className="text-xs text-slate-600 dark:text-slate-400 italic">
+                            <MathRenderer content={`*(${prob.problem_vi})*`} />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="pt-3 border-t border-slate-200 dark:border-slate-700/80 space-y-2">
+                        <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase">
+                          Hướng dẫn giải chi tiết (Solution):
+                        </span>
+                        <div className="text-xs text-slate-800 dark:text-slate-200 leading-relaxed bg-white dark:bg-slate-800 p-4 rounded-lg border border-slate-200/70 dark:border-slate-700">
+                          <MathRenderer content={prob.solution_vi || prob.solution_en} />
+                        </div>
+                        {prob.answer && (
+                          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                            <span>Đáp số (Answer):</span>
+                            <span>{prob.answer}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
+
+      {/* TAB 2: LỘ TRÌNH ÔN THI 12 TUẦN */}
+      {activeStudyTab === 'roadmap' && (
+        <div className="space-y-6">
+          <div className="bg-gradient-to-r from-indigo-900 via-indigo-950 to-slate-900 p-6 rounded-2xl text-white shadow-sm border border-indigo-800/40">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-white/10 text-indigo-200 mb-3 border border-white/10">
+              <Calendar className="w-3.5 h-3.5 text-amber-400" />
+              Chiến Lược Ôn Luyện Đạt Giải Cao — Sở GD&ĐT Hải Phòng
+            </div>
+            <h3 className="text-xl font-bold">Kế Hoạch & Lộ Trình Ôn Luyện 12 Tuần</h3>
+            <p className="text-xs text-indigo-200/90 mt-1 max-w-3xl leading-relaxed">
+              Thiết kế khoa học 3 giai đoạn: Nền tảng (Tuần 1–3) → Chuyên sâu VDC theo mạch (Tuần 4–8) → Tổng luyện đề bấm giờ 90 phút (Tuần 9–12).
+            </p>
+          </div>
+
+          <div className="space-y-6">
+            {HAIPHONG_12_WEEK_ROADMAP.map((phase) => (
+              <div
+                key={phase.phase}
+                className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-4"
+              >
+                <div className="border-b border-slate-100 dark:border-slate-700 pb-3">
+                  <h4 className="text-base font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-2">
+                    <Layers className="w-4 h-4" />
+                    {phase.phase_name}
+                  </h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    {phase.description}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {phase.weeks.map((w) => (
+                    <div
+                      key={w.week}
+                      className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 space-y-2.5 flex flex-col justify-between"
+                    >
+                      <div>
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-300">
+                          Tuần {w.week}
+                        </span>
+                        <h5 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white mt-1.5 leading-snug">
+                          {w.title.split(':')[1]?.trim() || w.title}
+                        </h5>
+                        <ul className="mt-2.5 space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
+                          {w.tasks.map((task, tIdx) => (
+                            <li key={tIdx} className="flex items-start gap-1.5">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                              <span>{task}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* TAB 3: TRỢ LÝ TỰ HỌC AI TÙY BIẾN */}
+      {activeStudyTab === 'ai_assistant' && (
+        <div className="space-y-6">
+          {/* Search & Topic Control Card */}
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+              <div>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 mb-2">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  AI Study Assistant for Math Olympiad
+                </div>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                  Góc Tự Học Chuyên Đề Tùy Chọn Bằng AI
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  Nhập bất kỳ chủ đề toán học nào để AI sinh bài giảng lý thuyết chuẩn KaTeX và bài tập thực hành.
+                </p>
+              </div>
+            </div>
+
+            {/* Input & Action */}
+            <div className="flex flex-col sm:flex-row gap-2.5">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={topicInput}
+                  onChange={(e) => setTopicInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleGenerateLesson()}
+                  placeholder="VD: Pigeonhole Principle, Whispering gallery ellipse, Squeeze Theorem..."
+                  className="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <button
+                disabled={isLoading || !topicInput.trim()}
+                onClick={() => handleGenerateLesson()}
+                className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition shadow-xs flex items-center justify-center gap-1.5 disabled:opacity-50 shrink-0"
+              >
+                {isLoading ? (
+                  <>
+                    <RotateCw className="w-4 h-4 animate-spin" />
+                    Đang Sinh Bài Giảng...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    Sinh Bài Học AI
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Suggested Quick Topics */}
+            <div className="pt-2 flex flex-wrap items-center gap-1.5">
+              <span className="text-[11px] font-medium text-slate-400 mr-1">Gợi ý nhanh:</span>
+              {POPULAR_TOPICS.map((topic) => (
+                <button
+                  key={topic}
+                  onClick={() => {
+                    setTopicInput(topic);
+                    handleGenerateLesson(topic);
+                  }}
+                  className="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-slate-100 dark:bg-slate-750 text-slate-600 dark:text-slate-300 hover:bg-emerald-50 hover:text-emerald-700 dark:hover:bg-emerald-950/40 dark:hover:text-emerald-300 transition"
+                >
+                  {topic.split('(')[0].trim()}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {errorMsg && (
+            <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-300">
+              {errorMsg}
+            </div>
+          )}
+        </div>
+      )}
+
 
       {/* Lesson Viewer */}
       {currentNote && (

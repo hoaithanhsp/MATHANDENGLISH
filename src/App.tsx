@@ -21,7 +21,7 @@ import { storageService } from './services/storageService';
 import { onAuthChanged, logout, getProfileFromDb, getRoleFromEmail, findAccountByEmail } from './services/authService';
 import { fbSet } from './lib/firebase';
 import { Exam, Assignment, StudentStudyNote, Profile, UserRole, Question } from './types';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Sparkles } from 'lucide-react';
 
 export default function App() {
   // Auth state
@@ -292,6 +292,17 @@ export default function App() {
             {/* STUDENT TABS */}
             {currentUser.role === 'student' && (
               <>
+                {activeTab === 'student_generate' && (
+                  <ExamGenerator
+                    isStudentMode={true}
+                    onSaveExam={handleSaveExam}
+                    onNavigateToBank={() => setActiveTab('student_mock')}
+                    onStartTestNow={(exam) => {
+                      handleSaveExam(exam);
+                      setActiveRunningExam(exam);
+                    }}
+                  />
+                )}
                 {activeTab === 'student_assistant' && (
                   <StudyAssistant
                     onSaveNote={handleSaveNote}
@@ -307,16 +318,25 @@ export default function App() {
                           Phòng Luyện Thi Chuẩn Ma Trận Hải Phòng (90 Phút)
                         </h2>
                         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                          Chọn một đề thi có sẵn bên dưới hoặc nhập mã đề thi từ thầy cô giáo để bắt đầu làm bài.
+                          Chọn một đề thi có sẵn bên dưới, tự tạo đề mới bằng AI, hoặc nhập mã đề thi từ thầy cô giáo để bắt đầu làm bài.
                         </p>
                       </div>
 
-                      <button
-                        onClick={() => setIsJoinModalOpen(true)}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition shadow-xs shrink-0"
-                      >
-                        Nhập Mã Phòng Thi (Access Code)
-                      </button>
+                      <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+                        <button
+                          onClick={() => setActiveTab('student_generate')}
+                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 border border-indigo-200 dark:border-indigo-800 transition shadow-xs"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
+                          Tự Tạo Đề AI
+                        </button>
+                        <button
+                          onClick={() => setIsJoinModalOpen(true)}
+                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition shadow-xs"
+                        >
+                          Nhập Mã Phòng Thi (Access Code)
+                        </button>
+                      </div>
                     </div>
 
                     {exams.filter((e) => e.is_published).length > 0 ? (

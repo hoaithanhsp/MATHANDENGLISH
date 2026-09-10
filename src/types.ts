@@ -148,12 +148,12 @@ export const HAIPHONG_MATRIX_RULES: MatrixRule[] = [
     strand_name_en: 'Algebra & Calculus',
     question_count: 9,
     topics: [
-      'Trigonometry (Lượng giác)',
-      'Sequences & Progressions (Dãy số, Cấp số cộng, Cấp số nhân)',
-      'Limits & Continuous Functions (Giới hạn & Hàm số liên tục)',
-      'Exponential & Logarithmic Functions (Mũ & Logarit)',
-      'System of Linear Inequalities in Two Variables (Hệ BPT bậc nhất 2 ẩn)',
-      'Quadratic Functions & Inequalities (Hàm số bậc hai)'
+      'System of Linear Inequalities in Two Variables & Linear Programming (Hệ BPT bậc nhất hai ẩn & Quy hoạch tuyến tính)',
+      'Quadratic Functions & Real-World Applications (Hàm số bậc hai & Ứng dụng thực tế)',
+      'Trigonometric Functions & Equations (Hàm số lượng giác, PT lượng giác)',
+      'Sequences & Progressions (Cấp số cộng, cấp số nhân, dãy số)',
+      'Limits of Sequences & Functions, Continuous Functions (Giới hạn dãy số, hàm số liên tục - Trọng tâm VDC Phần II)',
+      'Exponential & Logarithmic Functions, Parametric Equations (Hàm số mũ, logarit, PT/BPT mũ - logarit chứa tham số)'
     ]
   },
   {
@@ -163,9 +163,10 @@ export const HAIPHONG_MATRIX_RULES: MatrixRule[] = [
     question_count: 9,
     topics: [
       'Trigonometric Relations in Triangles (Hệ thức lượng trong tam giác)',
-      'Lines & Circles in the Coordinate Plane (PT đường thẳng & đường tròn)',
-      'Conic Sections: Ellipse, Hyperbola, Parabola (3 đường Conic)',
-      'Parallelism & Perpendicularity in Space (Quan hệ song song & vuông góc trong không gian)'
+      'Lines & Circles in the Coordinate Plane (PT đường thẳng & đường tròn Oxy)',
+      'Conic Sections: Ellipse, Hyperbola, Parabola & Real-World Models (Ba đường conic & Bài toán thực tế cầu vòm, phòng thì thầm)',
+      'Parallelism in Space (Quan hệ song song trong không gian)',
+      'Perpendicularity in Space (Quan hệ vuông góc trong không gian - đến bài đường thẳng vuông góc mặt phẳng: góc, thiết diện, khoảng cách)'
     ]
   },
   {
@@ -174,16 +175,17 @@ export const HAIPHONG_MATRIX_RULES: MatrixRule[] = [
     strand_name_en: 'Statistics, Probability, Discrete Math & Number Theory',
     question_count: 4,
     topics: [
-      'Combinatorics & Probability (Tổ hợp & Xác suất)',
-      'Grouped Data Statistics: Quartiles, Median (Số liệu ghép nhóm)',
-      'Pigeonhole Principle in Real-World Problems (Nguyên lý Dirichlet)',
-      'Invariance Principle & Monovariants (Nguyên lý bất biến)'
+      'Combinatorics & Classical Probability (Tổ hợp & Xác suất cổ điển)',
+      'Grouped Data Statistics: Quartiles, Median, Mode (Các số đặc trưng của mẫu số liệu ghép nhóm - GDPT 2018)',
+      'Pigeonhole Principle in Real-World Problems (Bài toán thực tế vận dụng nguyên lý Dirichlet chuồng - thỏ)',
+      'Invariance Principle & Monovariants (Bài toán thực tế vận dụng nguyên lý bất biến và đơn biến)'
     ]
   }
 ];
 
 export const DIFFICULTY_DISTRIBUTION = {
-  understanding: { count: 6, percentage: '27.3%', name_vi: 'Thông hiểu', name_en: 'Understanding' },
-  application: { count: 9, percentage: '40.9%', name_vi: 'Vận dụng', name_en: 'Application' },
-  advanced: { count: 7, percentage: '31.8%', name_vi: 'Vận dụng cao', name_en: 'Higher-order Thinking' }
+  understanding: { count: 8, percentage: '36.4%', name_vi: 'Thông hiểu (Phần I: 5 câu, Phần II: 3 câu)', name_en: 'Understanding' },
+  application: { count: 9, percentage: '40.9%', name_vi: 'Vận dụng (Phần I: 5 câu, Phần II: 4 câu)', name_en: 'Application' },
+  advanced: { count: 5, percentage: '22.7%', name_vi: 'Vận dụng cao (Phần I: 2 câu, Phần II: 3 câu)', name_en: 'Higher-order Thinking' }
 };
+

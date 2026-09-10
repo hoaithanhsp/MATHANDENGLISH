@@ -420,5 +420,144 @@ export const OLYMPIAD_VOCABULARY: VocabWord[] = [
     strand: 'statistics_discrete',
     definition: 'Probability of an event occurring, given that another event has already occurred: P(A|B) = P(A ∩ B) / P(B).',
     example: 'P(Ace | Red card) = 2/26 = 1/13.'
+  },
+  // ==========================================
+  // IV. THUẬT NGỮ CHUẨN MA TRẬN HẢI PHÒNG 2025
+  // ==========================================
+  {
+    id: 'v-46',
+    term_en: 'feasible region',
+    pronunciation: '/ˈfiːzəbəl ˈriːdʒən/',
+    term_vi: 'miền nghiệm (miền chấp nhận được)',
+    strand: 'algebra_calculus',
+    definition: 'The set of all possible points of an optimization problem that satisfy the problem constraints.',
+    example: 'The vertices of the feasible region of the linear system are (0, 0), (40, 0), (30, 20), (0, 30).'
+  },
+  {
+    id: 'v-47',
+    term_en: 'linear programming',
+    pronunciation: '/ˈlɪniər ˈproʊɡræmɪŋ/',
+    term_vi: 'quy hoạch tuyến tính',
+    strand: 'algebra_calculus',
+    definition: 'A method to achieve the best outcome in a mathematical model whose requirements are represented by linear relationships.',
+    example: 'Solve the linear programming problem to maximize weekly profit.'
+  },
+  {
+    id: 'v-48',
+    term_en: 'objective function',
+    pronunciation: '/əbˈdʒɛktɪv ˈfʌŋkʃən/',
+    term_vi: 'hàm mục tiêu',
+    strand: 'algebra_calculus',
+    definition: 'The real-valued function F(x, y) whose value is to be either minimized or maximized over the feasible region.',
+    example: 'Maximize the objective profit function F(x, y) = 40x + 50y.'
+  },
+  {
+    id: 'v-49',
+    term_en: 'recurrence relation',
+    pronunciation: '/rɪˈkɜːrəns rɪˈleɪʃən/',
+    term_vi: 'hệ thức truy hồi',
+    strand: 'algebra_calculus',
+    definition: 'An equation that recursively defines a sequence; each term is given as a function of the preceding terms.',
+    example: 'The sequence satisfies the recurrence u_{n+1} = (u_n + 1)/(u_n + 3).'
+  },
+  {
+    id: 'v-50',
+    term_en: 'squeeze theorem',
+    pronunciation: '/skwiːz ˈθɪərəm/',
+    term_vi: 'định lý kẹp (Sandwich Theorem)',
+    strand: 'algebra_calculus',
+    definition: 'If a_n ≤ u_n ≤ b_n for all n and lim a_n = lim b_n = L, then lim u_n = L.',
+    example: 'Use the Squeeze Theorem to calculate the limit of the sequence.'
+  },
+  {
+    id: 'v-51',
+    term_en: 'conic sections',
+    pronunciation: '/ˈkɑnɪk ˈsɛkʃənz/',
+    term_vi: 'ba đường conic (elip, hypebol, parabol)',
+    strand: 'geometry_measurement',
+    definition: 'Curves obtained by the intersection of the surface of a cone with a plane: ellipse, parabola, and hyperbola.',
+    example: 'The focal length of the ellipse is 2c.'
+  },
+  {
+    id: 'v-52',
+    term_en: 'whispering gallery',
+    pronunciation: '/ˈwɪspərɪŋ ˈɡæləri/',
+    term_vi: 'phòng thì thầm (ứng dụng tiêu điểm elip)',
+    strand: 'geometry_measurement',
+    definition: 'An elliptical room under which whispers at one focus can be heard clearly at the other focus due to reflection.',
+    example: 'Sound waves originating at one focus of an ellipse reflect to the opposite focus.'
+  },
+  {
+    id: 'v-53',
+    term_en: 'cross-section',
+    pronunciation: '/ˈkrɔːs ˌsɛkʃən/',
+    term_vi: 'thiết diện',
+    strand: 'geometry_measurement',
+    definition: 'The intersection of a solid three-dimensional figure with a cutting plane.',
+    example: 'Find the area of the cross-section of the pyramid formed by plane (P).'
+  },
+  {
+    id: 'v-54',
+    term_en: 'skew lines',
+    pronunciation: '/skjuː laɪnz/',
+    term_vi: 'hai đường thẳng chéo nhau trong không gian',
+    strand: 'geometry_measurement',
+    definition: 'Two lines in three-dimensional space that do not intersect and are not parallel.',
+    example: 'Calculate the distance between two skew lines in the cube.'
+  },
+  {
+    id: 'v-55',
+    term_en: 'pigeonhole principle',
+    pronunciation: '/ˈpɪdʒɪnhoʊl ˈprɪnsəpəl/',
+    term_vi: 'nguyên lý Dirichlet (nguyên lý chuồng - thỏ)',
+    strand: 'statistics_discrete',
+    definition: 'If n items are put into m containers, and n > m, then at least one container must contain more than one item.',
+    example: 'By the Pigeonhole Principle, among 17 points in an equilateral triangle of side 1, at least two are closer than 1/4.'
+  },
+  {
+    id: 'v-56',
+    term_en: 'invariant',
+    pronunciation: '/ɪnˈvɛriənt/',
+    term_vi: 'đại lượng bất biến',
+    strand: 'statistics_discrete',
+    definition: 'A quantity or property that remains unchanged when a specific sequence of operations is performed.',
+    example: 'The parity of the sum of numbers on the board is an invariant.'
+  },
+  {
+    id: 'v-57',
+    term_en: 'monovariant',
+    pronunciation: '/ˌmɑnəˈvɛriənt/',
+    term_vi: 'đại lượng đơn biến (bán bất biến)',
+    strand: 'statistics_discrete',
+    definition: 'A quantity that changes monotonically (strictly increases or decreases) with each step, proving termination.',
+    example: 'A positive integer monovariant that decreases strictly guarantees the process must terminate.'
+  },
+  {
+    id: 'v-58',
+    term_en: 'grouped data',
+    pronunciation: '/ɡrupt ˈdeɪtə/',
+    term_vi: 'mẫu số liệu ghép nhóm',
+    strand: 'statistics_discrete',
+    definition: 'Data that has been bundled together in categories or intervals rather than presented individually.',
+    example: 'Calculate the median and quartiles of the grouped data distribution.'
+  },
+  {
+    id: 'v-59',
+    term_en: 'quartile',
+    pronunciation: '/ˈkwɔːrtaɪl/',
+    term_vi: 'tứ phân vị (Q1, Q2, Q3)',
+    strand: 'statistics_discrete',
+    definition: 'Values that divide a list of numbers into four equal parts: Q1 (25%), Q2/Median (50%), Q3 (75%).',
+    example: 'The first quartile Q1 for the grouped data is 24.0.'
+  },
+  {
+    id: 'v-60',
+    term_en: 'mode of grouped data',
+    pronunciation: '/moʊd əv ɡrupt ˈdeɪtə/',
+    term_vi: 'mốt của mẫu số liệu ghép nhóm (Mo)',
+    strand: 'statistics_discrete',
+    definition: 'The estimated value that appears most frequently in a grouped dataset, calculated from the modal interval.',
+    example: 'The modal group is [160; 165) with frequency 14.'
   }
 ];
+

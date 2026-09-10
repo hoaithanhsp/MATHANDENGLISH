@@ -6,6 +6,7 @@
 
 import { Exam, Assignment, StudentStudyNote, Profile, UserRole, MistakeEntry, MistakeReason, VocabWord } from '../types';
 import { CHAPTER_STUDY_NOTES } from '../data/chapterStudyNotes';
+import { ALL_HAIPHONG_PRELOADED_EXAMS } from '../data/haiPhongExams';
 import {
   isFirebaseConfigured,
   fbSet,
@@ -86,11 +87,25 @@ export const storageService = {
     const cleaned = raw.filter(
       (e) => e && e.id !== 'hp-exam-sample-01' && e.access_code !== 'HP-MATH-2026'
     );
-    if (cleaned.length !== raw.length) {
+
+    // Tự động nạp các bộ đề thi chuẩn Hải Phòng (Mock 01, Mock 02, Code 136)
+    let modified = false;
+    for (const preloaded of ALL_HAIPHONG_PRELOADED_EXAMS) {
+      const exists = cleaned.some(
+        (e) => e.id === preloaded.id || e.access_code?.toUpperCase() === preloaded.access_code.toUpperCase()
+      );
+      if (!exists) {
+        cleaned.push(preloaded);
+        modified = true;
+      }
+    }
+
+    if (cleaned.length !== raw.length || modified) {
       writeLocal(STORAGE_KEYS.EXAMS, cleaned);
     }
     return cleaned;
   },
+
 
   mergeExams(currentList: Exam[], newList: Exam[]): Exam[] {
     const map = new Map<string, Exam>();
@@ -161,6 +176,12 @@ export const storageService = {
         console.error('Lỗi khi tra cứu đề thi trên Firebase:', err);
       }
     }
+
+    // 3. Fallback tra cứu trong danh sách đề thi chuẩn tích hợp sẵn
+    const preloaded = ALL_HAIPHONG_PRELOADED_EXAMS.find(
+      (e) => e.access_code?.toUpperCase() === norm
+    );
+    if (preloaded) return preloaded;
 
     return undefined;
   },

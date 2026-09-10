@@ -142,6 +142,17 @@ export const Navbar: React.FC<NavbarProps> = ({
             ) : (
               <>
                 <button
+                  onClick={() => setActiveTab('student_generate')}
+                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    activeTab === 'student_generate'
+                      ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-semibold'
+                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+                  Tự Tạo Đề AI
+                </button>
+                <button
                   onClick={() => setActiveTab('student_assistant')}
                   className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                     activeTab === 'student_assistant'
@@ -356,6 +367,17 @@ export const Navbar: React.FC<NavbarProps> = ({
             </>
           ) : (
             <>
+              <button
+                onClick={() => setActiveTab('student_generate')}
+                className={`px-2.5 py-1 text-xs whitespace-nowrap rounded-lg flex items-center gap-1 ${
+                  activeTab === 'student_generate'
+                    ? 'bg-indigo-600 text-white font-semibold'
+                    : 'text-slate-600 dark:text-slate-300'
+                }`}
+              >
+                <Sparkles className="w-3 h-3" />
+                Tạo Đề AI
+              </button>
               <button
                 onClick={() => setActiveTab('student_assistant')}
                 className={`px-2.5 py-1 text-xs whitespace-nowrap rounded-lg ${
