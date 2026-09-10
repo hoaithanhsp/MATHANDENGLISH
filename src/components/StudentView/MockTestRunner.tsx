@@ -364,7 +364,7 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
               <div className="my-4 p-4 rounded-2xl bg-teal-900/60 border border-teal-400/40 text-left backdrop-blur-md">
                 <div className="flex items-center gap-2 text-amber-300 text-xs font-bold mb-1">
                   <Award className="w-4 h-4" />
-                  <span>Lời Nhận Xét & Dặn Dò Của Thầy Cô:</span>
+                  <span>Lời nhận xét & dặn dò của thầy cô:</span>
                 </div>
                 <p className="text-xs sm:text-sm text-teal-100 italic leading-relaxed whitespace-pre-wrap">
                   "{submittedAssignment.teacher_feedback}"
@@ -467,7 +467,7 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
                     <div className="mb-3 p-3 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs">
                       <div className="flex items-center gap-1.5 font-bold text-[11px] text-teal-600 dark:text-teal-400 mb-1">
                         <Languages className="w-3.5 h-3.5" />
-                        <span>Bản dịch Tiếng Việt:</span>
+                        <span>Bản dịch tiếng Việt:</span>
                       </div>
                       <div className="text-slate-700 dark:text-slate-300 leading-relaxed italic">
                         <MathRenderer content={q.question_vi} />
@@ -507,9 +507,9 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
                         onChange={(e) => handleUpdateReason(mistakeId, e.target.value as MistakeReason)}
                         className="px-2 py-1 rounded bg-white dark:bg-slate-800 border border-rose-300 dark:border-rose-700 text-slate-800 dark:text-slate-200 font-medium"
                       >
-                        <option value="formula_error">Sai công thức Toán</option>
-                        <option value="language_misinterpretation">Dịch nhầm đề Tiếng Anh</option>
-                        <option value="careless_calculation">Tính toán ẩu / Nhầm số</option>
+                        <option value="formula_error">Sai công thức toán</option>
+                        <option value="language_misinterpretation">Dịch nhầm đề tiếng Anh</option>
+                        <option value="careless_calculation">Tính toán ẩu / nhầm số</option>
                         <option value="concept_gap">Chưa nắm vững lý thuyết</option>
                         <option value="other">Lý do khác</option>
                       </select>
@@ -673,7 +673,7 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
                   <div className="mb-6 p-3.5 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-sans">
                     <div className="flex items-center gap-1.5 font-bold text-[11px] text-teal-600 dark:text-teal-400 mb-1.5">
                       <Languages className="w-4 h-4" />
-                      <span>Bản dịch Tiếng Việt:</span>
+                      <span>Bản dịch tiếng Việt:</span>
                     </div>
                     <div className="text-slate-700 dark:text-slate-300 leading-relaxed italic">
                       <MathRenderer content={currentQ.question_vi} />

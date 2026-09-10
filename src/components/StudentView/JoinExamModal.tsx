@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { KeyRound, X, ArrowRight, AlertCircle, Loader2 } from 'lucide-react';
 import { Exam } from '../../types';
 
@@ -143,7 +143,7 @@ export const JoinExamModal: React.FC<JoinExamModalProps> = ({
                 </>
               ) : (
                 <>
-                  <span>Bắt Đầu Làm Bài</span>
+                  <span>Bắt đầu làm bài</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </>
               )}

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * LoginScreen — Màn hình đăng nhập Firebase Auth
  * Hiển thị danh sách tài khoản GV/HS, nhập email+password để đăng nhập
  */
@@ -72,7 +72,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
             Đội Tuyển HSG Toán Hải Phòng
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Hệ thống Dạy & Học Toán bằng Tiếng Anh • Chuẩn Ma Trận Sở GD&ĐT
+            Hệ thống dạy & học Toán bằng tiếng Anh • Chuẩn ma trận Sở GD&ĐT
           </p>
         </div>
 
@@ -146,7 +146,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
               ) : (
                 <>
                   <LogIn className="w-4 h-4" />
-                  Đăng Nhập
+                  Đăng nhập
                 </>
               )}
             </button>
@@ -155,7 +155,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
 
         {/* Footer */}
         <p className="text-center text-[10px] text-slate-400 mt-5">
-          Hệ Thống Dạy & Học Đội Tuyển HSG Toán THPT • Chuẩn Ma Trận Sở GD&ĐT Hải Phòng
+          Hệ thống dạy & học đội tuyển HSG Toán THPT • Chuẩn ma trận Sở GD&ĐT Hải Phòng
         </p>
         <p className="text-center text-[10px] text-slate-400/70 mt-1">
           Tác giả: <strong>Trần Hoài Thanh</strong> — THPT Khúc Thừa Dụ, TP.Hải Phòng — Zalo: 0348296773

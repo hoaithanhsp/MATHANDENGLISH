@@ -234,6 +234,34 @@ IV. MATHEMATICAL FORMATTING (KaTeX):
 - The JSON output must parse cleanly via JSON.parse().`;
 
 // ============================================================
+// SANITIZE LATEX IN JSON — CRITICAL FIX
+// Prevents JSON.parse from destroying LaTeX commands:
+//   \frac → \f = form feed (U+000C) + "rac"  ❌
+//   \beta → \b = backspace (U+0008) + "eta"   ❌
+//   \text → \t = tab (U+0009) + "ext"          ❌
+//   \right → \r = carriage return + "ight"     ❌
+//   \newcommand → \n = newline + "ewcommand"   ❌
+// ============================================================
+function sanitizeLatexInJson(jsonText: string): string {
+  // Protect already-escaped sequences (\\frac is valid JSON for literal \frac)
+  // but single \frac in JSON text would be misinterpreted.
+  // Strategy: ensure ALL \letter patterns are double-escaped for JSON.
+  // (?<!\\) = not already escaped, \\([a-zA-Z]) = backslash + letter
+  return jsonText.replace(/(?<!\\)\\([a-zA-Z])/g, '\\\\$1');
+}
+
+function safeJsonParse(text: string): any {
+  const sanitized = sanitizeLatexInJson(text);
+  try {
+    return JSON.parse(sanitized);
+  } catch {
+    // Fallback: strip markdown code fences and retry
+    const cleaned = sanitized.replace(/```json\s*|```/g, '').trim();
+    return JSON.parse(cleaned);
+  }
+}
+
+// ============================================================
 // HIGH-LEVEL API FUNCTIONS
 // ============================================================
 
@@ -309,13 +337,7 @@ CRITICAL: Return ONLY the valid JSON array. Ensure all JSON string quotes and La
     onModelSwitch,
   });
 
-  const rawText = result.text;
-  try {
-    return JSON.parse(rawText);
-  } catch {
-    const cleaned = rawText.replace(/```json\s*|```/g, '').trim();
-    return JSON.parse(cleaned);
-  }
+  return safeJsonParse(result.text);
 };
 
 
@@ -348,12 +370,7 @@ Return ONLY valid JSON matching this schema.`;
     onModelSwitch,
   });
 
-  const raw = result.text;
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return JSON.parse(raw.replace(/```json\s*|```/g, '').trim());
-  }
+  return safeJsonParse(result.text);
 };
 
 /** Generate quick topical practice quiz */
@@ -386,12 +403,7 @@ Output: JSON array of ${count} question objects.`;
     onModelSwitch,
   });
 
-  const raw = result.text;
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return JSON.parse(raw.replace(/```json\s*|```/g, '').trim());
-  }
+  return safeJsonParse(result.text);
 };
 
 /** Regenerate / Swap a single question with matching metadata */
@@ -437,13 +449,7 @@ Output JSON format (single question object):
     onModelSwitch,
   });
 
-  const raw = result.text;
-  let parsed: any;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    parsed = JSON.parse(raw.replace(/```json\s*|```/g, '').trim());
-  }
+  const parsed = safeJsonParse(result.text);
 
   // Ensure consistent identifiers
   return {
@@ -509,10 +515,5 @@ Return ONLY a JSON object with this exact schema:
     onModelSwitch,
   });
 
-  const raw = result.text;
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return JSON.parse(raw.replace(/```json\s*|```/g, '').trim());
-  }
+  return safeJsonParse(result.text);
 };

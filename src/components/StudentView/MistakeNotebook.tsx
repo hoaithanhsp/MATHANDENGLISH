@@ -116,11 +116,11 @@ export const MistakeNotebook: React.FC<MistakeNotebookProps> = ({ onPracticeMist
   const getReasonBadge = (reason?: MistakeReason) => {
     switch (reason) {
       case 'language_misinterpretation':
-        return { label: 'Dịch nhầm đề Tiếng Anh', color: 'bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300' };
+        return { label: 'Dịch nhầm đề tiếng Anh', color: 'bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300' };
       case 'formula_error':
-        return { label: 'Sai công thức Toán', color: 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300' };
+        return { label: 'Sai công thức toán', color: 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300' };
       case 'careless_calculation':
-        return { label: 'Tính toán ẩu / Nhầm số', color: 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300' };
+        return { label: 'Tính toán ẩu / nhầm số', color: 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300' };
       case 'concept_gap':
         return { label: 'Hổng lý thuyết', color: 'bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300' };
       default:
@@ -150,7 +150,7 @@ export const MistakeNotebook: React.FC<MistakeNotebookProps> = ({ onPracticeMist
             className="px-5 py-3 rounded-2xl bg-white text-rose-900 hover:bg-rose-50 font-bold text-xs shadow-lg transition flex items-center gap-2 disabled:opacity-40"
           >
             <Play className="w-4 h-4 text-rose-600 fill-current" />
-            Luyện Lại Câu Chưa Hiểu ({mistakes.filter((m) => !m.mastered).length})
+            Luyện lại câu chưa hiểu ({mistakes.filter((m) => !m.mastered).length})
           </button>
           <button
             onClick={() => handleStartPractice(false)}
@@ -185,7 +185,7 @@ export const MistakeNotebook: React.FC<MistakeNotebookProps> = ({ onPracticeMist
           </div>
 
           <div className="p-4 rounded-2xl bg-white dark:bg-slate-800 border border-rose-200 dark:border-rose-900 shadow-xs">
-            <span className="text-xs text-rose-600 dark:text-rose-400 block font-semibold">Sai công thức Toán</span>
+            <span className="text-xs text-rose-600 dark:text-rose-400 block font-semibold">Sai công thức toán</span>
             <div className="text-2xl font-black text-rose-700 dark:text-rose-300 mt-1 font-mono">
               {reasonCounts.formula_error}
             </div>
@@ -193,7 +193,7 @@ export const MistakeNotebook: React.FC<MistakeNotebookProps> = ({ onPracticeMist
           </div>
 
           <div className="p-4 rounded-2xl bg-white dark:bg-slate-800 border border-amber-200 dark:border-amber-900 shadow-xs">
-            <span className="text-xs text-amber-600 dark:text-amber-400 block font-semibold">Tính toán ẩu / Nhầm số</span>
+            <span className="text-xs text-amber-600 dark:text-amber-400 block font-semibold">Tính toán ẩu / nhầm số</span>
             <div className="text-2xl font-black text-amber-700 dark:text-amber-300 mt-1 font-mono">
               {reasonCounts.careless_calculation}
             </div>
@@ -325,7 +325,7 @@ export const MistakeNotebook: React.FC<MistakeNotebookProps> = ({ onPracticeMist
                 {q.question_vi && (
                   <div className="mb-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 text-xs">
                     <div className="flex items-center gap-1 text-teal-600 dark:text-teal-400 font-bold text-[11px] mb-1">
-                      <Languages className="w-3.5 h-3.5" /> Bản dịch Tiếng Việt:
+                      <Languages className="w-3.5 h-3.5" /> Bản dịch tiếng Việt:
                     </div>
                     <div className="italic text-slate-700 dark:text-slate-300">
                       <MathRenderer content={q.question_vi} />
@@ -363,9 +363,9 @@ export const MistakeNotebook: React.FC<MistakeNotebookProps> = ({ onPracticeMist
                           }}
                           className="px-2 py-1 rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold"
                         >
-                          <option value="formula_error">Sai công thức Toán</option>
-                          <option value="language_misinterpretation">Dịch nhầm đề Tiếng Anh</option>
-                          <option value="careless_calculation">Tính toán ẩu / Nhầm số</option>
+                          <option value="formula_error">Sai công thức toán</option>
+                          <option value="language_misinterpretation">Dịch nhầm đề tiếng Anh</option>
+                          <option value="careless_calculation">Tính toán ẩu / nhầm số</option>
                           <option value="concept_gap">Hổng lý thuyết</option>
                           <option value="other">Lý do khác</option>
                         </select>

@@ -253,7 +253,7 @@ export const ReviewSection: React.FC = () => {
                                 <div className="p-2.5 rounded-lg bg-slate-100/80 dark:bg-slate-850 border border-slate-200 dark:border-slate-700 text-xs">
                                   <div className="flex items-center gap-1 font-semibold text-[11px] text-teal-600 dark:text-teal-400 mb-1">
                                     <Languages className="w-3.5 h-3.5" />
-                                    <span>Bản dịch Tiếng Việt:</span>
+                                    <span>Bản dịch tiếng Việt:</span>
                                   </div>
                                   <div className="text-slate-600 dark:text-slate-300 italic leading-relaxed">
                                     <MathRenderer content={q.question_vi} />

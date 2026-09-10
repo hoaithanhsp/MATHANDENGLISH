@@ -241,7 +241,7 @@ export const OlympicProofStudio: React.FC = () => {
             {selectedProblem.statement_vi && (
               <div>
                 <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
-                  Bản dịch Tiếng Việt:
+                  Bản dịch tiếng Việt:
                 </span>
                 <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed italic p-3 rounded-xl bg-slate-50/60 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700">
                   <MathRenderer content={selectedProblem.statement_vi} />
