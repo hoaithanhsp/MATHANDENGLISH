@@ -1,0 +1,566 @@
+TOTAL PAGES: 10
+
+=== PAGE 1 ===
+Phân Tích Đề Thi HSG Toán THPT Tiếng Anh Hải Phòng &
+Bộ Tài Liệu Ôn Luyện
+Tài liệu này phân tích chi tiết cấu trúc đề thi Kỳ thi chọn HSG thành phố môn Toán 
+và các môn Khoa học tự nhiên bằng tiếng Anh – Môn Toán (THPT) do Sở GD&ĐT 
+Hải Phòng ban hành năm 2025, đồng thời tổng hợp bộ tài liệu ôn luyện theo từng 
+mạch kiến thức, nội dung và mức độ khó.
+Cấu trúc 2 phần:
+Phần I – Trắc nghiệm nhiều phương án lựa chọn: 12 câu
+Phần II – Trắc nghiệm trả lời ngắn: 10 câu
+3 mạch kiến thức chính:
+1. Đại số – Giải tích
+2. Hình học và đo lường
+3. Thống kê – Xác suất – Rời rạc – Số học
+1. Tổng quan kỳ thi
+Tiêu chí
+Quy định
+Tên kỳ thi
+Chọn HSG thành phố môn Toán và các môn KHTN bằng tiếng Anh
+Cơ quan ban
+hành
+UBND TP Hải Phòng – Sở GD&ĐT
+Phạm vi kiến
+thức
+Chương trình Toán THCS + Toán lớp 10, 11 (GDPT 2018)
+Hình thức thi
+22 câu hỏi trắc nghiệm, gồm 02 phần
+Thời gian làm
+bài
+90 phút
+Thang điểm
+10 điểm
+Đặc thù
+Câu hỏi không trùng lặp với đề thi Sở GD&ĐT Hải Phòng đã công bố
+trong 3 năm gần nhất
+
+
+=== PAGE 2 ===
+2. Ma trận cấu trúc đề thi
+Phần I – 12 câu trắc nghiệm nhiều phương án lựa chọn
+Mạch kiến
+thức
+Nội dung
+Th
+ôn
+g
+hiể
+u
+Vậ
+n
+dụ
+ng
+Vận
+dụn
+g
+cao
+T
+ổ
+n
+g
+Đại số –
+Giải tích
+Hệ BPT bậc nhất hai ẩn ; hàm số bậc hai ; hàm số
+lượng giác, PT lượng giác ; cấp số và dãy số ; giới
+hạn dãy số – hàm số, hàm số liên tục ; hàm số mũ
+– logarit, PT mũ và logarit
+2
+2
+1
+5
+Hình học
+và đo
+lường
+Hệ thức lượng trong tam giác ; PT đường thẳng,
+đường tròn, ba đường conic ; quan hệ song song
+trong không gian ; quan hệ vuông góc trong
+không gian (đến bài đường thẳng vuông góc với
+mặt phẳng)
+2
+2
+1
+5
+Thống kê
+– Xác suất
+– Rời rạc –
+Số học
+Tổ hợp, xác suất ; các số đặc trưng của mẫu số
+liệu ghép nhóm ; bài toán thực tế vận dụng
+nguyên lý Dirichlet, nguyên lý bất biến
+1
+1
+0
+2
+Phần II – 10 câu trắc nghiệm trả lời ngắn
+Mạch kiến thức
+Nội dung
+Thông
+hiểu
+Vận
+dụng
+Vận
+dụng cao
+Tổn
+g
+Đại số – Giải tích
+(cùng các chủ đề
+như Phần I)
+1
+1
+2
+4
+Hình học và đo lường
+(cùng các chủ đề
+như Phần I)
+1
+2
+1
+4
+Thống kê – Xác suất – Rời
+rạc – Số học
+(cùng các chủ đề
+như Phần I)
+1
+1
+0
+2
+Tổng hợp toàn đề (22 câu)
+Mức độ
+Phần I
+Phần II
+Tổng
+Tỷ trọng
+
+
+=== PAGE 3 ===
+Lưu ý : File cấu trúc không nêu phân bổ điểm chi tiết từng câu. Khi luyện tập, nên 
+coi mỗi câu có trọng số tương đương (tổng 10 điểm cho 22 câu), đồng thời ưu tiên 
+độ chính xác tuyệt đối ở Phần II vì câu trả lời ngắn đòi hỏi kết quả số chính xác, 
+không có điểm thành phần theo hướng dẫn chấm tự luận.
+Nội dung và dạng bài :
+Phân bố mức độ : Phần I có 2 TH + 2 VD + 1 VDC; Phần II có 1 TH + 1 VD + 2 VDC — 
+đây là mạch duy nhất có tới 2 câu vận dụng cao ở phần trả lời ngắn, thường là dãy 
+số/giới hạn và PT mũ – logarit chứa tham số.
+Thông hiểu
+5
+3
+8
+~36%
+Vận dụng
+5
+4
+9
+~41%
+Vận dụng cao
+2
+3
+5
+~23%
+3. Phân tích mạch kiến thức & mức độ khó
+3.1. Mạch Đại số – Giải tích (9 câu, chiếm ~41%)
+Chủ đề
+Lớ
+p
+Dạng bài điển hình
+Hệ bất phương trình
+bậc nhất hai ẩn
+10
+Biểu diễn miền nghiệm ; bài toán quy hoạch tuyến tính
+thực tế (tối ưu lợi nhuận, chi phí, nguyên liệu)
+Hàm số bậc hai
+10
+Khảo sát đồ thị ; giá trị lớn nhất/nhỏ nhất ; ứng dụng
+thực tế (cầu vòm, quỹ đạo ném)
+Hàm số lượng giác,
+PT lượng giác
+11
+Giá trị lớn nhất – nhỏ nhất của hàm lượng giác ; PT lượng
+giác nâng cao (đặt ẩn phụ, chứa tham số, chứa căn)
+Cấp số và dãy số
+11
+Cấp số cộng/nhân ; tìm số hạng tổng quát từ công thức
+truy hồi ; quy nạp
+Giới hạn dãy số, hàm
+số, hàm số liên tục
+11
+Tính giới hạn bằng định nghĩa, định lý kẹp ; xét tính liên
+tục ; giới hạn dãy tổng
+Hàm số mũ, logarit,
+PT mũ và logarit
+11
+Biến đổi mũ – logarit ; PT, BPT mũ – logarit chứa tham số
+; bài toán lãi suất/tăng trưởng
+
+
+=== PAGE 4 ===
+Trọng tâm khó : Dãy số – giới hạn (số hạng tổng quát, giới hạn dãy truy hồi, dãy sinh bởi 
+phương trình) và PT mũ – logarit chứa tham số là 2 "bài toán phân loại" chủ lực của 
+mạch này.
+Nội dung và dạng bài :
+Phân bố mức độ : Phần I có 2 TH + 2 VD + 1 VDC; Phần II có 1 TH + 2 VD + 1 VDC. 
+Mạch này chiếm tỷ trọng lớn và đòi hỏi kỹ năng dựng hình, suy luận không gian.
+Trọng tâm khó : Bài toán thực tế Oxy (conic) và các bài toán tổng hợp HHKG (tính góc, 
+chứng minh vuông góc) thường là câu vận dụng cao.
+Nội dung và dạng bài :
+3.2. Mạch Hình học và đo lường (9 câu, chiếm ~41%)
+Chủ đề
+L
+ớ
+p
+Dạng bài điển hình
+Hệ thức lượng trong tam
+giác
+1
+0
+Định lý sin, cos, công thức diện tích ; bài toán thực
+tế đo đạc
+PT đường thẳng, đường
+tròn, ba đường conic
+1
+0
+Viết PT đường thẳng/đường tròn ; nhận dạng elip –
+hypebol – parabol ; bài toán thực tế Oxy (cầu, quỹ
+đạo, gương)
+Quan hệ song song trong
+không gian
+1
+1
+Chứng minh song song; tìm giao tuyến, giao điểm,
+thiết diện
+Quan hệ vuông góc trong
+không gian (đến đường
+thẳng ⊥ mặt phẳng)
+1
+1
+Chứng minh đường thẳng vuông góc mặt phẳng ;
+góc giữa đường và mặt (giới hạn kiến thức : đến bài
+đường thẳng vuông góc với mặt phẳng)
+3.3. Mạch Thống kê – Xác suất – Rời rạc – Số học (4 câu, chiếm ~18%)
+Chủ đề
+Lớp
+Dạng bài điển hình
+Tổ hợp, xác suất
+10,
+11
+Quy tắc đếm, hoán vị – chỉnh hợp – tổ hợp ;
+xác suất cổ điển ; bài toán đếm nâng cao
+Các số đặc trưng của mẫu số
+liệu ghép nhóm
+11
+Số trung bình, trung vị, mốt, tứ phân vị cho
+mẫu ghép nhóm
+Bài toán thực tế vận dụng
+nguyên lý Dirichlet, nguyên lý
+bất
+
+
+=== PAGE 5 ===
+Phân bố mức độ : Cả 2 phần đều là 1 TH + 1 VD — không có câu vận dụng cao riêng 
+trong mạch này, nhưng câu Dirichlet/bất biến thực chất có độ khó cao (nằm ở mức "vận 
+dụng" theo ma trận nhưng thường là câu "đinh" của đề).
+1. Thông hiểu (8 câu) là "nền điểm" : phủ đều cả 3 mạch — cần nắm chắc kiến thức 
+chuẩn SGK 10, 11 và cả phần Toán THCS (đặc biệt số học, tổ hợp cơ bản) vì phạm vi 
+kiến thức bao gồm cả THCS.
+2. Vận dụng (9 câu) quyết định giải thưởng : tập trung luyện bài toán thực tế (quy 
+hoạch tuyến tính, conic ứng dụng, xác suất thực tế) — đây là "thương hiệu" của đề thi 
+Hải Phòng.
+3. Vận dụng cao (5 câu) phân loại top : 2 câu dãy số – giới hạn, 1 câu mũ – logarit, 1 
+câu HHKG, 1 câu hình Oxy/conic — cần tài liệu bồi dưỡng HSG chuyên sâu.
+4. Thi bằng tiếng Anh: ngoài kiến thức, cần vốn từ vựng toán học tiếng Anh chuẩn (xem 
+mục 7) và luyện đề song ngữ.
+5. Đề không trùng 3 năm gần : phải luyện đề các năm cũ để nắm "gu" ra đề, đồng thời 
+luyện thêm đề minh họa/đề mẫu mới nhất của Sở.
+biế
+n
+THC
+S+
+Chứng minh tồn tại bằng nguyên lý Dirichlet (chuồng – thỏ) ; bài toán trò
+chơi, bàn cờ, phép biến đổi dùng bất biến
+4. Nhận định chiến lược
+5. Lộ trình ôn luyện đề xuất (12 tuần)
+Giai đoạn
+Thời
+gian
+Nội dung
+1. Nền
+tảng
+Tuầ
+n 1–
+3
+Củng cố toàn bộ kiến thức THCS + Toán 10, 11 theo ma trận ; hệ
+thống hóa lý thuyết và công thức ; học thuật ngữ tiếng Anh
+2. Chuyên
+sâu theo
+mạch
+Tuầ
+n 4–
+8
+Luyện chuyên đề nâng cao : dãy số – giới hạn, PT lượng giác, mũ
+– logarit, HHKG, tổ hợp – xác suất, Dirichlet – bất biến (mỗi tuần
+1–2 chuyên đề, kèm đề HSG các tỉnh)
+
+
+=== PAGE 6 ===
+3. Tổng
+luyện đề
+Tuần
+9–12
+Làm 2–3 đề/tuần : đề Hải Phòng các năm, đề minh họa, đề mẫu ;
+canh giờ 90 phút ; rà soát lỗi và bổ sung lỗ hổng
+6. Bộ tài liệu ôn luyện theo mạch kiến thức
+6.1. Đề thi & đề mẫu (ưu tiên hàng đầu)
+Tài liệu
+Nguồn
+Đề thi HSG Toán tiếng Anh THPT Hải Phòng năm 2023
+("Mathematics and Science Competition in English – Test:
+Mathematics, Upper Secondary")
+happymathclub.v
+n
+Đề chọn HSG Toán THPT 2024–2025 Sở GD&ĐT Hải Phòng (12 TN
+nhiều lựa chọn + 4 đúng sai + 6 trả lời ngắn, có đáp án mã đề
+101–102)
+toanmath.com –
+PDF / trang giới
+thiệu
+Đề minh họa thi HSG Toán THPT 2024–2025 Sở GD&ĐT Hải
+Phòng (có đáp án/hướng dẫn giải)
+thi247.com
+Đề tham khảo HSG Toán 12 năm 2024–2025 Sở GD&ĐT Hải
+Phòng (cấu trúc 3 phần)
+toanmath.com
+Đề HSG Toán THPT Hải Phòng 2022–2023 (tự luận 8 bài, 180 phút
+— dạng cũ, tham khảo để nắm nội dung trọng tâm)
+toanmath.com
+Đề khảo sát đội tuyển HSG Toán THPT Đồ Sơn – Hải Phòng 2025–
+2026 (cấu trúc chuẩn mới, có đáp án)
+toanmath.com
+Tổng hợp bộ đề HSG khối 12 Hải Phòng 2024–2025 (đáp án &
+hướng dẫn chấm)
+hoangquy.net
+Đề chọn HSG Quốc gia môn Toán THPT 2025–2026 (chuẩn độ khó
+cao nhất để thử thách)
+toanmath.com
+Tuyển tập đề thi HSG Toán 12 các trường/Sở toàn quốc (kho đề
+phong phú)
+toanmath.com/de
+-thi-hsg-toan-12
+
+
+=== PAGE 7 ===
+6.2. Đại số – Giải tích
+Chuyên đề
+Nguồn
+Chuyên đề dãy số bồi dưỡng HSG (số hạng tổng quát, truy hồi, PT
+đặc trưng, thế lượng giác)
+thuvienhoclieu.c
+om
+Chuyên đề giới hạn dãy số bồi dưỡng HSG (định nghĩa, định lý
+kẹp, các dạng khác)
+thuvienhoclieu.c
+om
+Tài liệu bồi dưỡng HSG – Olympic chuyên đề dãy số (63 trang,
+Nguyễn Thanh Tâm)
+toanmath.com
+Chuyên đề giới hạn dãy số bồi dưỡng HSG Toán THPT (51 trang,
+Cao Hoàng Hạ)
+toanmath.com
+Tổng hợp các bài toán dãy số – giới hạn trong đề thi HSG các tỉnh,
+thành phố (PDF)
+cuuduongthanco
+ng.com
+Bài toán thực tế quy về hệ BPT bậc nhất 2 ẩn (quy hoạch tuyến
+tính, 22 trang, Nguyễn Bá Hoàng)
+toanmath.com ·
+PDF
+Vận dụng hệ BPT bậc nhất hai ẩn giải bài toán quy hoạch tuyến
+tính (lý thuyết + bài tập)
+vted.vn
+Chuyên đề phương trình lượng giác bồi dưỡng HSG Toán 11 (41
+trang)
+thuvienhoclieu.c
+om
+Giải toán lượng giác nâng cao 11 (40 dạng toán, có lời giải)
+sachhoc.com
+Bài tập mũ và logarit vận dụng cao có lời giải chi tiết (56 trang,
+Nguyễn Xuân Chung)
+toanmath.com
+Trắc nghiệm PT mũ – logarit mức độ vận dụng và vận dụng cao
+(Hoàng Xuân Nhàn)
+mathvn.com
+Chuyên đề mũ và logarit – Đặng Việt Đông (506 trang, đầy đủ các
+dạng)
+sachhoc.com
+6.3. Hình học và đo lường
+Chuyên đề
+Nguồn
+Tài liệu HHKG lớp 11 (255 trang : đại cương, quan hệ song song, quan
+hệ vuông góc)
+toanmath.co
+m
+
+
+=== PAGE 8 ===
+Chuyên đề trọng điểm bồi dưỡng HSG hình học không gian – Nguyễn
+Quang Sơn
+toanmath.co
+m
+Chuyên đề quan hệ song song trong không gian Toán 11 (79 trang)
+toanmath.co
+m
+Tuyển tập tài liệu quan hệ vuông góc trong không gian Toán 11 (đủ 4
+mức độ)
+toanmath.co
+m
+Bài tập quan hệ song song – vuông góc trong không gian (kèm file
+PDF)
+mathvn.com
+Tuyển tập 28 bài toán thực tế Oxy : đường thẳng, đường tròn, ba
+đường conic (Toán 10 mới)
+toanthaycu.c
+om
+Bài toán thực tế về ba đường conic có đáp án (Toán 10)
+vndoc.com
+Bài tập vận dụng – vận dụng cao phương trình đường tròn Toán 10
+toanthaycu.c
+om
+Tài liệu ba đường conic Toán 10 KNTT (lý thuyết + bài tập)
+thi247.com
+6.4. Thống kê – Xác suất – Rời rạc – Số học
+Chuyên đề
+Nguồn
+Chuyên đề nguyên lý Dirichlet (lý thuyết + bài tập vận dụng)
+tailieumont
+oan.com
+Ứng dụng nguyên lý Dirichlet trong giải toán THCS (94 trang : tổ hợp,
+số học, hình học)
+thcs.toanm
+ath.com
+Sách "Các nguyên lý cơ bản của toán học và áp dụng trong nhà trường
+phổ thông" (Dirichlet, cực hạn, bất biến, ~500 bài toán)
+sachgiaodu
+c.edu.vn
+Chuyên đề xác suất ôn thi HSG lớp 11–12 (các dạng toán tổ hợp xác
+suất)
+sachhoc.co
+m
+Bài tập trắc nghiệm tổ hợp và xác suất nâng cao có lời giải chi tiết
+(Strong Team VD–VDC)
+toanmath.c
+om
+Bài tập tổ hợp – xác suất vận dụng cao có lời giải chi tiết Toán 11 (101
+trang)
+studocu.vn
+110 câu trắc nghiệm các số đặc trưng đo xu thế trung tâm mẫu số liệu
+ghép nhóm (30 trang, giải chi tiết)
+thuvienhocl
+ieu.com
+
+
+=== PAGE 9 ===
+Chuyên đề các số đặc trưng đo xu thế trung tâm cho mẫu số liệu
+ghép nhóm Toán 11 (42 trang)
+toanmath.com
+Kho tài liệu bồi dưỡng HSG Toán tổng hợp (20 chuyên đề, đề HSG
+các tỉnh, Olympic 10–11)
+cuuduongthanco
+ng.com
+6.5. Tài liệu tiếng Anh (olympiad — phù hợp thi bằng tiếng Anh)
+Tài liệu
+Nội dung chính
+Nguồn
+Combinatorics Lecture 1:
+Pigeonhole Principle – Yufei
+Zhao (MIT)
+Nguyên lý chuồng – thỏ (Dirichlet)
+trình độ Olympic, tiếng Anh
+yufeizhao.c
+om
+Invariants and Monovariants –
+Yufei Zhao (IMO Winter Camp)
+Nguyên lý bất biến và đơn điệu
+(monovariant), chuẩn đội tuyển IMO
+web.mit.ed
+u
+Olympiad Combinatorics –
+Pranav A. Sriram
+Toàn bộ tổ hợp Olympic : pigeonhole,
+invariants, đếm, đồ thị
+archive.org
+(PDF)
+Problem-Solving Methods in
+Combinatorics – Pablo
+Soberón (Springer)
+Chương riêng về Pigeonhole Principle
+và Invariants, có lời giải đầy đủ
+dokumen.p
+ub ·
+Springer
+The Pigeonhole Principle –
+Valentin Goranko (Wits)
+Chuyên đề chuồng – thỏ kèm bài tập
+olympiad
+wmc.ms.wit
+s.ac.za
+OTIS Excerpts – Evan Chen
+(202 bài toán + lời giải)
+Bộ đề đại số, tổ hợp, số học phân loại
+web.evanc
+hen.cc
+Mathematics via Problems –
+Combinatorics (MCCME,
+skopenkov)
+Hệ thống bài tập tổ hợp sơ cấp – trung
+cấp
+users.mcc
+me.ru
+Problem Solving in Math
+(Math 43900) – David Galvin
+Ghi chú bài giảng gồm pigeonhole,
+invariant, các kỹ thuật cơ bản
+www3.nd.e
+du
+AoPS Wiki: Olympiad books
+(danh sách sách khuyến nghị)
+103 Trigonometry Problems
+(Andreescu–Feng), EGMO (Evan Chen),
+sách dãy số, mũ – logarit
+artofproble
+msolving.c
+om
+AoPS Wiki : Mathematics
+books (đại số, lượng giác nâng
+cao)
+114 Exponent and Logarithm Problems,
+120 Awesome Algebra Problems…
+artofproble
+msolving.c
+om
+
+
+=== PAGE 10 ===
+1. Học thuật ngữ tiếng Anh song song kiến thức: hệ bất phương trình (system of linear 
+inequalities), miền nghiệm (feasible region), quy hoạch tuyến tính (linear 
+programming), cấp số cộng/nhân (arithmetic/geometric progression), giới hạn (limit), 
+hàm số liên tục (continuous function), mũ – logarit (exponential – logarithmic 
+functions), đường conic (conic sections), quan hệ vuông góc (perpendicularity), xác 
+suất (probability), nguyên lý Dirichlet (pigeonhole principle), bất biến (invariant), mẫu 
+số liệu ghép nhóm (grouped data), tứ phân vị (quartile).
+2. Luyện đề gốc tiếng Anh: đề thi chính thức của kỳ thi này ra hoàn toàn bằng tiếng 
+Anh (như đề "Mathematics and Science Competition in English" năm 2023 của Hải 
+Phòng) — nên làm quen với cách diễn đạt đề bài bằng tiếng Anh để tránh hiểu sai 
+yêu cầu.
+3. Câu trả lời ngắn (Phần II) : trả lời bằng số/kết quả chính xác ; luyện kỹ năng tính 
+nhanh, ước lượng và kiểm tra lại để tránh sai số làm tròn.
+Đề thi HSG Toán THPT tiếng Anh Hải Phòng theo cấu trúc 2025 có diện kiến thức rộng 
+(THCS + lớp 10, 11) nhưng phân bổ rất rõ ràng : 41% Đại số – Giải tích, 41% Hình học – 
+đo lường, 18% Thống kê – Xác suất – Rời rạc – Số học ; ~77% số câu ở mức thông hiểu – 
+vận dụng, ~23% ở mức vận dụng cao. Chiến lược tối ưu là lấy chắc 8 câu thông hiểu, 
+chinh phục 9 câu vận dụng bằng các bài toán thực tế, và tập trung bồi dưỡng chuyên 
+sâu 5 câu vận dụng cao (dãy số – giới hạn, mũ – logarit tham số, HHKG, conic) bằng các 
+tài liệu chuyên đề và đề thi các năm đã tổng hợp ở trên.
+7. Lưu ý đặc thù thi bằng tiếng Anh
+8. Kết luận
+
+
