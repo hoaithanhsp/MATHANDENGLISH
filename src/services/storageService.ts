@@ -37,7 +37,7 @@ const DEFAULT_STUDENT: Profile = {
   id: 'student-hp-01',
   email: 'student.olympiad@haiphong.edu.vn',
   role: 'student',
-  full_name: 'Học sinh',
+  full_name: 'Phạm Quang Huy',
   created_at: new Date().toISOString(),
 };
 

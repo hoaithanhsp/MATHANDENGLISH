@@ -100,6 +100,10 @@ export const fbSignUp = async (email: string, password: string, displayName: str
   return result.user;
 };
 
+export const fbUpdateProfile = async (user: User, profile: { displayName?: string }): Promise<void> => {
+  await updateProfile(user, profile);
+};
+
 export const fbSignOut = async (): Promise<void> => {
   const auth = getFirebaseAuth();
   await signOut(auth);

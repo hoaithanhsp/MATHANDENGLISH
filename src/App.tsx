@@ -18,7 +18,8 @@ import { SchemaModal } from './components/SchemaModal';
 import { SettingsModal } from './components/SettingsModal';
 import { VisitCounter } from './components/VisitCounter';
 import { storageService } from './services/storageService';
-import { onAuthChanged, logout, getProfileFromDb, getRoleFromEmail } from './services/authService';
+import { onAuthChanged, logout, getProfileFromDb, getRoleFromEmail, findAccountByEmail } from './services/authService';
+import { fbSet } from './lib/firebase';
 import { Exam, Assignment, StudentStudyNote, Profile, UserRole, Question } from './types';
 import { Loader2 } from 'lucide-react';
 
@@ -56,15 +57,19 @@ export default function App() {
       if (firebaseUser) {
         // User đã đăng nhập → lấy profile từ DB
         let profile = await getProfileFromDb(firebaseUser.uid);
-        if (!profile) {
-          // Fallback: tạo profile từ Firebase User
+        const predefined = findAccountByEmail(firebaseUser.email || '');
+
+        // Nếu chưa có profile hoặc tên trong DB khác tên mới cập nhật của danh sách HS
+        if (!profile || (predefined && profile.full_name !== predefined.displayName)) {
           profile = {
             id: firebaseUser.uid,
             email: firebaseUser.email || '',
             role: getRoleFromEmail(firebaseUser.email || ''),
-            full_name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
-            created_at: new Date().toISOString(),
+            full_name: predefined?.displayName || firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+            created_at: profile?.created_at || new Date().toISOString(),
           };
+          // Cập nhật lại vào Realtime Database
+          await fbSet(`profiles/${firebaseUser.uid}`, profile);
         }
         setAuthProfile(profile);
         setCurrentUser(profile);

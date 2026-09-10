@@ -10,11 +10,11 @@
  */
 
 import { User } from 'firebase/auth';
-import { fbSignIn, fbSignUp, fbSignOut, fbOnAuthChanged, fbSet, fbGet } from '../lib/firebase';
+import { fbSignIn, fbSignUp, fbSignOut, fbOnAuthChanged, fbSet, fbGet, fbUpdateProfile } from '../lib/firebase';
 import { Profile, UserRole } from '../types';
 
 // ============================================================
-// PREDEFINED ACCOUNTS (1 GV + 8 HS)
+// PREDEFINED ACCOUNTS (1 GV + 9 HS ĐỘI TUYỂN HẢI PHÒNG)
 // ============================================================
 export interface AccountInfo {
   email: string;
@@ -31,53 +31,59 @@ export const PREDEFINED_ACCOUNTS: AccountInfo[] = [
     displayName: 'Trần Hoài Thanh (THPT Khúc Thừa Dụ, TP.Hải Phòng)',
     role: 'teacher',
   },
-  // === 8 HỌC SINH ===
+  // === 9 HỌC SINH ĐỘI TUYỂN ===
   {
     email: 'hs01@hpmath.edu.vn',
     password: 'HS01@hpmath',
-    displayName: 'Trần Minh Quang',
+    displayName: 'Phạm Quang Huy',
     role: 'student',
   },
   {
     email: 'hs02@hpmath.edu.vn',
     password: 'HS02@hpmath',
-    displayName: 'Nguyễn Thu Hà',
+    displayName: 'Nguyễn Văn Minh',
     role: 'student',
   },
   {
     email: 'hs03@hpmath.edu.vn',
     password: 'HS03@hpmath',
-    displayName: 'Lê Hoàng Anh',
+    displayName: 'Nguyễn Văn Tuấn Anh',
     role: 'student',
   },
   {
     email: 'hs04@hpmath.edu.vn',
     password: 'HS04@hpmath',
-    displayName: 'Phạm Đức Mạnh',
+    displayName: 'Vũ Hoàng Duy',
     role: 'student',
   },
   {
     email: 'hs05@hpmath.edu.vn',
     password: 'HS05@hpmath',
-    displayName: 'Vũ Thị Mai Linh',
+    displayName: 'Lê Thị Huyền',
     role: 'student',
   },
   {
     email: 'hs06@hpmath.edu.vn',
     password: 'HS06@hpmath',
-    displayName: 'Đỗ Quốc Bảo',
+    displayName: 'Bùi Tố Uyên',
     role: 'student',
   },
   {
     email: 'hs07@hpmath.edu.vn',
     password: 'HS07@hpmath',
-    displayName: 'Bùi Khánh Ngọc',
+    displayName: 'Trần Thị Anh Thư',
     role: 'student',
   },
   {
     email: 'hs08@hpmath.edu.vn',
     password: 'HS08@hpmath',
-    displayName: 'Hoàng Trung Kiên',
+    displayName: 'Vũ Mạnh Cường',
+    role: 'student',
+  },
+  {
+    email: 'hs09@hpmath.edu.vn',
+    password: 'HS09@hpmath',
+    displayName: 'Vũ Ngọc Thịnh',
     role: 'student',
   },
 ];
@@ -125,12 +131,22 @@ export const loginWithEmailPassword = async (
   // Xây dựng profile
   const role = getRoleFromEmail(email);
   const accountInfo = findAccountByEmail(email);
+  const targetName = accountInfo?.displayName || user.displayName || email.split('@')[0];
+
+  // Nếu user đã có trước nhưng displayName chưa cập nhật theo danh sách mới
+  if (accountInfo?.displayName && user.displayName !== accountInfo.displayName) {
+    try {
+      await fbUpdateProfile(user, { displayName: accountInfo.displayName });
+    } catch {
+      // ignore
+    }
+  }
   
   const profile: Profile = {
     id: user.uid,
     email: email,
     role,
-    full_name: user.displayName || accountInfo?.displayName || email.split('@')[0],
+    full_name: targetName,
     created_at: new Date().toISOString(),
   };
 

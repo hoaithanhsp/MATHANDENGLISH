@@ -179,10 +179,26 @@ sequenceDiagram
 
 ## 🛡️ Cấu Hình Firebase Authentication & Security Rules
 
-### 1. Bật Email/Password Provider (Bắt buộc cho hệ thống tài khoản GV & 8 HS)
+### 1. Bật Email/Password Provider (Bắt buộc cho hệ thống tài khoản GV & 9 HS)
 1. Trên Firebase Console, vào **Build** → **Authentication**.
 2. Chọn tab **Sign-in method** → nhấn vào **Email/Password**.
 3. Bật công tắc **Enable** (đầu tiên) → nhấn **Save**.
+
+#### 📋 Danh Sách Tài Khoản Đội Tuyển HSG Toán Hải Phòng (1 GV + 9 HS):
+| STT | Vai Trò | Họ và Tên | Email Đăng Nhập | Mật Khẩu Mặc Định |
+|:---:|:---|:---|:---|:---|
+| 0 | Giáo viên | **Trần Hoài Thanh** | `giaovien@hpmath.edu.vn` | `GV@hpmath2026` |
+| 1 | Học sinh | **Phạm Quang Huy** | `hs01@hpmath.edu.vn` | `HS01@hpmath` |
+| 2 | Học sinh | **Nguyễn Văn Minh** | `hs02@hpmath.edu.vn` | `HS02@hpmath` |
+| 3 | Học sinh | **Nguyễn Văn Tuấn Anh** | `hs03@hpmath.edu.vn` | `HS03@hpmath` |
+| 4 | Học sinh | **Vũ Hoàng Duy** | `hs04@hpmath.edu.vn` | `HS04@hpmath` |
+| 5 | Học sinh | **Lê Thị Huyền** | `hs05@hpmath.edu.vn` | `HS05@hpmath` |
+| 6 | Học sinh | **Bùi Tố Uyên** | `hs06@hpmath.edu.vn` | `HS06@hpmath` |
+| 7 | Học sinh | **Trần Thị Anh Thư** | `hs07@hpmath.edu.vn` | `HS07@hpmath` |
+| 8 | Học sinh | **Vũ Mạnh Cường** | `hs08@hpmath.edu.vn` | `HS08@hpmath` |
+| 9 | Học sinh | **Vũ Ngọc Thịnh** | `hs09@hpmath.edu.vn` | `HS09@hpmath` |
+
+*(Trên màn hình Đăng nhập của ứng dụng đã có sẵn nút bấm 1-Click cho cả 10 thầy trò, không cần phải nhớ email/pass khi thao tác).*
 
 ---
 
