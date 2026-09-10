@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import {
   BookOpen,
   Sparkles,
@@ -18,9 +18,14 @@ import {
   Calendar,
   Target,
   Layers,
-  ArrowRight
+  ArrowRight,
+  X,
+  Hash,
+  ListOrdered,
+  AlertCircle,
+  SlidersHorizontal
 } from 'lucide-react';
-import { StudentStudyNote, ExamMode, Question } from '../../types';
+import { StudentStudyNote, ExamMode, Question, MathStrand } from '../../types';
 import MathRenderer from '../MathRenderer';
 import { printExamOrNotes } from '../../utils/printPdf';
 import { CHAPTER_STUDY_NOTES } from '../../data/chapterStudyNotes';
@@ -29,7 +34,12 @@ import {
   HAIPHONG_12_WEEK_ROADMAP,
   OlympiadSpecialTopic
 } from '../../data/haiPhongSpecialTopics';
-import { generateStudyLesson, generateTopicPractice } from '../../services/geminiService';
+import {
+  generateStudyLesson,
+  generateTopicPractice,
+  TopicQuestionType,
+  TopicDifficulty
+} from '../../services/geminiService';
 
 interface StudyAssistantProps {
   onSaveNote: (note: StudentStudyNote) => void;
@@ -70,75 +80,122 @@ export const StudyAssistant: React.FC<StudyAssistantProps> = ({
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
 
+  // AI Quiz Generator Modal State
+  const [showQuizModal, setShowQuizModal] = useState(false);
+  const [quizModalTopic, setQuizModalTopic] = useState<{
+    title_vi: string;
+    title_en?: string;
+    strand?: string;
+  } | null>(null);
+  const [quizQuestionCount, setQuizQuestionCount] = useState<number>(6);
+  const [quizQuestionType, setQuizQuestionType] = useState<TopicQuestionType>('mixed');
+  const [quizDifficulty, setQuizDifficulty] = useState<TopicDifficulty>('advanced');
+  const [quizMode, setQuizMode] = useState<ExamMode>('bilingual');
+  const [quizGenerationError, setQuizGenerationError] = useState<string>('');
+  const [generationStepStatus, setGenerationStepStatus] = useState<string>('');
 
-  // Generate Lesson via API
-  const handleGenerateLesson = async (topicToFetch?: string) => {
-    const topic = topicToFetch || topicInput.trim();
-    if (!topic) return;
-
-    setIsLoading(true);
-    setErrorMsg('');
-    setSavedSuccess(false);
-
-    try {
-      const lesson = await generateStudyLesson({ topic, mode });
-      const newNote: StudentStudyNote = {
-        id: `note-${Date.now()}`,
-        student_id: 'current-student',
-        topic,
-        mode,
-        content_markdown: lesson.content_markdown || '',
-        glossary: lesson.glossary || [],
-        methods: lesson.methods || [],
-        created_at: new Date().toISOString(),
-      };
-
-      setCurrentNote(newNote);
-    } catch (err: any) {
-      console.warn('AI study assistant error, using curated study note fallback:', err);
-      setErrorMsg(`${err.message}. Đang mở chuyên đề từ học liệu chuẩn để bạn không bị gián đoạn ôn tập.`);
-      // Load fallback note from official 25 chapters
-      const fallback = CHAPTER_STUDY_NOTES.find((n) => n.topic.toLowerCase().includes(topic.toLowerCase())) || CHAPTER_STUDY_NOTES[0];
-      setCurrentNote({ ...fallback, topic });
-    } finally {
-      setIsLoading(false);
-    }
+  // Mở modal tạo đề cho chuyên đề VDC đang chọn
+  const openQuizModalForSpecialTopic = (top: OlympiadSpecialTopic) => {
+    setQuizModalTopic({
+      title_vi: top.title_vi,
+      title_en: top.title_en,
+      strand: top.strand,
+    });
+    setQuizQuestionCount(6);
+    setQuizQuestionType('mixed');
+    setQuizDifficulty('advanced');
+    setQuizMode(mode);
+    setQuizGenerationError('');
+    setShowQuizModal(true);
   };
 
-  // Generate Practice Quiz for Current Topic
-  const handleCreateTopicPractice = async () => {
+  // Mở modal tạo đề cho bài giảng lý thuyết đang học
+  const openQuizModalForCurrentNote = () => {
+    setQuizModalTopic({
+      title_vi: currentNote.topic,
+      title_en: '',
+      strand: 'algebra_calculus',
+    });
+    setQuizQuestionCount(6);
+    setQuizQuestionType('mixed');
+    setQuizDifficulty('application');
+    setQuizMode(currentNote.mode || mode);
+    setQuizGenerationError('');
+    setShowQuizModal(true);
+  };
+
+  // Hàm sinh đề bằng AI 100% theo các tùy chọn
+  const handleExecuteAiQuizGeneration = async () => {
+    if (!quizModalTopic) return;
     setIsGeneratingQuiz(true);
+    setQuizGenerationError('');
+    setGenerationStepStatus('Đang kết nối Gemini AI và phân tích chuyên đề...');
+
     try {
+      const topicStr = quizModalTopic.title_en
+        ? `${quizModalTopic.title_vi} (${quizModalTopic.title_en})`
+        : quizModalTopic.title_vi;
+
+      const typeLabel =
+        quizQuestionType === 'mcq'
+          ? 'Trắc nghiệm 4 lựa chọn'
+          : quizQuestionType === 'short_answer'
+          ? 'Trả lời ngắn điền đáp số'
+          : quizQuestionType === 'true_false'
+          ? 'Đúng - Sai (True/False)'
+          : 'Kết hợp các dạng';
+
+      setGenerationStepStatus(`Gemini AI đang biên soạn ${quizQuestionCount} câu hỏi ${typeLabel}...`);
+
       const rawQuestions = await generateTopicPractice({
-        topic: currentNote.topic,
-        mode: currentNote.mode,
-        count: 6,
+        topic: topicStr,
+        mode: quizMode,
+        count: quizQuestionCount,
+        questionType: quizQuestionType,
+        difficulty: quizDifficulty,
+        strand: quizModalTopic.strand,
       });
 
+      if (!rawQuestions || !Array.isArray(rawQuestions) || rawQuestions.length === 0) {
+        throw new Error('AI không trả về danh sách câu hỏi hợp lệ. Vui lòng thử lại.');
+      }
+
+      setGenerationStepStatus('Đang hoàn thiện đề thi và chuẩn bị phòng làm bài...');
+
       const questions: Question[] = rawQuestions.map((q: any, i: number) => ({
-        id: `quiz-q-${Date.now()}-${i + 1}`,
-        exam_id: `practice-${Date.now()}`,
-        part: q.part || (i < 4 ? 'PART_1' : 'PART_2'),
+        id: `quiz-ai-${Date.now()}-${i + 1}`,
+        exam_id: `topic-practice-${Date.now()}`,
+        part: q.part || (q.options_en ? 'PART_1' : 'PART_2'),
         order_index: i + 1,
-        strand: q.strand || 'algebra_calculus',
-        topic: currentNote.topic,
-        difficulty: q.difficulty || 'application',
+        strand: (q.strand as MathStrand) || (quizModalTopic.strand as MathStrand) || 'algebra_calculus',
+        topic: quizModalTopic.title_vi,
+        difficulty: q.difficulty || (quizDifficulty === 'mixed' ? 'application' : quizDifficulty),
         question_en: q.question_en || '',
         question_vi: q.question_vi || '',
         options_en: q.options_en || (q.part === 'PART_1' ? ['A', 'B', 'C', 'D'] : undefined),
         options_vi: q.options_vi || undefined,
-        correct_answer: q.correct_answer || 'A',
+        correct_answer: q.correct_answer || (q.part === 'PART_1' ? 'A' : '0'),
         acceptable_answers: q.acceptable_answers || [],
+        hints: q.hints || [],
         solution_en: q.solution_en || '',
         solution_vi: q.solution_vi || '',
       }));
 
-      onStartPracticeQuiz(currentNote.topic, questions);
+      // Đóng modal và chuyển ngay sang phòng thi
+      setShowQuizModal(false);
+      onStartPracticeQuiz(
+        `${quizModalTopic.title_vi} (${typeLabel} - ${quizQuestionCount} câu)`,
+        questions
+      );
     } catch (err: any) {
-      const fallbackQuestions = getTopicFallbackQuestions(currentNote.topic);
-      onStartPracticeQuiz(currentNote.topic, fallbackQuestions);
+      console.error('Quiz generation error:', err);
+      const friendlyMsg = err?.message || 'Đã có lỗi xảy ra trong quá trình sinh đề bằng AI.';
+      setQuizGenerationError(
+        `${friendlyMsg}. Thầy/Cô và các bạn hãy kiểm tra lại kết nối hoặc API Key trong Cài đặt, hoặc thử giảm bớt số lượng câu hỏi.`
+      );
     } finally {
       setIsGeneratingQuiz(false);
+      setGenerationStepStatus('');
     }
   };
 
@@ -293,62 +350,10 @@ export const StudyAssistant: React.FC<StudyAssistantProps> = ({
 
                 <div className="flex flex-wrap items-center gap-2">
                   <button
-                    onClick={async () => {
-                      setIsGeneratingQuiz(true);
-                      try {
-                        const raw = await generateTopicPractice({
-                          topic: `${selectedHpTopic.title_vi} (${selectedHpTopic.title_en})`,
-                          mode,
-                          count: 6,
-                        });
-                        const questions: Question[] = raw.map((q: any, i: number) => ({
-                          id: `quiz-hp-${Date.now()}-${i + 1}`,
-                          exam_id: `hp-practice-${Date.now()}`,
-                          part: q.part || (i < 4 ? 'PART_1' : 'PART_2'),
-                          order_index: i + 1,
-                          strand: selectedHpTopic.strand,
-                          topic: selectedHpTopic.title_vi,
-                          difficulty: q.difficulty || 'application',
-                          question_en: q.question_en || '',
-                          question_vi: q.question_vi || '',
-                          options_en: q.options_en || (q.part === 'PART_1' ? ['A', 'B', 'C', 'D'] : undefined),
-                          options_vi: q.options_vi || undefined,
-                          correct_answer: q.correct_answer || 'A',
-                          acceptable_answers: q.acceptable_answers || [],
-                          solution_en: q.solution_en || '',
-                          solution_vi: q.solution_vi || '',
-                        }));
-                        onStartPracticeQuiz(selectedHpTopic.title_vi, questions);
-                      } catch {
-                        // Fallback quiz from special topic sample problems
-                        const fallbackQuestions: Question[] = selectedHpTopic.sample_problems.map((p, i) => ({
-                          id: `fb-hp-${Date.now()}-${i + 1}`,
-                          exam_id: `hp-fb-${Date.now()}`,
-                          part: 'PART_2',
-                          order_index: i + 1,
-                          strand: selectedHpTopic.strand,
-                          topic: selectedHpTopic.title_vi,
-                          difficulty: 'advanced',
-                          question_en: p.problem_en,
-                          question_vi: p.problem_vi,
-                          correct_answer: p.answer || '1',
-                          acceptable_answers: [p.answer || '1'],
-                          solution_en: p.solution_en,
-                          solution_vi: p.solution_vi,
-                        }));
-                        onStartPracticeQuiz(selectedHpTopic.title_vi, fallbackQuestions);
-                      } finally {
-                        setIsGeneratingQuiz(false);
-                      }
-                    }}
-                    disabled={isGeneratingQuiz}
-                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 transition shadow-xs disabled:opacity-50"
+                    onClick={() => openQuizModalForSpecialTopic(selectedHpTopic)}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 transition shadow-xs hover:shadow-teal-500/20 active:scale-95"
                   >
-                    {isGeneratingQuiz ? (
-                      <RotateCw className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <FileQuestion className="w-3.5 h-3.5" />
-                    )}
+                    <Sparkles className="w-4 h-4 text-amber-300" />
                     Tạo bài tập chuyên đề & làm ngay
                   </button>
 
@@ -593,15 +598,10 @@ export const StudyAssistant: React.FC<StudyAssistantProps> = ({
 
             <div className="flex flex-wrap items-center gap-2">
               <button
-                onClick={handleCreateTopicPractice}
-                disabled={isGeneratingQuiz}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 transition shadow-xs disabled:opacity-50"
+                onClick={openQuizModalForCurrentNote}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 transition shadow-xs hover:shadow-teal-500/20 active:scale-95"
               >
-                {isGeneratingQuiz ? (
-                  <RotateCw className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <FileQuestion className="w-3.5 h-3.5" />
-                )}
+                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
                 Tạo bài tập chuyên đề & làm ngay
               </button>
 
@@ -750,6 +750,304 @@ export const StudyAssistant: React.FC<StudyAssistantProps> = ({
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL TÙY CHỌN TẠO BÀI TẬP CHUYÊN ĐỀ BẰNG AI (GEMINI POWERED)             */}
+      {/* ========================================================================= */}
+      {showQuizModal && quizModalTopic && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-150">
+          <div className="bg-white dark:bg-slate-850 rounded-3xl max-w-xl w-full border border-slate-200 dark:border-slate-750 shadow-2xl overflow-hidden flex flex-col my-auto">
+            {/* Modal Header */}
+            <div className="p-5 sm:p-6 border-b border-slate-100 dark:border-slate-750/80 bg-gradient-to-r from-teal-500/10 via-emerald-500/5 to-transparent flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center text-white shadow-md shadow-teal-500/20 shrink-0 mt-0.5">
+                  <Sparkles className="w-5 h-5 text-amber-200" />
+                </div>
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300 mb-1 border border-teal-200 dark:border-teal-800">
+                    <Sparkles className="w-3 h-3 text-teal-600 dark:text-teal-400" />
+                    AI Tự Động Biên Soạn 100%
+                  </div>
+                  <h3 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white">
+                    Tùy Chọn Đề Bài Tập Chuyên Đề
+                  </h3>
+                  <p className="text-xs text-teal-700 dark:text-teal-300 font-semibold mt-0.5 line-clamp-1">
+                    Chuyên đề: {quizModalTopic.title_vi}
+                  </p>
+                </div>
+              </div>
+
+              {!isGeneratingQuiz && (
+                <button
+                  type="button"
+                  onClick={() => setShowQuizModal(false)}
+                  className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              )}
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-5 sm:p-6 space-y-5 overflow-y-auto max-h-[70vh]">
+              {/* Error Notification */}
+              {quizGenerationError && (
+                <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/80 text-rose-800 dark:text-rose-200 text-xs flex items-start gap-2.5">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600 dark:text-rose-400" />
+                  <div className="flex-1 leading-relaxed">{quizGenerationError}</div>
+                </div>
+              )}
+
+              {/* Tùy chọn 1: Số lượng câu hỏi */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                    <SlidersHorizontal className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                    Số lượng câu hỏi:
+                  </label>
+                  <span className="text-xs font-bold text-teal-600 dark:text-teal-400">
+                    {quizQuestionCount} câu
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-5 gap-2">
+                  {[4, 6, 8, 10, 15].map((cnt) => (
+                    <button
+                      key={cnt}
+                      type="button"
+                      disabled={isGeneratingQuiz}
+                      onClick={() => setQuizQuestionCount(cnt)}
+                      className={`py-2 px-1 rounded-xl text-xs font-bold border transition ${
+                        quizQuestionCount === cnt
+                          ? 'bg-teal-600 text-white border-teal-600 shadow-xs ring-2 ring-teal-500/20'
+                          : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-teal-300'
+                      }`}
+                    >
+                      {cnt} câu
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-2 pt-1">
+                  <span className="text-[11px] text-slate-500">Hoặc tùy chỉnh (2-22 câu):</span>
+                  <input
+                    type="number"
+                    min={2}
+                    max={22}
+                    value={quizQuestionCount}
+                    disabled={isGeneratingQuiz}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value, 10);
+                      if (!isNaN(val)) {
+                        setQuizQuestionCount(Math.min(22, Math.max(2, val)));
+                      }
+                    }}
+                    className="w-16 px-2 py-1 rounded-lg text-xs font-bold border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-center text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-teal-500 focus:outline-hidden"
+                  />
+                </div>
+              </div>
+
+              {/* Tùy chọn 2: Loại câu hỏi (Đúng theo yêu cầu người dùng) */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-800 dark:text-slate-200 block">
+                  Loại câu hỏi muốn làm:
+                </label>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {/* Option 1: Trắc nghiệm (MCQ) */}
+                  <div
+                    onClick={() => !isGeneratingQuiz && setQuizQuestionType('mcq')}
+                    className={`p-3 rounded-xl border-2 cursor-pointer transition flex items-start gap-2.5 ${
+                      quizQuestionType === 'mcq'
+                        ? 'border-teal-600 bg-teal-50/60 dark:bg-teal-950/40 text-teal-950 dark:text-teal-200 shadow-xs'
+                        : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:border-teal-200'
+                    }`}
+                  >
+                    <ListOrdered className={`w-4 h-4 mt-0.5 shrink-0 ${quizQuestionType === 'mcq' ? 'text-teal-600' : 'text-slate-400'}`} />
+                    <div>
+                      <div className="text-xs font-bold flex items-center gap-1.5">
+                        Trắc nghiệm (4 lựa chọn)
+                        {quizQuestionType === 'mcq' && <Check className="w-3.5 h-3.5 text-teal-600" />}
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                        Chọn 1 đáp án đúng trong 4 phương án A, B, C, D.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Option 2: Trả lời ngắn */}
+                  <div
+                    onClick={() => !isGeneratingQuiz && setQuizQuestionType('short_answer')}
+                    className={`p-3 rounded-xl border-2 cursor-pointer transition flex items-start gap-2.5 ${
+                      quizQuestionType === 'short_answer'
+                        ? 'border-teal-600 bg-teal-50/60 dark:bg-teal-950/40 text-teal-950 dark:text-teal-200 shadow-xs'
+                        : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:border-teal-200'
+                    }`}
+                  >
+                    <Hash className={`w-4 h-4 mt-0.5 shrink-0 ${quizQuestionType === 'short_answer' ? 'text-teal-600' : 'text-slate-400'}`} />
+                    <div>
+                      <div className="text-xs font-bold flex items-center gap-1.5">
+                        Trả lời ngắn (Điền đáp số)
+                        {quizQuestionType === 'short_answer' && <Check className="w-3.5 h-3.5 text-teal-600" />}
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                        Tự tính toán và điền số nguyên, phân số, số thập phân.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Option 3: Đúng - Sai (True / False) */}
+                  <div
+                    onClick={() => !isGeneratingQuiz && setQuizQuestionType('true_false')}
+                    className={`p-3 rounded-xl border-2 cursor-pointer transition flex items-start gap-2.5 ${
+                      quizQuestionType === 'true_false'
+                        ? 'border-teal-600 bg-teal-50/60 dark:bg-teal-950/40 text-teal-950 dark:text-teal-200 shadow-xs'
+                        : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:border-teal-200'
+                    }`}
+                  >
+                    <CheckCircle2 className={`w-4 h-4 mt-0.5 shrink-0 ${quizQuestionType === 'true_false' ? 'text-teal-600' : 'text-slate-400'}`} />
+                    <div>
+                      <div className="text-xs font-bold flex items-center gap-1.5">
+                        Đúng - Sai (True / False)
+                        {quizQuestionType === 'true_false' && <Check className="w-3.5 h-3.5 text-teal-600" />}
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                        Phán đoán tính đúng/sai của mệnh đề toán học.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Option 4: Kết hợp (Mix) */}
+                  <div
+                    onClick={() => !isGeneratingQuiz && setQuizQuestionType('mixed')}
+                    className={`p-3 rounded-xl border-2 cursor-pointer transition flex items-start gap-2.5 ${
+                      quizQuestionType === 'mixed'
+                        ? 'border-teal-600 bg-teal-50/60 dark:bg-teal-950/40 text-teal-950 dark:text-teal-200 shadow-xs'
+                        : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:border-teal-200'
+                    }`}
+                  >
+                    <Layers className={`w-4 h-4 mt-0.5 shrink-0 ${quizQuestionType === 'mixed' ? 'text-teal-600' : 'text-slate-400'}`} />
+                    <div>
+                      <div className="text-xs font-bold flex items-center gap-1.5">
+                        Kết hợp (Mix các dạng)
+                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-200 font-extrabold">
+                          Khuyên dùng
+                        </span>
+                        {quizQuestionType === 'mixed' && <Check className="w-3.5 h-3.5 text-teal-600" />}
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                        Phối hợp cả Trắc nghiệm, Đúng - Sai và Điền đáp số.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tùy chọn 3: Mức độ khó & Ngôn ngữ */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                {/* Độ khó */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-800 dark:text-slate-200 block">
+                    Mức độ nhận thức:
+                  </label>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {[
+                      { id: 'application', label: 'Vận dụng' },
+                      { id: 'advanced', label: 'VDC (HSG)' },
+                      { id: 'mixed', label: 'Hỗn hợp' },
+                    ].map((d) => (
+                      <button
+                        key={d.id}
+                        type="button"
+                        disabled={isGeneratingQuiz}
+                        onClick={() => setQuizDifficulty(d.id as TopicDifficulty)}
+                        className={`py-2 px-1 text-[11px] font-bold rounded-lg border transition text-center ${
+                          quizDifficulty === d.id
+                            ? 'bg-teal-600 text-white border-teal-600'
+                            : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                        }`}
+                      >
+                        {d.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Ngôn ngữ */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-800 dark:text-slate-200 block">
+                    Ngôn ngữ hiển thị:
+                  </label>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {[
+                      { id: 'bilingual', label: '🇻🇳 Song ngữ' },
+                      { id: 'english_only', label: '🇬🇧 English' },
+                    ].map((m) => (
+                      <button
+                        key={m.id}
+                        type="button"
+                        disabled={isGeneratingQuiz}
+                        onClick={() => setQuizMode(m.id as ExamMode)}
+                        className={`py-2 px-1 text-[11px] font-bold rounded-lg border transition text-center ${
+                          quizMode === m.id
+                            ? 'bg-teal-600 text-white border-teal-600'
+                            : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                        }`}
+                      >
+                        {m.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Trạng thái Loading Animation khi AI đang tạo đề */}
+              {isGeneratingQuiz && (
+                <div className="p-4 rounded-2xl bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 text-center space-y-2.5 animate-pulse">
+                  <RotateCw className="w-6 h-6 text-teal-600 dark:text-teal-400 animate-spin mx-auto" />
+                  <p className="text-xs font-bold text-teal-800 dark:text-teal-200">
+                    {generationStepStatus || 'Đang tạo câu hỏi chuyên đề mới bằng AI...'}
+                  </p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+                    AI đang phân tích kiến thức chuyên sâu và sinh toàn bộ công thức toán LaTeX cùng lời giải chi tiết mới 100%.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 sm:p-5 border-t border-slate-100 dark:border-slate-750/80 bg-slate-50/50 dark:bg-slate-850 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                disabled={isGeneratingQuiz}
+                onClick={() => setShowQuizModal(false)}
+                className="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition disabled:opacity-50"
+              >
+                Hủy
+              </button>
+
+              <button
+                type="button"
+                disabled={isGeneratingQuiz}
+                onClick={handleExecuteAiQuizGeneration}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 transition shadow-sm hover:shadow-teal-500/20 active:scale-95 disabled:opacity-50"
+              >
+                {isGeneratingQuiz ? (
+                  <>
+                    <RotateCw className="w-4 h-4 animate-spin" />
+                    Đang Biên Soạn Đề AI...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 text-amber-300" />
+                    🚀 Bắt Đầu Tạo Bằng AI & Làm Ngay
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

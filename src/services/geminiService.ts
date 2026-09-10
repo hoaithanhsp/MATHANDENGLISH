@@ -251,7 +251,30 @@ IV. MATHEMATICAL FORMATTING (KaTeX):
  * \newcommand → \n = LF ❌
  */
 function sanitizeLatexInJson(jsonText: string): string {
-  return jsonText.replace(/(?<!\\)\\([a-zA-Z])/g, '\\\\$1');
+  return jsonText.replace(/(?<!\\)\\([a-zA-Z])/g, (match, letter, offset) => {
+    // Check if it's \n that is actually a newline (not a LaTeX command starting with n)
+    const after = jsonText.slice(offset + 2, offset + 20);
+    if (letter === 'n') {
+      const isLatexCommand = /^(abla|atural|eg|eq|e|earrow|exists|otin|ormalsize|u\b|ull\b|warrow|Rightarrow|Leftarrow)/.test(after);
+      if (!isLatexCommand) {
+        // Giữ nguyên \n hợp lệ của JSON (ví dụ: \n-, \n\n, \nThe, \nTọa độ)
+        return match;
+      }
+    }
+    if (letter === 'r') {
+      const isLatexCommand = /^(ight|angle|ceil|floor|ho\b|hook|ightarrow|ightharpoon)/.test(after);
+      if (!isLatexCommand) {
+        return match; // Giữ nguyên \r
+      }
+    }
+    if (letter === 't') {
+      const isLatexCommand = /^(ext|imes|heta|an\b|anh|au\b|o\b|op\b|riangle|riangleq|ilde|herefore)/.test(after);
+      if (!isLatexCommand) {
+        return match; // Giữ nguyên \t
+      }
+    }
+    return '\\\\' + letter;
+  });
 }
 
 /**
@@ -411,35 +434,108 @@ Write ALL math formulas directly as standard LaTeX in $...$ or $$...$$.`;
   return safeJsonParse(result.text);
 };
 
-/** Generate quick topical practice quiz */
-export const generateTopicPractice = async (params: {
+export type TopicQuestionType = 'mcq' | 'short_answer' | 'true_false' | 'mixed';
+export type TopicDifficulty = 'understanding' | 'application' | 'advanced' | 'mixed';
+
+export interface GenerateTopicPracticeParams {
   topic: string;
   mode?: string;
   count?: number;
+  questionType?: TopicQuestionType;
+  difficulty?: TopicDifficulty;
+  strand?: string;
   onModelSwitch?: (from: string, to: string, reason: string) => void;
-}): Promise<any[]> => {
-  const { topic, mode = 'bilingual', count = 6, onModelSwitch } = params;
+}
 
-  const prompt = `Generate exactly ${count} practice questions STRICTLY on the topic: "${topic}".
+/** Generate custom topical practice quiz using AI with full question format control */
+export const generateTopicPractice = async (params: GenerateTopicPracticeParams): Promise<any[]> => {
+  const {
+    topic,
+    mode = 'bilingual',
+    count = 6,
+    questionType = 'mixed',
+    difficulty = 'mixed',
+    strand = 'algebra_calculus',
+    onModelSwitch,
+  } = params;
+
+  let formatInstruction = '';
+  if (questionType === 'mcq') {
+    formatInstruction = `FORMAT: ALL ${count} questions MUST BE PART_1 (Multiple Choice with 4 options A, B, C, D).
+- "part": "PART_1"
+- "options_en": ["A. ...", "B. ...", "C. ...", "D. ..."] (English math options)
+- "correct_answer": "A", "B", "C", or "D"`;
+  } else if (questionType === 'short_answer') {
+    formatInstruction = `FORMAT: ALL ${count} questions MUST BE PART_2 (Short Answer - student calculates and inputs number/fraction).
+- "part": "PART_2"
+- "options_en": null
+- "correct_answer": concise numerical value, integer, simplified fraction like "a/b", or decimal string
+- "acceptable_answers": [array of equivalent forms, e.g. ["1/2", "0.5"]]`;
+  } else if (questionType === 'true_false') {
+    formatInstruction = `FORMAT: ALL ${count} questions MUST BE True/False Mathematical Propositions (Đúng / Sai).
+- Each question presents a profound mathematical assertion, inequality, property, or convergence claim related to "${topic}".
+- "part": "PART_1"
+- "options_en": ["A. Đúng (True)", "B. Sai (False)"]
+- "correct_answer": "A" (if True) or "B" (if False)
+- In "solution_en" and "solution_vi", explain rigorously WHY it is True or furnish a clear counterexample demonstrating why it is False.`;
+  } else {
+    // Mixed format
+    formatInstruction = `FORMAT: MIX OF QUESTION TYPES distributed evenly among:
+1. Multiple Choice (PART_1 with 4 options A, B, C, D)
+2. True/False Propositions (PART_1 with options_en: ["A. Đúng (True)", "B. Sai (False)"] and correct_answer "A" or "B")
+3. Short Answer (PART_2 with options_en: null and correct_answer as exact number/fraction)`;
+  }
+
+  let difficultyInstruction = '';
+  if (difficulty === 'understanding') {
+    difficultyInstruction = 'COGNITIVE LEVEL: Understanding (Thông hiểu - concepts, fundamental formulas, direct applications).';
+  } else if (difficulty === 'application') {
+    difficultyInstruction = 'COGNITIVE LEVEL: Application (Vận dụng - multi-step problem solving, standard competition methods).';
+  } else if (difficulty === 'advanced') {
+    difficultyInstruction = 'COGNITIVE LEVEL: Advanced / Olympiad (Vận dụng cao - profound high-school Olympiad level, ingenious transformations, extremal reasoning).';
+  } else {
+    difficultyInstruction = 'COGNITIVE LEVEL: Balanced mix of Application (60%) and Advanced / Olympiad (40%).';
+  }
+
+  const prompt = `Task: Generate a brand new, authentic set of exactly ${count} math practice questions strictly on the topic: "${topic}".
+
+${formatInstruction}
+
+${difficultyInstruction}
 
 CRITICAL RULES:
-1. ALL questions MUST be directly about "${topic}". Do NOT generate questions on other topics.
-2. Language mode: ${mode}. In bilingual mode, translate ONLY the question prompt into "question_vi". Do NOT translate options into Vietnamese.
-3. Use KaTeX-compatible LaTeX enclosed in $...$ for inline or $$...$$ for display formulas.
-4. In JSON strings, use valid standard JSON escaping for LaTeX commands (e.g., "\\\\sin", "\\\\frac{a}{b}", "\\\\sqrt{x}", "\\\\log", "\\\\lim_{x \\\\to 0}"). Do NOT use 4 backslashes.
-5. Include Part 1 (MCQ with 4 options) and Part 2 (Short-answer with correct_answer as a number or expression).
-6. Each question must have: id, part ("PART_1" or "PART_2"), order_index, strand, topic, difficulty, question_en, question_vi, correct_answer, solution_en, solution_vi.
-7. MCQ options format (English only, do NOT translate): ["A. ...", "B. ...", "C. ...", "D. ..."]
+1. ALL questions MUST BE 100% newly crafted, creative, and mathematically rigorous. Do NOT copy plain trivial examples.
+2. Subject topic: "${topic}". Target strand: "${strand}".
+3. Language mode: ${mode}.
+   - In bilingual mode: "question_en" has English problem statement, "question_vi" has faithful Vietnamese translation.
+   - For PART_1 MCQ options: English only.
+   - Both "solution_en" and "solution_vi" must supply clear, step-by-step mathematical reasoning.
+4. Use standard KaTeX $...$ for inline and $$...$$ for display formulas.
+5. In JSON strings, use valid LaTeX formatting ("$\\\\frac{a}{b}$", "$\\\\sqrt{x}$").
+6. Each question object schema:
+{
+  "id": "quiz-q-1",
+  "order_index": 1,
+  "part": "PART_1" | "PART_2",
+  "strand": "${strand}",
+  "topic": "${topic}",
+  "difficulty": "understanding" | "application" | "advanced",
+  "question_en": string,
+  "question_vi": string,
+  "options_en": ["A. ...", "B. ...", "C. ...", "D. ..."] | ["A. Đúng (True)", "B. Sai (False)"] | null,
+  "correct_answer": string,
+  "acceptable_answers": string[],
+  "hints": ["Hint 1", "Hint 2"],
+  "solution_en": string,
+  "solution_vi": string
+}
 
-Output: JSON array of ${count} question objects wrapped in \`\`\`json ... \`\`\` code fences.
-Write ALL math formulas directly using standard $...$ LaTeX.
-Escape LaTeX backslashes in JSON strings: "\\\\frac{a}{b}", "$\\\\sqrt{x}$".`;
+Output: Return ONLY a valid JSON array of ${count} question objects wrapped in \`\`\`json ... \`\`\` code fences.`;
 
   const result = await generateContentWithFallback({
     contents: prompt,
     systemInstruction: HAIPHONG_SYSTEM_INSTRUCTION,
-    // NO responseMimeType — allows Gemini to write LaTeX naturally
-    maxOutputTokens: 12288,
+    maxOutputTokens: count <= 6 ? 16384 : 32768,
     onModelSwitch,
   });
 

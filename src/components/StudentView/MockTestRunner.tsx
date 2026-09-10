@@ -315,10 +315,10 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
     // Score on 20.00 scale (Hai Phong Math Olympiad Standard: Part I = 12 * 0.5 = 6.0đ; Part II = 10 * 1.4 = 14.0đ)
     let finalScore = 0;
     const hasStandardParts = questions.some((q) => q.part === 'PART_1') && questions.some((q) => q.part === 'PART_2');
-    if (hasStandardParts) {
+    if (hasStandardParts && totalQuestions === 22) {
       finalScore = Number((part1Correct * 0.5 + part2Correct * 1.4).toFixed(2));
     } else {
-      // Fallback for custom topic practice: scale directly to 20.00
+      // Custom topic practice / quizzes: scale proportionally to 20.00
       finalScore = totalQuestions > 0 ? Number(((correctCount / totalQuestions) * 20).toFixed(2)) : 0;
     }
 
@@ -775,41 +775,99 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
                   </div>
                 )}
 
-                {/* Input Area: Part 1 (MCQ) vs Part 2 (Short Answer) */}
+                {/* Input Area: Part 1 (MCQ / True-False) vs Part 2 (Short Answer) */}
                 {currentQ.part === 'PART_1' && currentQ.options_en ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 my-4 font-sans text-xs">
-                    {currentQ.options_en.map((opt, oIdx) => {
-                      const letter = ['A', 'B', 'C', 'D'][oIdx];
-                      const isSelected = answers[currentQ.id] === letter;
-                      return (
-                        <div
-                          key={oIdx}
-                          onClick={() => handleSelectAnswer(letter)}
-                          className={`p-3.5 rounded-xl border cursor-pointer transition flex items-center justify-between ${
-                            isSelected
-                              ? 'border-teal-600 bg-teal-50 dark:bg-teal-950/50 text-teal-950 dark:text-teal-200 font-semibold shadow-xs'
-                              : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 hover:border-teal-300 dark:hover:border-teal-600 text-slate-700 dark:text-slate-300'
-                          }`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <span
-                              className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
-                                isSelected
-                                  ? 'bg-teal-600 text-white'
-                                  : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
-                              }`}
-                            >
-                              {letter}
-                            </span>
-                            <div className="text-xs sm:text-sm font-medium">
-                              <MathRenderer content={opt.replace(/^[A-D]\.\s*/, '')} inline />
+                  currentQ.options_en.length === 2 ? (
+                    /* True/False Custom 2-Card Layout */
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 my-5 font-sans">
+                      {currentQ.options_en.map((opt, oIdx) => {
+                        const letter = ['A', 'B'][oIdx];
+                        const isSelected = answers[currentQ.id] === letter;
+                        const isTrueOption = oIdx === 0;
+                        return (
+                          <div
+                            key={oIdx}
+                            onClick={() => handleSelectAnswer(letter)}
+                            className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-center justify-between ${
+                              isSelected
+                                ? isTrueOption
+                                  ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-950 dark:text-emerald-200 shadow-sm ring-2 ring-emerald-500/20'
+                                  : 'border-rose-500 bg-rose-50 dark:bg-rose-950/40 text-rose-950 dark:text-rose-200 shadow-sm ring-2 ring-rose-500/20'
+                                : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-teal-300 dark:hover:border-teal-600 text-slate-700 dark:text-slate-300'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3.5">
+                              <span
+                                className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm shrink-0 shadow-2xs ${
+                                  isSelected
+                                    ? isTrueOption
+                                      ? 'bg-emerald-600 text-white'
+                                      : 'bg-rose-600 text-white'
+                                    : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                                }`}
+                              >
+                                {isTrueOption ? '✓' : '✗'}
+                              </span>
+                              <div>
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
+                                  {isTrueOption ? 'Mệnh đề Khẳng định' : 'Mệnh đề Phủ định'}
+                                </span>
+                                <div className="text-sm font-bold mt-0.5">
+                                  <MathRenderer content={opt.replace(/^[A-B]\.\s*/, '')} inline />
+                                </div>
+                              </div>
                             </div>
+                            {isSelected && (
+                              <span
+                                className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
+                                  isTrueOption
+                                    ? 'bg-emerald-200/80 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200'
+                                    : 'bg-rose-200/80 text-rose-800 dark:bg-rose-900 dark:text-rose-200'
+                                }`}
+                              >
+                                Đã chọn
+                              </span>
+                            )}
                           </div>
-                          {isSelected && <Check className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0" />}
-                        </div>
-                      );
-                    })}
-                  </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    /* Standard 4-Choice MCQ Grid */
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 my-4 font-sans text-xs">
+                      {currentQ.options_en.map((opt, oIdx) => {
+                        const letter = ['A', 'B', 'C', 'D'][oIdx];
+                        const isSelected = answers[currentQ.id] === letter;
+                        return (
+                          <div
+                            key={oIdx}
+                            onClick={() => handleSelectAnswer(letter)}
+                            className={`p-3.5 rounded-xl border cursor-pointer transition flex items-center justify-between ${
+                              isSelected
+                                ? 'border-teal-600 bg-teal-50 dark:bg-teal-950/50 text-teal-950 dark:text-teal-200 font-semibold shadow-xs'
+                                : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 hover:border-teal-300 dark:hover:border-teal-600 text-slate-700 dark:text-slate-300'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <span
+                                className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
+                                  isSelected
+                                    ? 'bg-teal-600 text-white'
+                                    : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
+                                }`}
+                              >
+                                {letter}
+                              </span>
+                              <div className="text-xs sm:text-sm font-medium">
+                                <MathRenderer content={opt.replace(/^[A-D]\.\s*/, '')} inline />
+                              </div>
+                            </div>
+                            {isSelected && <Check className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0" />}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )
                 ) : (
                   <div className="my-6 p-4 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 space-y-3">
                     <div className="flex items-center justify-between">

@@ -7,8 +7,15 @@ import { Exam } from '../types';
 function renderLatexToHtml(text: string): string {
   if (!text) return '';
 
+  // Normalize literal string escapes (\n, \r\n, \r)
+  let normalized = text
+    .replace(/\\r\\n/g, '\n')
+    .replace(/\\r/g, '\n')
+    .replace(/\\+n(?!(nabla|natural|neg|neq|ne|nearrow|nexists|notin|normalsize|nu|null|nwarrow|nRightarrow|nLeftarrow)\b)/g, '\n')
+    .replace(/(^|\n)\s*[\*\-•]\s*/g, '$1• ');
+
   // Block math: $$...$$
-  let processed = text.replace(/\$\$([\s\S]+?)\$\$/g, (_, math) => {
+  let processed = normalized.replace(/\$\$([\s\S]+?)\$\$/g, (_, math) => {
     try {
       return `<div class="katex-display-block">${katex.renderToString(math.trim(), {
         displayMode: true,

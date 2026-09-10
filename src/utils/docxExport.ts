@@ -9,6 +9,15 @@ import {
 } from 'docx';
 import { Exam, Question } from '../types';
 
+function cleanDocxText(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/\\r\\n/g, '\n')
+    .replace(/\\r/g, '\n')
+    .replace(/\\+n(?!(nabla|natural|neg|neq|ne|nearrow|nexists|notin|normalsize|nu|null|nwarrow|nRightarrow|nLeftarrow)\b)/g, '\n')
+    .replace(/(^|\n)\s*[\*\-•]\s*/g, '$1• ');
+}
+
 /**
  * Ensure LaTeX expressions are wrapped in $...$ delimiters.
  * Detects common LaTeX commands (\\frac, \\sqrt, \\sin, \\triangle, etc.)
@@ -279,7 +288,7 @@ function formatQuestionDocx(q: Question, mode: 'bilingual' | 'english_only', inc
             size: 20,
           }),
           new TextRun({
-            text: ensureLatexDelimiters(q.solution_en),
+            text: ensureLatexDelimiters(cleanDocxText(q.solution_en)),
             size: 20,
           }),
         ],
@@ -292,7 +301,7 @@ function formatQuestionDocx(q: Question, mode: 'bilingual' | 'english_only', inc
         new Paragraph({
           children: [
             new TextRun({
-              text: `    [Giải thích Tiếng Việt]: ${q.solution_vi}`,
+              text: `    [Giải thích Tiếng Việt]: ${cleanDocxText(q.solution_vi)}`,
               italics: true,
               size: 19,
             }),

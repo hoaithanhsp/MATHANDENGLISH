@@ -54,9 +54,20 @@ export const MathRenderer: React.FC<MathRendererProps> = ({ content, className =
       }
     });
 
+    // Step 2: Normalize literal string escapes (\n, \r\n, \r) in text outside math formulas
+    // Any \n that is not a known LaTeX math command (e.g. \neq, \notin, \nabla) is converted to real newline
+    let normalizedText = textWithPlaceholders
+      .replace(/\\r\\n/g, '\n')
+      .replace(/\\r/g, '\n')
+      .replace(/\\+n(?!(nabla|natural|neg|neq|ne|nearrow|nexists|notin|normalsize|nu|null|nwarrow|nRightarrow|nLeftarrow)\b)/g, '\n');
+
+    // Normalize bullet point lines: ensure a space after bullet markers (-, *, •)
+    normalizedText = normalizedText.replace(/(^|\n)\s*[\*\-•]\s*/g, '$1- ');
+
     // Step 2: If inline mode, just format inline bold/italic and restore math
     if (inline) {
-      let escaped = escapeHtml(textWithPlaceholders);
+      let inlineText = normalizedText.replace(/\n+/g, ' ');
+      let escaped = escapeHtml(inlineText);
       escaped = formatInlineStyles(escaped);
       for (let i = 0; i < mathTokens.length; i++) {
         escaped = escaped.split(`@@@KATEXMATH${i}TOKEN@@@`).join(mathTokens[i]);
@@ -65,7 +76,7 @@ export const MathRenderer: React.FC<MathRendererProps> = ({ content, className =
     }
 
     // Step 3: Block mode — full Markdown to beautiful HTML parser
-    const lines = textWithPlaceholders.split('\n');
+    const lines = normalizedText.split('\n');
     const parsedHtmlChunks: string[] = [];
 
     for (let i = 0; i < lines.length; i++) {
