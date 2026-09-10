@@ -17,6 +17,8 @@ import {
   Target,
   BookmarkCheck,
   Languages,
+  Radar,
+  PenTool,
 } from 'lucide-react';
 import { Profile, UserRole } from '../types';
 
@@ -101,7 +103,18 @@ export const Navbar: React.FC<NavbarProps> = ({
                   }`}
                 >
                   <UserCheck className="w-3.5 h-3.5" />
-                  My Students
+                  Bài Nộp HS
+                </button>
+                <button
+                  onClick={() => setActiveTab('teacher_radar')}
+                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    activeTab === 'teacher_radar'
+                      ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-semibold'
+                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <Radar className="w-3.5 h-3.5 text-indigo-500" />
+                  Radar Năng Lực K11
                 </button>
                 <button
                   onClick={() => setActiveTab('matrix_guide')}
@@ -160,6 +173,17 @@ export const Navbar: React.FC<NavbarProps> = ({
                 >
                   <Clock className="w-3.5 h-3.5" />
                   Luyện Đề 90 Phút
+                </button>
+                <button
+                  onClick={() => setActiveTab('student_proof')}
+                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    activeTab === 'student_proof'
+                      ? 'bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 font-semibold'
+                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <PenTool className="w-3.5 h-3.5 text-purple-500" />
+                  Olympic Proof Studio
                 </button>
                 <button
                   onClick={onOpenQuickJoin}
@@ -300,6 +324,16 @@ export const Navbar: React.FC<NavbarProps> = ({
                 Bài Nộp HS
               </button>
               <button
+                onClick={() => setActiveTab('teacher_radar')}
+                className={`px-2.5 py-1 text-xs whitespace-nowrap rounded-lg ${
+                  activeTab === 'teacher_radar'
+                    ? 'bg-indigo-600 text-white'
+                    : 'text-slate-600 dark:text-slate-300'
+                }`}
+              >
+                Radar K11
+              </button>
+              <button
                 onClick={() => setActiveTab('matrix_guide')}
                 className={`px-2.5 py-1 text-xs whitespace-nowrap rounded-lg ${
                   activeTab === 'matrix_guide'
@@ -351,6 +385,16 @@ export const Navbar: React.FC<NavbarProps> = ({
                 }`}
               >
                 Luyện Đề 90p
+              </button>
+              <button
+                onClick={() => setActiveTab('student_proof')}
+                className={`px-2.5 py-1 text-xs whitespace-nowrap rounded-lg ${
+                  activeTab === 'student_proof'
+                    ? 'bg-purple-600 text-white'
+                    : 'text-slate-600 dark:text-slate-300'
+                }`}
+              >
+                Tự Luận
               </button>
               <button
                 onClick={onOpenQuickJoin}

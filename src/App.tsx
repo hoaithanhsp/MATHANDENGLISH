@@ -11,6 +11,8 @@ import { StudentNotes } from './components/StudentView/StudentNotes';
 import { ReviewSection } from './components/StudentView/ReviewSection';
 import { MistakeNotebook } from './components/StudentView/MistakeNotebook';
 import { InteractiveVocabModal } from './components/StudentView/InteractiveVocabModal';
+import { OlympicProofStudio } from './components/StudentView/OlympicProofStudio';
+import { TeamCompetencyRadar } from './components/TeacherView/TeamCompetencyRadar';
 import { JoinExamModal } from './components/StudentView/JoinExamModal';
 import { SchemaModal } from './components/SchemaModal';
 import { SettingsModal } from './components/SettingsModal';
@@ -238,6 +240,7 @@ export default function App() {
           <MockTestRunner
             exam={activeRunningExam}
             studentName={activeStudentName}
+            studentId={currentUser.id}
             onFinishExam={(asgn) => {
               handleFinishExam(asgn);
             }}
@@ -264,6 +267,9 @@ export default function App() {
                 )}
                 {activeTab === 'teacher_submissions' && (
                   <StudentSubmissions assignments={assignments} exams={exams} />
+                )}
+                {activeTab === 'teacher_radar' && (
+                  <TeamCompetencyRadar assignments={assignments} exams={exams} />
                 )}
                 {activeTab === 'matrix_guide' && <MatrixGuide />}
                 {activeTab === 'student_notes' && (
@@ -371,6 +377,9 @@ export default function App() {
                       </div>
                     )}
                   </div>
+                )}
+                {activeTab === 'student_proof' && (
+                  <OlympicProofStudio />
                 )}
                 {activeTab === 'student_mistakes' && (
                   <MistakeNotebook

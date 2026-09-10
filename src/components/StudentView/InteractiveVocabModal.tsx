@@ -60,6 +60,7 @@ export const InteractiveVocabModal: React.FC = () => {
 
   const handleSpeak = (text: string) => {
     if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'en-US';
       utterance.rate = 0.9;
@@ -295,7 +296,7 @@ export const InteractiveVocabModal: React.FC = () => {
 
             {!isFlipped ? (
               // FRONT SIDE: English term + pronunciation
-              <div className="space-y-4 animate-in fade-in">
+              <div className="space-y-4 animate-in fade-in flex flex-col items-center">
                 <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300">
                   {currentCard.strand || 'Math Olympiad'}
                 </span>
@@ -307,16 +308,40 @@ export const InteractiveVocabModal: React.FC = () => {
                     {currentCard.pronunciation}
                   </p>
                 )}
-                <div className="pt-4 text-xs text-slate-400">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSpeak(currentCard.term_en);
+                  }}
+                  className="px-3 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900 transition flex items-center gap-1.5 text-xs font-semibold shadow-xs"
+                  title="Nghe phát âm chuẩn (Web Speech)"
+                >
+                  <Volume2 className="w-4 h-4" /> Phát âm Audio
+                </button>
+                <div className="pt-2 text-xs text-slate-400">
                   (Bấm vào thẻ để xem nghĩa và định nghĩa toán học)
                 </div>
               </div>
             ) : (
               // BACK SIDE: Vietnamese + Definition + Example
-              <div className="space-y-4 animate-in fade-in">
-                <h3 className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
-                  {currentCard.term_vi}
-                </h3>
+              <div className="space-y-4 animate-in fade-in flex flex-col items-center">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                    {currentCard.term_vi}
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSpeak(currentCard.term_en);
+                    }}
+                    className="p-1 rounded-full text-slate-400 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+                    title="Nghe lại phát âm tiếng Anh"
+                  >
+                    <Volume2 className="w-4 h-4" />
+                  </button>
+                </div>
                 <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed max-w-md">
                   {currentCard.definition}
                 </p>

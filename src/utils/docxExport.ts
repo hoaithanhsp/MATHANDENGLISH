@@ -80,6 +80,18 @@ export async function exportExamToDocx(options: ExportDocxOptions): Promise<void
     new Paragraph({
       text: '-------------------------------------------------------------------------------------------------------',
       alignment: AlignmentType.CENTER,
+      spacing: { after: 160 },
+    }),
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: '📌 HƯỚNG DẪN CÔNG THỨC TOÁN TRONG MICROSOFT WORD: Các công thức toán được mã hóa theo chuẩn LaTeX ($...$). Trong Word 2016 / 365, Thầy/Cô và các em học sinh có thể quét chọn biểu thức toán và bấm tổ hợp phím [Alt] + [=] để chuyển đổi tự động sang Equation toán học trực quan.',
+          italics: true,
+          size: 18,
+          color: '555555',
+        }),
+      ],
+      alignment: AlignmentType.LEFT,
       spacing: { after: 240 },
     })
   );

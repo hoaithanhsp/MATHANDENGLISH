@@ -98,14 +98,13 @@ export const MathRenderer: React.FC<MathRendererProps> = ({ content, className =
  * Also handles: \\\\sin → \\sin (quadruple to double)
  */
 function fixDoubleEscapes(math: string): string {
-  // First pass: reduce \\\\ to \\ (quadruple-escaped → proper LaTeX)
+  // First pass: reduce quadruple-escaped backslashes to double
   let result = math.replace(/\\\\\\\\/g, '\\\\');
-  // Second pass: reduce \\ to \ for known LaTeX commands
-  // Match \\commandname where commandname is a known LaTeX command
-  result = result.replace(
-    /\\\\(sin|cos|tan|cot|sec|csc|arcsin|arccos|arctan|sinh|cosh|tanh|log|ln|exp|lim|max|min|sup|inf|det|gcd|deg|dim|ker|hom|arg|Pr|sqrt|frac|binom|sum|prod|int|iint|iiint|oint|partial|nabla|infty|pm|mp|times|div|cdot|cdots|ldots|vdots|ddots|dots|leq|geq|neq|approx|equiv|sim|simeq|cong|propto|perp|parallel|angle|triangle|square|circ|star|bullet|diamond|oplus|otimes|forall|exists|nexists|in|notin|subset|supset|subseteq|supseteq|cap|cup|setminus|emptyset|varnothing|land|lor|lnot|neg|implies|iff|to|leftarrow|rightarrow|Leftarrow|Rightarrow|leftrightarrow|Leftrightarrow|uparrow|downarrow|mapsto|alpha|beta|gamma|delta|epsilon|zeta|eta|theta|iota|kappa|lambda|mu|nu|xi|omicron|pi|rho|sigma|tau|upsilon|phi|chi|psi|omega|Gamma|Delta|Theta|Lambda|Xi|Pi|Sigma|Upsilon|Phi|Psi|Omega|varepsilon|varphi|vartheta|text|textbf|textit|mathrm|mathbf|mathit|mathbb|mathcal|mathfrak|mathsf|overline|underline|hat|bar|vec|tilde|dot|ddot|widehat|widetilde|overbrace|underbrace|left|right|big|Big|bigg|Bigg|lceil|rceil|lfloor|rfloor|langle|rangle|quad|qquad|hspace|vspace|phantom|bmod|pmod|mod|operatorname|stackrel|overset|underset|boxed|color|cancel|not)\b/g,
-    '\\$1'
-  );
+
+  // Second pass: generalize LaTeX command reduction (\\command -> \command)
+  // Replaces any \\ followed by alphabetical command name or special LaTeX symbol
+  result = result.replace(/\\\\([a-zA-Z]+|[{}[\](),:;!%_#&|])/g, '\\$1');
+
   return result;
 }
 

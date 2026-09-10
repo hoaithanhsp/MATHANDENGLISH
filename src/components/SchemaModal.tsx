@@ -55,10 +55,22 @@ const FIREBASE_SCHEMA_TEXT = `// ===============================================
       "student_id": "string",
       "student_name": "string",
       "status": "assigned | completed",
-      "score": 8.5,
+      "score": 18.5,
       "answers": { "<question_id>": "student_answer" },
       "started_at": "ISO 8601 string",
       "submitted_at": "ISO 8601 string",
+      "created_at": "ISO 8601 string",
+      "teacher_feedback": "string | null",
+      "graded_at": "ISO 8601 string | null"
+    }
+  },
+
+  "profiles": {
+    "<user_uid>": {
+      "id": "string",
+      "email": "string",
+      "role": "teacher | student",
+      "full_name": "string",
       "created_at": "ISO 8601 string"
     }
   },
@@ -111,7 +123,7 @@ const FIREBASE_SCHEMA_TEXT = `// ===============================================
       }
     },
 
-    // ── ASSIGNMENTS: Ai cũng đọc (GV xem kết quả), ai cũng ghi (HS nộp bài) ──
+    // ── ASSIGNMENTS: Đọc và ghi bài nộp, hỗ trợ chấm điểm và lời phê GV ──
     "assignments": {
       ".read": true,
       ".write": true,
@@ -122,9 +134,24 @@ const FIREBASE_SCHEMA_TEXT = `// ===============================================
         "student_id":   { ".validate": "newData.isString() && newData.val().length > 0" },
         "student_name": { ".validate": "newData.isString() && newData.val().length <= 200" },
         "status":       { ".validate": "newData.isString() && (newData.val() === 'assigned' || newData.val() === 'completed')" },
-        "score":        { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10" },
+        "score":        { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 20" },
         "answers":      { ".validate": "newData.hasChildren()" },
-        "created_at":   { ".validate": "newData.isString()" }
+        "created_at":   { ".validate": "newData.isString()" },
+        "teacher_feedback": { ".validate": "newData.isString()" },
+        "graded_at":    { ".validate": "newData.isString()" }
+      }
+    },
+
+    // ── PROFILES: Đăng nhập & lưu thông tin GV/HS ──
+    "profiles": {
+      ".read": true,
+      ".write": true,
+      "$userId": {
+        ".validate": "newData.hasChildren(['id', 'email', 'role', 'full_name'])",
+        "id":        { ".validate": "newData.isString()" },
+        "email":     { ".validate": "newData.isString()" },
+        "role":      { ".validate": "newData.isString() && (newData.val() === 'teacher' || newData.val() === 'student')" },
+        "full_name": { ".validate": "newData.isString()" }
       }
     },
 
@@ -147,8 +174,6 @@ const FIREBASE_SCHEMA_TEXT = `// ===============================================
     "$other": {
       ".validate": false
     }
-  }
-}
   }
 }`;
 

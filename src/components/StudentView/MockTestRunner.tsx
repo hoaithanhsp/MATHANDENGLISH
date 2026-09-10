@@ -28,6 +28,7 @@ import { printHaiPhongExam } from '../../utils/printPdf';
 interface MockTestRunnerProps {
   exam: Exam;
   studentName?: string;
+  studentId?: string;
   onFinishExam: (assignment: Assignment) => void;
   onExit: () => void;
 }
@@ -35,6 +36,7 @@ interface MockTestRunnerProps {
 export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
   exam,
   studentName = 'Trần Minh Quang (Đội tuyển HSG)',
+  studentId = 'student-hp-01',
   onFinishExam,
   onExit,
 }) => {
@@ -215,7 +217,10 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
     setIsSubmitted(true);
 
     let correctCount = 0;
+    let part1Correct = 0;
+    let part2Correct = 0;
     const wrongEntries: MistakeEntry[] = [];
+    const actualStudentId = studentId || 'student-hp-01';
 
     questions.forEach((q) => {
       const userAns = answers[q.id] || '';
@@ -232,11 +237,16 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
 
       if (isCorrect) {
         correctCount += 1;
+        if (q.part === 'PART_1') {
+          part1Correct += 1;
+        } else {
+          part2Correct += 1;
+        }
       } else {
         // Tự động thêm vào danh sách bài tập làm sai
         wrongEntries.push({
           id: `mistake-${exam.id}-${q.id}-${Date.now()}`,
-          student_id: 'student-hp-01',
+          student_id: actualStudentId,
           question: q,
           exam_title: exam.title,
           student_answer: userAns,
@@ -247,13 +257,20 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
       }
     });
 
-    // Score on 10.0 scale
-    const finalScore = totalQuestions > 0 ? Number(((correctCount / totalQuestions) * 10).toFixed(2)) : 0;
+    // Score on 20.00 scale (Hai Phong Math Olympiad Standard: Part I = 12 * 0.5 = 6.0đ; Part II = 10 * 1.4 = 14.0đ)
+    let finalScore = 0;
+    const hasStandardParts = questions.some((q) => q.part === 'PART_1') && questions.some((q) => q.part === 'PART_2');
+    if (hasStandardParts) {
+      finalScore = Number((part1Correct * 0.5 + part2Correct * 1.4).toFixed(2));
+    } else {
+      // Fallback for custom topic practice: scale directly to 20.00
+      finalScore = totalQuestions > 0 ? Number(((correctCount / totalQuestions) * 20).toFixed(2)) : 0;
+    }
 
     const newAssignment: Assignment = {
       id: `assign-${Date.now()}`,
       exam_id: exam.id,
-      student_id: 'student-hp-01',
+      student_id: actualStudentId,
       student_name: studentName,
       status: 'completed',
       score: finalScore,
@@ -318,18 +335,47 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
             <div className="my-6">
               <div className="text-5xl sm:text-6xl font-black tracking-tight text-white font-mono">
                 {score.toFixed(2)}
-                <span className="text-2xl font-normal text-indigo-200"> / 10.00</span>
+                <span className="text-2xl font-normal text-indigo-200"> / 20.00</span>
               </div>
               <p className="text-sm text-emerald-300 font-medium mt-2">
                 Đúng {correctCount} / {totalQuestions} câu ({((correctCount / totalQuestions) * 100).toFixed(1)}%)
               </p>
+              <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-white/10 backdrop-blur-sm text-amber-300 border border-white/10">
+                {score >= 18.0
+                  ? '🌟 Thành tích Xuất sắc — Ứng viên Đội tuyển Giải Nhất Thành phố'
+                  : score >= 15.0
+                  ? '🎯 Thành tích Giỏi — Đạt chuẩn Đội tuyển HSG K11 Hải Phòng'
+                  : score >= 12.0
+                  ? '📈 Thành tích Khá — Cần bồi dưỡng thêm chuyên đề nâng cao'
+                  : score >= 10.0
+                  ? '⚡ Đạt Yêu cầu Cơ bản — Cần tăng tốc luyện đề và từ vựng'
+                  : '⚠️ Cần Nỗ lực Nhiều Hơn — Xem kỹ lại lời giải chi tiết và sổ tay câu sai'}
+              </div>
               {tabSwitchCount > 0 && (
-                <p className="text-xs text-amber-300 mt-1 flex items-center justify-center gap-1">
+                <p className="text-xs text-amber-300 mt-2 flex items-center justify-center gap-1">
                   <ShieldAlert className="w-3.5 h-3.5" />
                   Ghi nhận chuyển tab / rời màn hình: <strong>{tabSwitchCount} lần</strong>
                 </p>
               )}
             </div>
+
+            {/* Teacher Feedback Banner if available */}
+            {submittedAssignment.teacher_feedback && (
+              <div className="my-4 p-4 rounded-2xl bg-indigo-900/60 border border-indigo-400/40 text-left backdrop-blur-md">
+                <div className="flex items-center gap-2 text-amber-300 text-xs font-bold mb-1">
+                  <Award className="w-4 h-4" />
+                  <span>Lời Nhận Xét & Dặn Dò Của Thầy Cô:</span>
+                </div>
+                <p className="text-xs sm:text-sm text-indigo-100 italic leading-relaxed whitespace-pre-wrap">
+                  "{submittedAssignment.teacher_feedback}"
+                </p>
+                {submittedAssignment.graded_at && (
+                  <span className="text-[10px] text-indigo-300 block mt-2">
+                    Nhận xét lúc: {new Date(submittedAssignment.graded_at).toLocaleString('vi-VN')}
+                  </span>
+                )}
+              </div>
+            )}
 
             <div className="flex flex-wrap justify-center gap-3">
               <button

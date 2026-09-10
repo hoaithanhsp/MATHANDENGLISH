@@ -59,12 +59,36 @@ export interface Assignment {
   student_id: string;
   student_name?: string;
   status: 'assigned' | 'completed';
-  score?: number; // scale 10.00 or 20.00
+  score?: number; // scale 20.00 (theo chuẩn HSG Hải Phòng)
   answers: Record<string, string>; // question_id -> student answer
   tab_switch_count?: number; // Count of tab switches during live exam
+  teacher_feedback?: string; // Lời phê / phản hồi dặn dò của giáo viên
+  graded_at?: string;        // Thời điểm giáo viên nhận xét/chấm bài
   started_at?: string;
   submitted_at?: string;
   created_at: string;
+}
+
+export interface ProofProblem {
+  id: string;
+  title: string;
+  strand: MathStrand;
+  difficulty: CognitiveLevel;
+  topic: string;
+  statement_en: string;
+  statement_vi?: string;
+  hints?: string[];
+  key_vocabulary?: string[];
+  sample_proof_en?: string;
+}
+
+export interface ProofFeedback {
+  rigor_score: number; // Thang điểm độ chặt chẽ toán học (0 - 10)
+  language_score: number; // Thang điểm tiếng Anh học thuật (0 - 10)
+  grammar_issues?: { original: string; correction: string; explanation: string }[];
+  math_reasoning_feedback?: string;
+  polished_proof_en: string;
+  pedagogical_advice?: string;
 }
 
 export type MistakeReason =

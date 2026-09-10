@@ -9,7 +9,7 @@
 
 import { GoogleGenAI } from '@google/genai';
 import { apiKeyManager, AiProvider } from './apiKeyManager';
-import { Question } from '../types';
+import { Question, ProofFeedback } from '../types';
 
 // ============================================================
 // ERROR CLASSIFICATION
@@ -211,10 +211,9 @@ Contest Structure & Rules (MUST BE STRICTLY FOLLOWED):
    - Strand 3: Statistics, Probability, Discrete & Number Theory: 4 questions.
 5. KaTeX Math Formatting (CRITICAL):
    - All mathematical formulas MUST use standard LaTeX: '$...$' for inline formulas, '$$...$$' for display block formulas.
-   - In JSON output strings, use double backslash for LaTeX commands: "\\\\sin", "\\\\frac{a}{b}", "\\\\sqrt{x}", "\\\\lim_{x \\\\to 0}".
-   - This is because JSON requires escaping backslashes. The rendered result will show proper math.
-   - CORRECT in JSON: "$\\\\sin(x) + \\\\cos(x)$"
-   - WRONG in JSON: "$\\sin(x)$" (single backslash gets lost in JSON parsing)
+   - In JSON strings, write standard valid JSON escape for LaTeX commands: "\\frac{a}{b}", "\\sin(x)", "\\sqrt{x}", "\\lim_{x \\to 0}".
+   - When parsed by JSON.parse(), this yields standard single-backslash LaTeX commands (\frac{a}{b}, \sin, etc.).
+   - NEVER use 4 backslashes ("\\\\\\\\"). Keep it standard valid JSON.
 6. Language:
    - For bilingual mode: provide question_en and question_vi (translate ONLY the question prompt, do NOT translate options/answers). options_en MUST be in English only (do NOT translate options to Vietnamese). Also provide solution_en and solution_vi.
    - For english_only: question_en, options_en, solution_en.
@@ -341,8 +340,8 @@ export const generateTopicPractice = async (params: {
 CRITICAL RULES:
 1. ALL questions MUST be directly about "${topic}". Do NOT generate questions on other topics.
 2. Language mode: ${mode}. In bilingual mode, translate ONLY the question prompt into "question_vi". Do NOT translate options into Vietnamese.
-3. Use KaTeX-compatible LaTeX with single backslash inside $...$ delimiters. Example: $\sin(x)$, $\frac{a}{b}$, $\lim_{x \to 0}$.
-4. Do NOT use \\\\sin or \\\\frac (double backslash). Use single backslash: \sin, \frac, \sqrt, \log, etc.
+3. Use KaTeX-compatible LaTeX enclosed in $...$ for inline or $$...$$ for display formulas.
+4. In JSON strings, use valid standard JSON escaping for LaTeX commands (e.g., "\\\\sin", "\\\\frac{a}{b}", "\\\\sqrt{x}", "\\\\log", "\\\\lim_{x \\\\to 0}"). Do NOT use 4 backslashes.
 5. Include Part 1 (MCQ with 4 options) and Part 2 (Short-answer with correct_answer as a number or expression).
 6. Each question must have: id, part ("PART_1" or "PART_2"), order_index, strand, topic, difficulty, question_en, question_vi, correct_answer, solution_en, solution_vi.
 7. MCQ options format (English only, do NOT translate): ["A. ...", "B. ...", "C. ...", "D. ..."]
@@ -379,25 +378,12 @@ Provide a NEW, DIFFERENT, EQUIVALENT replacement problem with the EXACT SAME spe
 - Part: ${originalQuestion.part} (${originalQuestion.part === 'PART_1' ? 'Multiple Choice with 4 options' : 'Short Answer'})
 - Strand: ${originalQuestion.strand}
 - Topic: "${originalQuestion.topic}"
-- Difficulty: ${originalQuestion.difficulty}
-- Mode: ${mode}
-${customPrompt ? `- Teacher's specific requirement: "${customPrompt}"` : ''}
+- Cognitive Difficulty Level: ${originalQuestion.difficulty}
+- Language Mode: ${mode}
+${customPrompt ? `Teacher's Special Instruction: "${customPrompt}"` : ''}
 
-CRITICAL RULES:
-1. Make the question original, mathematically sound, challenging, and suitable for Hai Phong City Math Olympiad.
-2. In bilingual mode:
-   - "question_vi" is translated from "question_en".
-   - DO NOT translate MCQ options into Vietnamese ("options_vi" should be empty or omitted). Options MUST stay pure English.
-3. For MCQ (PART_1): options_en must be an array of 4 items ["A. ...", "B. ...", "C. ...", "D. ..."], and correct_answer must be one of "A", "B", "C", "D".
-4. For Short Answer (PART_2): correct_answer must be a single concise number or fraction string (e.g. "42", "1/3", "-5.5", "12").
-5. Include a "hints" array of 2 progressive hints (Hint 1: direction/concept, Hint 2: intermediate step) to help students in practice mode.
-6. Use KaTeX-compatible LaTeX enclosed in $...$ with single backslashes (e.g., $\frac{a}{b}$, $\sqrt{x}$).
-7. Return ONLY a single valid JSON object matching the Question schema.
-
-Output Schema:
+Output JSON format (single question object):
 {
-  "id": "${originalQuestion.id}",
-  "exam_id": "${originalQuestion.exam_id}",
   "part": "${originalQuestion.part}",
   "order_index": ${originalQuestion.order_index},
   "strand": "${originalQuestion.strand}",
@@ -442,3 +428,61 @@ Output Schema:
   };
 };
 
+/**
+ * AI Academic Polisher for Olympic Mathematical Proofs
+ * Analyzes mathematical rigor, language accuracy, and provides publication-grade rewrite
+ */
+export const polishMathProof = async (params: {
+  problemTitle: string;
+  problemStatement: string;
+  studentProof: string;
+  onModelSwitch?: (from: string, to: string, reason: string) => void;
+}): Promise<ProofFeedback> => {
+  const { problemTitle, problemStatement, studentProof, onModelSwitch } = params;
+
+  const prompt = `You are an elite International Mathematical Olympiad (IMO) juror and English academic editor.
+A high school math olympiad competitor has submitted a written proof in English for the following problem:
+
+Problem Title: "${problemTitle}"
+Problem Statement:
+"${problemStatement}"
+
+Student's Written Proof in English:
+"${studentProof}"
+
+Analyze this proof meticulously with two criteria:
+1. Mathematical Rigor (Logical flow, missing cases, circular reasoning, completeness).
+2. Academic Mathematical English (Grammar, mathematical idioms, formal conjunctions like 'Without loss of generality', 'Assume for contradiction', 'It suffices to show', 'By Cauchy-Schwarz', 'Consequently').
+
+Return ONLY a JSON object with this exact schema:
+{
+  "rigor_score": number (0 to 10, integer or decimal with 1 decimal place),
+  "language_score": number (0 to 10, integer or decimal with 1 decimal place),
+  "grammar_issues": [
+    {
+      "original": "exact text snippet with error",
+      "correction": "corrected phrasing",
+      "explanation": "concise explanation in Vietnamese of why this is better in mathematical English"
+    }
+  ],
+  "math_reasoning_feedback": "Detailed pedagogical evaluation in Vietnamese of the student's mathematical argumentation, pointing out valid steps and logical pitfalls or unjustified claims.",
+  "polished_proof_en": "Flawless, publication-grade academic rewrite of the proof in English, beautifully formatted with standard LaTeX in $...$ and formal mathematical prose.",
+  "pedagogical_advice": "Actionable advice in Vietnamese for the student on how to write formal proofs faster and avoid losing points in municipal/national Olympiads."
+}`;
+
+  const result = await generateContentWithFallback({
+    contents: prompt,
+    systemInstruction: `You are an elite IMO reviewer and mathematical editor. Return valid JSON only. Keep LaTeX in standard $...$ and $$...$$.`,
+    responseMimeType: 'application/json',
+    maxOutputTokens: 8192,
+    thinkingLevel: 'low',
+    onModelSwitch,
+  });
+
+  const raw = result.text;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return JSON.parse(raw.replace(/```json\s*|```/g, '').trim());
+  }
+};

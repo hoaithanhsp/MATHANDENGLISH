@@ -1,0 +1,181 @@
+Tôi đã truy cập thành công vào repository **`hoaithanhsp/MATHANDENGLISH`** [citation:{"links":["https://github.com/hoaithanhsp/MATHANDENGLISH/blob/main/README.md"]}]. Dự án **MathElite AI** của thầy được xây dựng rất bài bản, chuẩn hóa bám sát ma trận đề thi **22 câu / 90 phút** của Sở GD&ĐT Hải Phòng [citation:{"links":["https://github.com/hoaithanhsp/MATHANDENGLISH/blob/main/README.md"]}], tích hợp sẵn trọn bộ 13 giáo án bồi dưỡng chính khóa [citation:{"links":["https://github.com/hoaithanhsp/MATHANDENGLISH/blob/main/README.md"]}], phân quyền Giáo viên – Học sinh cùng hệ thống Realtime Firebase [citation:{"links":["https://github.com/hoaithanhsp/MATHANDENGLISH/blob/main/src/services/storageService.ts"]}].
+
+Dưới đây là kết quả rà soát chi tiết về **5 lỗi logic cốt lõi trong code hiện tại** và **5 đề xuất bổ sung tính năng then chốt** để tối ưu hóa tương tác Thầy – Trò cho đội tuyển HSG Toán Tiếng Anh khối 11 TP. Hải Phòng.
+
+---
+
+### PHẦN 1: CÁC LỖI LOGIC TRONG CODE HIỆN TẠI
+
+#### 1. Lỗi tính điểm cào bằng và lệch thang điểm trong `MockTestRunner.tsx`
+- **Vị trí:** `src/components/StudentView/MockTestRunner.tsx` (dòng 250–251)
+  ```typescript
+  // Score on 10.0 scale
+  const finalScore = totalQuestions > 0 ? Number(((correctCount / totalQuestions) * 10).toFixed(2)) : 0;
+  ```
+- **Vấn đề logic:** 
+  1. Theo `README.md` và thể thức thi HSG Hải Phòng [citation:{"links":["https://github.com/hoaithanhsp/MATHANDENGLISH/blob/main/README.md"]}], bài thi tính theo **thang điểm 20.00**, nhưng code đang ép về thang 10.00.
+  2. Cách tính `(correctCount / totalQuestions) * 10` đang **cào bằng trọng số**: 1 câu trắc nghiệm khách quan Part I (mức Thông hiểu/Vận dụng nhẹ) có số điểm ngang bằng 1 câu trả lời ngắn Part II (Vận dụng cao, tính toán phức tạp).
+- **Khắc phục:** Cần tính điểm theo trọng số chuẩn của đề thi:
+  - **Part I (12 câu MCQ):** Mỗi câu 0.5 điểm $\rightarrow$ Tổng 6.0 điểm.
+  - **Part II (10 câu Trả lời ngắn):** Mỗi câu 1.4 điểm $\rightarrow$ Tổng 14.0 điểm.
+  - Tổng điểm toàn bài: **20.00 điểm**.
+  ```typescript
+  let part1Correct = 0;
+  let part2Correct = 0;
+  questions.forEach(q => {
+    const isCorrect = q.part === 'PART_1' 
+      ? (answers[q.id]?.trim().toUpperCase() === q.correct_answer.trim().toUpperCase())
+      : isMathAnswerCorrect(answers[q.id], q.correct_answer, q.acceptable_answers);
+    
+    if (isCorrect) {
+      if (q.part === 'PART_1') part1Correct++;
+      else part2Correct++;
+    }
+  });
+  const finalScore = Number((part1Correct * 0.5 + part2Correct * 1.4).toFixed(2)); // Thang 20.00
+  ```
+
+---
+
+#### 2. Lỗi không nhất quán khi chấm câu trả lời ngắn giữa Học sinh và Giáo viên
+- **Vị trí:** `src/components/TeacherView/StudentSubmissions.tsx` (dòng 208–212)
+  ```typescript
+  const isCorrect =
+    q &&
+    (q.correct_answer.trim().toUpperCase() === ans.trim().toUpperCase() ||
+      (q.acceptable_answers && q.acceptable_answers.includes(ans.trim())));
+  ```
+- **Vấn đề logic:** 
+  - Khi học sinh làm bài thi (`MockTestRunner.tsx`), hệ thống dùng hàm thông minh `isMathAnswerCorrect` [citation:{"links":["https://github.com/hoaithanhsp/MATHANDENGLISH/blob/main/src/utils/mathAnswerEvaluator.ts"]}] (nhận diện tương đương toán học: `1/2` = `0.5`, chấp nhận dấu phẩy `0,5` kiểu Việt, tính sai số epsilon).
+  - Nhưng khi Giáo viên vào trang `StudentSubmissions.tsx` để xem lại bài làm của học sinh, code lại so sánh chuỗi thô (`===`).
+  - **Hậu quả:** Học sinh nộp `0.5` trong khi đáp án là `1/2`, lúc nộp bài hệ thống báo câu đó **Đúng**, nhưng khi giáo viên mở chi tiết bài thi thì bảng hiển thị lại báo **Sai (Đ/A: 1/2)**.
+- **Khắc phục:** Import và sử dụng `isMathAnswerCorrect` đồng bộ trong `StudentSubmissions.tsx`:
+  ```typescript
+  import { isMathAnswerCorrect } from '../../utils/mathAnswerEvaluator';
+  // ...
+  const isCorrect = q && (
+    q.part === 'PART_1'
+      ? q.correct_answer.trim().toUpperCase() === ans.trim().toUpperCase()
+      : isMathAnswerCorrect(ans, q.correct_answer, q.acceptable_answers)
+  );
+  ```
+
+---
+
+#### 3. Lỗi Hardcode `student_id` gây đè lẫn dữ liệu giữa các học sinh
+- **Vị trí:** `src/components/StudentView/MockTestRunner.tsx` (dòng 239, 256)
+  ```typescript
+  wrongEntries.push({
+    id: `mistake-${exam.id}-${q.id}-${Date.now()}`,
+    student_id: 'student-hp-01', // 💥 HARDCODE
+    ...
+  });
+  
+  const newAssignment: Assignment = {
+    ...
+    student_id: 'student-hp-01', // 💥 HARDCODE
+  };
+  ```
+- **Vấn đề logic:** Khi triển khai cho đội tuyển nhiều học sinh cùng vào thi, mọi bài làm sai của tất cả các em đều bị gán chung mã `'student-hp-01'`. Kết quả là mục **Sổ tay bài tập sai (Mistake Notebook)** và kết quả nộp bài của các học sinh sẽ bị trộn lẫn vào nhau.
+- **Khắc phục:** Truyền `studentId` từ `currentUser.id` trong `App.tsx` vào `MockTestRunner` thay vì để giá trị tĩnh:
+  ```typescript
+  // Trong App.tsx dòng 240
+  <MockTestRunner
+    exam={activeRunningExam}
+    studentName={activeStudentName}
+    studentId={currentUser.id} // Thêm prop này
+    ...
+  />
+  ```
+
+---
+
+#### 4. Mâu thuẫn quy ước Escape dấu gạch chéo ngược LaTeX trong Prompt AI
+- **Vị trí:** `src/services/geminiService.ts`
+  - Dòng 173 (`HAIPHONG_SYSTEM_INSTRUCTION`): yêu cầu AI dùng `\\\\\\\\sin`, `\\\\\\\\frac` (4 dấu gạch chéo).
+  - Dòng 279 (`generateTopicPractice`): lại yêu cầu `Do NOT use \\\\\\\\sin... Use single backslash: \sin`.
+- **Vấn đề logic:** Khi prompt đưa ra 2 chỉ thị ngược nhau, Gemini sẽ sinh ra output lúc có 2 gạch chéo, lúc có 1 gạch chéo. Dù `MathRenderer.tsx` có hàm `fixDoubleEscapes`, hàm này chỉ bắt danh sách từ khóa cố định, nếu gặp các ký hiệu toán Olympic nâng cao như `\arcsin`, `\dbinom`, `\cong`, `\parallel`, `\sphericalangle`... KaTeX sẽ không render được và báo lỗi đỏ `[LaTeX Error]`.
+- **Khắc phục:** Thống nhất quy ước trong prompt: yêu cầu Gemini trả về cú pháp LaTeX chuẩn đơn giản bọc trong `$ ... $` và `\$ ... \$` với `responseMimeType: 'application/json'`.
+
+---
+
+#### 5. Định dạng công thức Toán khi xuất file Word (`docxExport.ts`)
+- **Vị trí:** `src/utils/docxExport.ts`
+  ```typescript
+  new TextRun({ text: q.question_en, size: 21 })
+  ```
+- **Vấn đề logic:** Thư viện `docx` xuất các chuỗi chứa `$ ... $` dưới dạng văn bản thô (Plain Text). Khi giáo viên hoặc học sinh tải file `.docx` về máy, công thức toán vẫn chỉ là `$f(x) = \frac{x^2+1}{x-1}$` chứ không tự động biến thành công thức Word Equation (OMML).
+- **Khắc phục:** Nên tích hợp thêm nút xuất **PDF (In trực tiếp)** qua trình duyệt (file `printPdf.ts` của thầy đã làm rất tốt phần KaTeX render nét đẹp khi in) hoặc bổ sung hướng dẫn phím tắt chuyển đổi LaTeX $\rightarrow$ Equation trong Word (nhấn `Alt + =` trong Word).
+
+---
+
+### PHẦN 2: CÁC TÍNH NĂNG NÊN BỔ SUNG ĐỂ TỐI ƯU CHO ĐỘI TUYỂN K11 HẢI PHÒNG
+
+Dành riêng cho mục tiêu bồi dưỡng đội tuyển HSG Toán Tiếng Anh lớp 11 Hải Phòng, tôi đề xuất thầy bổ sung **4 tính năng tương tác thực chiến** sau:
+
+```
+                          HỆ THỐNG TƯƠNG TÁC THẦY - TRÒ (K11 HẢI PHÒNG)
+                                                │
+         ┌─────────────────────┬────────────────┴────────────────┬─────────────────────┐
+         ▼                     ▼                                 ▼                     ▼
+1. Lời phê & Nhận xét     2. Chế độ Tự luận             3. Phát âm Audio         4. Radar Năng lực
+   2 chiều (GV ↔ HS)        (Olympic Proof Studio)        (Web Speech API)         Đội tuyển K11
+```
+
+---
+
+#### 1. Kênh phản hồi & Lời phê của Giáo viên (Teacher Feedback Loop)
+- **Hiện trạng:** Khi học sinh nộp bài, giáo viên chỉ xem được điểm và đáp án trắc nghiệm đúng/sai. Thầy chưa thể nhắn gửi lời nhận xét riêng cho từng em.
+- **Tính năng bổ sung:**
+  - Thêm trường `teacher_feedback?: string` và `graded_at?: string` trong `Assignment`.
+  - Trong component `StudentSubmissions.tsx`: Thêm một ô nhập **"Lời phê của Thầy/Cô"** (ví dụ: *"Câu 14 em quên xét trường hợp mẫu bằng 0", "Cần chú ý thuật ngữ 'coprime' khác với 'prime'"*).
+  - Phía học sinh: Tại mục xem lại bài thi đã nộp, hiển thị một khung nổi bật **Lời dặn của Giáo viên** kèm huy hiệu khen ngợi nếu đạt điểm giỏi.
+
+---
+
+#### 2. Module "Olympic Proof & Essay Studio" (Luyện viết chứng minh Tự luận Toán Tiếng Anh)
+- **Bối cảnh:** Kỳ thi HSG Toán Hải Phòng các năm trước thường có phần tự luận hoặc câu hỏi lập luận chặt chẽ. Học sinh thi đội tuyển thường giải toán rất nhanh nhưng khi viết chứng minh bằng tiếng Anh thì diễn đạt lủng củng, thiếu liên từ học thuật.
+- **Tính năng bổ sung:**
+  - Cho phép học sinh gõ lời giải chứng minh bằng tiếng Anh hoặc chụp ảnh bài giải giấy tải lên.
+  - **AI Academic Polisher:** Tích hợp nút *"Phân tích & Tinh chỉnh Tiếng Anh Toán học"*:
+    - Tự động phát hiện lỗi ngữ pháp, chia thì, dùng mạo từ.
+    - Gợi ý thay thế các liên từ toán học chuẩn quốc tế: *Without loss of generality (Không mất tính tổng quát), Assume for the sake of contradiction that (Giả sử phản chứng), It suffices to show that (Chỉ cần chỉ ra rằng), By the Pigeonhole Principle (Theo nguyên lý Dirichlet)...*
+
+---
+
+#### 3. Bổ sung âm thanh phát âm thuật ngữ (Text-to-Speech)
+- **Hiện trạng:** `InteractiveVocabModal.tsx` và `olympiadVocabulary.ts` [citation:{"links":["https://github.com/hoaithanhsp/MATHANDENGLISH/blob/main/src/data/olympiadVocabulary.ts"]}] có danh sách từ vựng kèm phiên âm IPA rất công phu, nhưng chưa có âm thanh.
+- **Tính năng bổ sung:** Tận dụng ngay **Web Speech API** có sẵn trên trình duyệt (hoàn toàn miễn phí, không tốn thêm API key hay thư viện ngoài). Chỉ cần thêm nút loa mini 🔊 cạnh mỗi thuật ngữ:
+  ```typescript
+  const speakTerm = (text: string) => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US';
+      utterance.rate = 0.9; // Đọc chậm một chút để nghe rõ âm đuôi toán học
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+  ```
+  Giúp học sinh luyện nghe – đọc chuẩn các từ hay phát âm sai như: *Perpendicular, Asymptote, Parallelepiped, Differentiable, Hypotenuse...*
+
+---
+
+#### 4. Bảng Radar phân tích điểm mạnh / điểm yếu từng học sinh trong Đội tuyển
+- **Mục tiêu:** Giúp giáo viên chủ nhiệm đội tuyển biết chính xác năng lực từng em trước kỳ thi thành phố.
+- **Cách làm:** Thống kê tỷ lệ làm đúng của học sinh theo 3 mạch kiến thức của Sở GD&ĐT Hải Phòng:
+  1. *Đại số – Giải tích (Lượng giác, Cấp số, Giới hạn, Mũ - Logarit)*
+  2. *Hình học và Đo lường (Hình không gian, Hệ thức lượng, Tọa độ, 3 đường Conic)*
+  3. *Thống kê, Xác suất, Rời rạc & Số học (Dirichlet, Bất biến, Số liệu ghép nhóm)*
+- Biểu thị dưới dạng thanh tiến độ phần trăm: Ví dụ học sinh Nguyễn Văn A: Đại số 88%, Xác suất 75%, nhưng Hình không gian chỉ 45% $\rightarrow$ Thầy cô biết ngay cần giao thêm bài tập hình học không gian cho học sinh này.
+
+---
+
+### TÓM TẮT CÁC FILE CẦN CẬP NHẬT NGAY
+
+| File cần sửa | Việc cần làm |
+|---|---|
+| `src/components/StudentView/MockTestRunner.tsx` | 1. Sửa thang điểm thành 20.00 (Part 1: 0.5đ/câu, Part 2: 1.4đ/câu).<br>2. Thay `student_id: 'student-hp-01'` bằng `currentUser.id`. |
+| `src/components/TeacherView/StudentSubmissions.tsx` | Dùng `isMathAnswerCorrect` để kết quả chấm hiển thị đúng với học sinh. |
+| `src/services/geminiService.ts` | Đồng bộ quy ước prompt LaTeX, tránh mâu thuẫn single/double backslash. |
+| `src/components/StudentView/InteractiveVocabModal.tsx` | Thêm tính năng phát âm audio bằng `speechSynthesis`. |

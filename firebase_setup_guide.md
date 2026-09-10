@@ -175,34 +175,60 @@ sequenceDiagram
 
 ---
 
-## 🛡️ Bảo Mật (Nâng Cao — Sau 30 Ngày)
+---
 
-Khi test mode hết hạn, cập nhật Security Rules trong Firebase Console:
+## 🛡️ Cấu Hình Firebase Authentication & Security Rules
+
+### 1. Bật Email/Password Provider (Bắt buộc cho hệ thống tài khoản GV & 8 HS)
+1. Trên Firebase Console, vào **Build** → **Authentication**.
+2. Chọn tab **Sign-in method** → nhấn vào **Email/Password**.
+3. Bật công tắc **Enable** (đầu tiên) → nhấn **Save**.
+
+---
+
+### 2. Cập nhật Security Rules cho Realtime Database
+Khi khởi tạo hoặc khi test mode 30 ngày hết hạn, vào **Realtime Database** → tab **Rules** và dán bộ Rules chuẩn sau:
 
 ```json
 {
   "rules": {
     "exams": {
       ".read": true,
-      ".write": "auth != null",
+      ".write": true,
       "$examId": {
-        ".validate": "newData.hasChildren(['id', 'title', 'access_code'])"
+        ".validate": "newData.hasChildren(['id', 'title', 'access_code', 'exam_type', 'mode', 'duration_minutes', 'is_published', 'created_at'])"
       }
     },
     "assignments": {
-      ".read": "auth != null",
-      ".write": "auth != null",
+      ".read": true,
+      ".write": true,
       "$assignmentId": {
-        ".validate": "newData.hasChildren(['id', 'exam_id', 'student_id'])"
+        ".validate": "newData.hasChildren(['id', 'exam_id', 'student_id', 'status', 'created_at'])",
+        "score": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 20" }
+      }
+    },
+    "profiles": {
+      ".read": true,
+      ".write": true,
+      "$userId": {
+        ".validate": "newData.hasChildren(['id', 'email', 'role', 'full_name'])"
       }
     },
     "study_notes": {
-      ".read": "auth != null",
-      ".write": "auth != null"
+      ".read": true,
+      ".write": true,
+      "$noteId": {
+        ".validate": "newData.hasChildren(['id', 'student_id', 'topic', 'content_markdown', 'created_at'])"
+      }
+    },
+    "$other": {
+      ".validate": false
     }
   }
 }
 ```
 
-> [!WARNING]
-> Nhớ cập nhật rules **trước khi** test mode hết hạn (30 ngày sau khi tạo database)!
+> [!IMPORTANT]
+> 1. Thang điểm bài thi chuẩn Sở GD&ĐT Hải Phòng là **20.00 điểm** (rule: `newData.val() <= 20`).
+> 2. Node `assignments` đã hỗ trợ cập nhật `teacher_feedback` và `graded_at` theo thời gian thực từ giáo viên.
+> 3. Node `profiles` phục vụ việc đồng bộ thông tin đăng nhập của Giáo viên và 8 Học sinh.

@@ -179,6 +179,21 @@ export const storageService = {
     }
   },
 
+  async updateAssignmentFeedback(assignmentId: string, feedback: string): Promise<void> {
+    const list = this.getAssignments();
+    const idx = list.findIndex((a) => a.id === assignmentId);
+    if (idx >= 0) {
+      list[idx].teacher_feedback = feedback;
+      list[idx].graded_at = new Date().toISOString();
+      writeLocal(STORAGE_KEYS.ASSIGNMENTS, list);
+
+      if (isFirebaseConfigured()) {
+        await fbSet(`assignments/${assignmentId}/teacher_feedback`, feedback);
+        await fbSet(`assignments/${assignmentId}/graded_at`, list[idx].graded_at);
+      }
+    }
+  },
+
   // Sync assignments from Firebase (for initial load — GV side)
   async syncAssignmentsFromFirebase(): Promise<Assignment[]> {
     if (!isFirebaseConfigured()) return this.getAssignments();
