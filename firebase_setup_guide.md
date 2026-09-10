@@ -211,35 +211,30 @@ Khi khởi tạo hoặc khi test mode 30 ngày hết hạn, vào **Realtime Data
   "rules": {
     "exams": {
       ".read": true,
-      ".write": true,
-      "$examId": {
-        ".validate": "newData.hasChildren(['id', 'title', 'access_code', 'exam_type', 'mode', 'duration_minutes', 'is_published', 'created_at'])"
-      }
+      ".write": true
     },
     "assignments": {
       ".read": true,
       ".write": true,
       "$assignmentId": {
-        ".validate": "newData.hasChildren(['id', 'exam_id', 'student_id', 'status', 'created_at'])",
-        "score": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 20" }
+        "score": { ".validate": "newData.val() == null || (newData.isNumber() && newData.val() >= 0 && newData.val() <= 20)" }
       }
+    },
+    "exam_sessions": {
+      ".read": true,
+      ".write": true
+    },
+    "exam_sessions_by_code": {
+      ".read": true,
+      ".write": true
     },
     "profiles": {
       ".read": true,
-      ".write": true,
-      "$userId": {
-        ".validate": "newData.hasChildren(['id', 'email', 'role', 'full_name'])"
-      }
+      ".write": true
     },
     "study_notes": {
       ".read": true,
-      ".write": true,
-      "$noteId": {
-        ".validate": "newData.hasChildren(['id', 'student_id', 'topic', 'content_markdown', 'created_at'])"
-      }
-    },
-    "$other": {
-      ".validate": false
+      ".write": true
     }
   }
 }

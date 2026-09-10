@@ -176,6 +176,16 @@ export default function App() {
     setAssignments(storageService.getAssignments());
   };
 
+  const handleResetAssignment = async (id: string) => {
+    await storageService.deleteAssignment(id);
+    setAssignments(storageService.getAssignments());
+  };
+
+  const handleResetAllAssignments = async () => {
+    await storageService.resetAllAssignments();
+    setAssignments([]);
+  };
+
   // Student starts topical practice
   const handleStartPracticeQuiz = (topic: string, questions: Question[]) => {
     storageService.incrementAiQuests(questions.length);
@@ -275,7 +285,12 @@ export default function App() {
                   />
                 )}
                 {activeTab === 'teacher_submissions' && (
-                  <StudentSubmissions assignments={assignments} exams={exams} />
+                  <StudentSubmissions
+                    assignments={assignments}
+                    exams={exams}
+                    onResetAssignment={handleResetAssignment}
+                    onResetAllAssignments={handleResetAllAssignments}
+                  />
                 )}
                 {activeTab === 'teacher_radar' && (
                   <TeamCompetencyRadar assignments={assignments} exams={exams} />

@@ -72,6 +72,7 @@ export interface Assignment {
 export interface ExamSession {
   id: string;
   exam_id: string;
+  access_code?: string;
   student_id: string;
   student_name: string;
   status: 'in_progress' | 'completed';

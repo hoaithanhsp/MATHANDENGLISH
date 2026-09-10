@@ -67,6 +67,8 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
   const notified5m = useRef(false);
   const sessionIdRef = useRef(`session-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const answersRef = useRef<Record<string, string>>(answers);
+  answersRef.current = answers;
 
   // Web Audio chime helper
   const playAlertChime = (freq = 520, count = 2) => {
@@ -113,33 +115,38 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
     }
   }, [exam.id, studentKey, totalQuestions]);
 
-  // 1b. Create exam session on Firebase for Live Monitoring
+  // 1b. Create exam session for Live Monitoring (Local + Cloud Realtime)
   useEffect(() => {
     const session: ExamSession = {
       id: sessionIdRef.current,
       exam_id: exam.id,
+      access_code: exam.access_code,
       student_id: studentId || 'student-hp-01',
       student_name: studentName || 'Học sinh',
       status: 'in_progress',
       started_at: new Date().toISOString(),
       last_active_at: new Date().toISOString(),
-      answered_count: 0,
+      answered_count: Object.keys(answersRef.current).filter((k) => (answersRef.current[k] || '').trim() !== '').length,
       total_questions: totalQuestions,
     };
     storageService.saveExamSession(session);
 
-    // Heartbeat every 30s
+    // Heartbeat every 8s using fresh answersRef
     heartbeatRef.current = setInterval(() => {
       if (!isSubmitted) {
-        const count = Object.keys(answers).filter((k) => (answers[k] || '').trim() !== '').length;
-        storageService.updateExamSessionProgress(exam.id, sessionIdRef.current, count);
+        const curAns = answersRef.current;
+        const count = Object.keys(curAns).filter((k) => (curAns[k] || '').trim() !== '').length;
+        storageService.updateExamSessionProgress(exam.id, sessionIdRef.current, count, {
+          answers: curAns,
+          accessCode: exam.access_code,
+        });
       }
-    }, 30000);
+    }, 8000);
 
     return () => {
       if (heartbeatRef.current) clearInterval(heartbeatRef.current);
     };
-  }, [exam.id]);
+  }, [exam.id, exam.access_code, studentId, studentName, totalQuestions, isSubmitted]);
 
   // 2. Continuous Auto-save every state change
   useEffect(() => {
@@ -163,6 +170,13 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
         setTabSwitchCount((prev) => {
           const next = prev + 1;
           setShowTabSwitchWarning(true);
+          const curAns = answersRef.current;
+          const count = Object.keys(curAns).filter((k) => (curAns[k] || '').trim() !== '').length;
+          storageService.updateExamSessionProgress(exam.id, sessionIdRef.current, count, {
+            answers: curAns,
+            tabSwitchCount: next,
+            accessCode: exam.access_code,
+          });
           return next;
         });
       }
@@ -170,7 +184,7 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [isSubmitted]);
+  }, [isSubmitted, exam.id, exam.access_code]);
 
   // 4. Countdown timer & Audio cues (15m, 5m)
   useEffect(() => {
@@ -209,10 +223,18 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
 
   const currentQ = questions[currentIndex];
 
-  // Set answer
+  // Set answer with instant realtime session sync
   const handleSelectAnswer = (ans: string) => {
     if (!currentQ || isSubmitted) return;
-    setAnswers((prev) => ({ ...prev, [currentQ.id]: ans }));
+    const nextAnswers = { ...answers, [currentQ.id]: ans };
+    setAnswers(nextAnswers);
+    answersRef.current = nextAnswers;
+    const count = Object.keys(nextAnswers).filter((k) => (nextAnswers[k] || '').trim() !== '').length;
+    storageService.updateExamSessionProgress(exam.id, sessionIdRef.current, count, {
+      answers: nextAnswers,
+      tabSwitchCount,
+      accessCode: exam.access_code,
+    });
   };
 
   // Virtual Keypad input handler
@@ -321,15 +343,20 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
     setSubmittedAssignment(newAssignment);
     onFinishExam(newAssignment);
 
-    // Update exam session on Firebase with results
+    // Update exam session (Local + Cloud) with results
     if (heartbeatRef.current) clearInterval(heartbeatRef.current);
-    storageService.completeExamSession(exam.id, sessionIdRef.current, {
-      score: finalScore,
-      correct_count: correctCount,
-      wrong_count: totalQuestions - correctCount,
-      answers,
-      tab_switch_count: tabSwitchCount,
-    });
+    storageService.completeExamSession(
+      exam.id,
+      sessionIdRef.current,
+      {
+        score: finalScore,
+        correct_count: correctCount,
+        wrong_count: totalQuestions - correctCount,
+        answers,
+        tab_switch_count: tabSwitchCount,
+      },
+      exam.access_code
+    );
   };
 
   // Update mistake reason from post-exam screen

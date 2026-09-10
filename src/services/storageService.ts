@@ -26,6 +26,31 @@ const STORAGE_KEYS = {
   AUTOSAVE_PREFIX: 'hp_exam_autosave_',
   AI_QUESTS_PREFIX: 'hp_ai_quests_',
   DELETED_EXAMS: 'hp_math_deleted_exams',
+  EXAM_SESSIONS: 'hp_math_exam_sessions',
+};
+
+let _examSessionChannel: BroadcastChannel | null = null;
+const getExamSessionChannel = (): BroadcastChannel | null => {
+  if (typeof window === 'undefined' || typeof BroadcastChannel === 'undefined') return null;
+  if (!_examSessionChannel) {
+    try {
+      _examSessionChannel = new BroadcastChannel('hp_exam_sessions_channel');
+    } catch {
+      _examSessionChannel = null;
+    }
+  }
+  return _examSessionChannel;
+};
+
+const notifySessionChange = (examId: string, session: ExamSession) => {
+  const channel = getExamSessionChannel();
+  if (channel) {
+    try {
+      channel.postMessage({ type: 'SESSION_UPDATE', examId, session, timestamp: Date.now() });
+    } catch {
+      // ignore
+    }
+  }
 };
 
 const DEFAULT_TEACHER: Profile = {
@@ -298,6 +323,54 @@ export const storageService = {
     }
   },
 
+  async deleteAssignment(assignmentId: string): Promise<void> {
+    const list = this.getAssignments();
+    const target = list.find((a) => a.id === assignmentId);
+    const filtered = list.filter((a) => a.id !== assignmentId);
+    writeLocal(STORAGE_KEYS.ASSIGNMENTS, filtered);
+
+    // Xóa bộ nhớ tạm autosave nếu có
+    if (target) {
+      this.clearExamAutoSave(target.exam_id, target.student_id);
+    }
+
+    // Xóa trên Firebase Cloud Realtime Database
+    if (isFirebaseConfigured()) {
+      try {
+        await fbRemove(`assignments/${assignmentId}`);
+      } catch (err) {
+        console.warn('Xóa assignment trên Firebase warning:', err);
+      }
+    }
+  },
+
+  async resetAllAssignments(): Promise<void> {
+    writeLocal(STORAGE_KEYS.ASSIGNMENTS, []);
+
+    // Xóa tất cả bộ nhớ tạm autosave
+    try {
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith(STORAGE_KEYS.AUTOSAVE_PREFIX)) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach((k) => localStorage.removeItem(k));
+    } catch {
+      // ignore
+    }
+
+    // Xóa toàn bộ node assignments trên Firebase
+    if (isFirebaseConfigured()) {
+      try {
+        await fbRemove('assignments');
+      } catch (err) {
+        console.warn('Reset toàn bộ assignments trên Firebase warning:', err);
+      }
+    }
+  },
+
   async updateAssignmentFeedback(assignmentId: string, feedback: string): Promise<void> {
     const list = this.getAssignments();
     const idx = list.findIndex((a) => a.id === assignmentId);
@@ -342,70 +415,454 @@ export const storageService = {
   },
 
   // ========================================
-  // Exam Sessions (Live Monitoring)
+  // Exam Sessions (Live Monitoring) — Multi-tier Realtime Sync
+  // Lưu đa tầng: Local Cache + BroadcastChannel + Firebase (exams/${examId}/live_sessions)
+  // Lưu ý: Node 'exams' trên Firebase đã có quyền read/write 100%, bảo đảm không bao giờ bị 401
   // ========================================
-  async saveExamSession(session: ExamSession): Promise<void> {
-    if (isFirebaseConfigured()) {
-      await fbSet(`exam_sessions/${session.exam_id}/${session.id}`, session);
-    }
+  getLocalSessionsMap(): Record<string, Record<string, ExamSession>> {
+    return readLocal<Record<string, Record<string, ExamSession>>>(STORAGE_KEYS.EXAM_SESSIONS, {});
   },
 
-  async updateExamSessionProgress(examId: string, sessionId: string, answeredCount: number): Promise<void> {
-    if (isFirebaseConfigured()) {
-      await fbSet(`exam_sessions/${examId}/${sessionId}/answered_count`, answeredCount);
-      await fbSet(`exam_sessions/${examId}/${sessionId}/last_active_at`, new Date().toISOString());
+  saveLocalSession(session: ExamSession): void {
+    const map = this.getLocalSessionsMap();
+    const examId = session.exam_id;
+    if (!map[examId]) {
+      map[examId] = {};
     }
-  },
-
-  async completeExamSession(examId: string, sessionId: string, result: {
-    score: number;
-    correct_count: number;
-    wrong_count: number;
-    answers: Record<string, string>;
-    tab_switch_count: number;
-  }): Promise<void> {
-    if (isFirebaseConfigured()) {
-      const now = new Date().toISOString();
-      await fbSet(`exam_sessions/${examId}/${sessionId}/status`, 'completed');
-      await fbSet(`exam_sessions/${examId}/${sessionId}/submitted_at`, now);
-      await fbSet(`exam_sessions/${examId}/${sessionId}/last_active_at`, now);
-      await fbSet(`exam_sessions/${examId}/${sessionId}/score`, result.score);
-      await fbSet(`exam_sessions/${examId}/${sessionId}/correct_count`, result.correct_count);
-      await fbSet(`exam_sessions/${examId}/${sessionId}/wrong_count`, result.wrong_count);
-      await fbSet(`exam_sessions/${examId}/${sessionId}/answers`, result.answers);
-      await fbSet(`exam_sessions/${examId}/${sessionId}/tab_switch_count`, result.tab_switch_count);
-    }
-  },
-
-  onExamSessionsChanged(examId: string, callback: (sessions: ExamSession[]) => void): () => void {
-    if (!isFirebaseConfigured()) return () => {};
-
-    return fbOnValue(`exam_sessions/${examId}`, (data) => {
-      if (data) {
-        const sessions = Object.values(data) as ExamSession[];
-        callback(sessions);
-      } else {
-        callback([]);
+    map[examId][session.id] = { ...session };
+    // Nếu có access_code, lưu tham chiếu cả vào access_code
+    if (session.access_code && session.access_code !== examId) {
+      if (!map[session.access_code]) {
+        map[session.access_code] = {};
       }
-    });
-  },
-
-  async getExamSessions(examId: string): Promise<ExamSession[]> {
-    if (!isFirebaseConfigured()) return [];
-    const data = await fbGet<Record<string, ExamSession>>(`exam_sessions/${examId}`);
-    return data ? Object.values(data) : [];
-  },
-
-  /** Lấy tất cả sessions của tất cả exams (cho lịch sử học tập) */
-  async getAllExamSessions(): Promise<ExamSession[]> {
-    if (!isFirebaseConfigured()) return [];
-    const data = await fbGet<Record<string, Record<string, ExamSession>>>('exam_sessions');
-    if (!data) return [];
-    const all: ExamSession[] = [];
-    for (const examSessions of Object.values(data)) {
-      all.push(...Object.values(examSessions));
+      map[session.access_code][session.id] = { ...session };
     }
-    return all;
+    writeLocal(STORAGE_KEYS.EXAM_SESSIONS, map);
+    notifySessionChange(examId, session);
+  },
+
+  async saveExamSession(session: ExamSession): Promise<void> {
+    // 1. Lưu ngay vào local cache + broadcast channel (tức thì 0ms)
+    this.saveLocalSession(session);
+
+    // 2. Gửi đồng bộ lên Firebase Realtime Database
+    if (isFirebaseConfigured()) {
+      try {
+        // A. Lưu vào node exams/.../live_sessions (Node 'exams' có quyền read/write 100%, không bao giờ bị 401)
+        await fbSet(`exams/${session.exam_id}/live_sessions/${session.id}`, session);
+        if (session.access_code && session.access_code !== session.exam_id) {
+          await fbSet(`exams/${session.access_code}/live_sessions/${session.id}`, session);
+        }
+
+        // B. Đồng thời gửi kèm vào node exam_sessions (dành cho môi trường có rules mở)
+        fbSet(`exam_sessions/${session.exam_id}/${session.id}`, session).catch(() => {});
+        if (session.access_code && session.access_code !== session.exam_id) {
+          fbSet(`exam_sessions_by_code/${session.access_code}/${session.id}`, session).catch(() => {});
+        }
+      } catch (err) {
+        console.warn('Sync session to Firebase warning:', err);
+      }
+    }
+  },
+
+  async updateExamSessionProgress(
+    examId: string,
+    sessionId: string,
+    answeredCount: number,
+    extra?: { answers?: Record<string, string>; tabSwitchCount?: number; accessCode?: string }
+  ): Promise<void> {
+    const now = new Date().toISOString();
+    // 1. Cập nhật local cache
+    const map = this.getLocalSessionsMap();
+    let existing = map[examId]?.[sessionId];
+    if (!existing && extra?.accessCode && map[extra.accessCode]?.[sessionId]) {
+      existing = map[extra.accessCode][sessionId];
+    }
+    if (existing) {
+      existing.answered_count = answeredCount;
+      existing.last_active_at = now;
+      if (extra?.answers) existing.answers = extra.answers;
+      if (typeof extra?.tabSwitchCount === 'number') existing.tab_switch_count = extra.tabSwitchCount;
+      if (extra?.accessCode) existing.access_code = extra.accessCode;
+      this.saveLocalSession(existing);
+    } else {
+      const dummy: ExamSession = {
+        id: sessionId,
+        exam_id: examId,
+        access_code: extra?.accessCode,
+        student_id: 'student-unknown',
+        student_name: 'Thí sinh',
+        status: 'in_progress',
+        started_at: now,
+        last_active_at: now,
+        answered_count: answeredCount,
+        total_questions: 22,
+        answers: extra?.answers,
+        tab_switch_count: extra?.tabSwitchCount,
+      };
+      this.saveLocalSession(dummy);
+    }
+
+    // 2. Gửi lên Firebase Realtime Database
+    if (isFirebaseConfigured()) {
+      try {
+        // Cập nhật node exams/.../live_sessions (an toàn 100%)
+        await fbSet(`exams/${examId}/live_sessions/${sessionId}/answered_count`, answeredCount);
+        await fbSet(`exams/${examId}/live_sessions/${sessionId}/last_active_at`, now);
+        if (extra?.answers) {
+          await fbSet(`exams/${examId}/live_sessions/${sessionId}/answers`, extra.answers);
+        }
+        if (typeof extra?.tabSwitchCount === 'number') {
+          await fbSet(`exams/${examId}/live_sessions/${sessionId}/tab_switch_count`, extra.tabSwitchCount);
+        }
+
+        // Cập nhật phụ vào node exam_sessions
+        fbSet(`exam_sessions/${examId}/${sessionId}/answered_count`, answeredCount).catch(() => {});
+        fbSet(`exam_sessions/${examId}/${sessionId}/last_active_at`, now).catch(() => {});
+        if (extra?.answers) {
+          fbSet(`exam_sessions/${examId}/${sessionId}/answers`, extra.answers).catch(() => {});
+        }
+        if (typeof extra?.tabSwitchCount === 'number') {
+          fbSet(`exam_sessions/${examId}/${sessionId}/tab_switch_count`, extra.tabSwitchCount).catch(() => {});
+        }
+      } catch (err) {
+        console.warn('Update session progress on Firebase warning:', err);
+      }
+    }
+  },
+
+  async completeExamSession(
+    examId: string,
+    sessionId: string,
+    result: {
+      score: number;
+      correct_count: number;
+      wrong_count: number;
+      answers: Record<string, string>;
+      tab_switch_count: number;
+    },
+    accessCode?: string
+  ): Promise<void> {
+    const now = new Date().toISOString();
+    // 1. Cập nhật local cache
+    const map = this.getLocalSessionsMap();
+    let existing = map[examId]?.[sessionId];
+    if (!existing && accessCode && map[accessCode]?.[sessionId]) {
+      existing = map[accessCode][sessionId];
+    }
+    if (existing) {
+      existing.status = 'completed';
+      existing.submitted_at = now;
+      existing.last_active_at = now;
+      existing.score = result.score;
+      existing.correct_count = result.correct_count;
+      existing.wrong_count = result.wrong_count;
+      existing.answers = result.answers;
+      existing.tab_switch_count = result.tab_switch_count;
+      this.saveLocalSession(existing);
+    }
+
+    // 2. Gửi lên Firebase Realtime Database
+    if (isFirebaseConfigured()) {
+      try {
+        // Cập nhật node exams/.../live_sessions
+        await fbSet(`exams/${examId}/live_sessions/${sessionId}/status`, 'completed');
+        await fbSet(`exams/${examId}/live_sessions/${sessionId}/submitted_at`, now);
+        await fbSet(`exams/${examId}/live_sessions/${sessionId}/last_active_at`, now);
+        await fbSet(`exams/${examId}/live_sessions/${sessionId}/score`, result.score);
+        await fbSet(`exams/${examId}/live_sessions/${sessionId}/correct_count`, result.correct_count);
+        await fbSet(`exams/${examId}/live_sessions/${sessionId}/wrong_count`, result.wrong_count);
+        await fbSet(`exams/${examId}/live_sessions/${sessionId}/answers`, result.answers);
+        await fbSet(`exams/${examId}/live_sessions/${sessionId}/tab_switch_count`, result.tab_switch_count);
+
+        // Cập nhật phụ vào node exam_sessions
+        fbSet(`exam_sessions/${examId}/${sessionId}/status`, 'completed').catch(() => {});
+        fbSet(`exam_sessions/${examId}/${sessionId}/submitted_at`, now).catch(() => {});
+        fbSet(`exam_sessions/${examId}/${sessionId}/last_active_at`, now).catch(() => {});
+        fbSet(`exam_sessions/${examId}/${sessionId}/score`, result.score).catch(() => {});
+        fbSet(`exam_sessions/${examId}/${sessionId}/correct_count`, result.correct_count).catch(() => {});
+        fbSet(`exam_sessions/${examId}/${sessionId}/wrong_count`, result.wrong_count).catch(() => {});
+        fbSet(`exam_sessions/${examId}/${sessionId}/answers`, result.answers).catch(() => {});
+        fbSet(`exam_sessions/${examId}/${sessionId}/tab_switch_count`, result.tab_switch_count).catch(() => {});
+      } catch (err) {
+        console.warn('Complete exam session on Firebase warning:', err);
+      }
+    }
+  },
+
+  onExamSessionsChanged(
+    examId: string,
+    callback: (sessions: ExamSession[]) => void,
+    accessCode?: string
+  ): () => void {
+    // 1. Helper lọc sessions từ local map
+    const getFilteredLocal = (): ExamSession[] => {
+      const map = this.getLocalSessionsMap();
+      const sessionMap = new Map<string, ExamSession>();
+
+      // Lấy từ examId
+      if (map[examId]) {
+        Object.values(map[examId]).forEach((s) => {
+          if (s && s.id) sessionMap.set(s.id, s);
+        });
+      }
+      // Lấy từ accessCode
+      if (accessCode && map[accessCode]) {
+        Object.values(map[accessCode]).forEach((s) => {
+          if (s && s.id) sessionMap.set(s.id, s);
+        });
+      }
+      // Quét toàn bộ map để không bỏ sót session nào có exam_id hoặc access_code khớp
+      Object.values(map).forEach((group) => {
+        Object.values(group).forEach((s) => {
+          if (!s || !s.id) return;
+          const matchExamId = s.exam_id === examId;
+          const matchAccessCode =
+            accessCode &&
+            (s.access_code?.toUpperCase() === accessCode.toUpperCase() ||
+              s.exam_id?.toUpperCase() === accessCode.toUpperCase());
+          if (matchExamId || matchAccessCode) {
+            sessionMap.set(s.id, s);
+          }
+        });
+      });
+
+      return Array.from(sessionMap.values());
+    };
+
+    // Phản hồi tức thì ngay 0ms với local cache
+    callback(getFilteredLocal());
+
+    // 2. Lắng nghe BroadcastChannel (đồng bộ tức thì giữa các tab trình duyệt)
+    const channel = getExamSessionChannel();
+    const handleBroadcast = (event: MessageEvent) => {
+      if (event.data && event.data.type === 'SESSION_UPDATE') {
+        callback(getFilteredLocal());
+      }
+    };
+    if (channel) {
+      channel.addEventListener('message', handleBroadcast);
+    }
+
+    // 3. Lắng nghe window storage event
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEYS.EXAM_SESSIONS) {
+        callback(getFilteredLocal());
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+
+    // 4. Lắng nghe Firebase Realtime Database
+    const unsubs: Array<() => void> = [];
+    if (isFirebaseConfigured()) {
+      try {
+        // Lắng nghe chính tại exams/${examId}/live_sessions (Node 'exams' đảm bảo quyền read/write 100%)
+        const unsubExamLive = fbOnValue(`exams/${examId}/live_sessions`, (data) => {
+          if (data) {
+            const cloudSessions = Object.values(data) as ExamSession[];
+            const map = this.getLocalSessionsMap();
+            if (!map[examId]) map[examId] = {};
+            cloudSessions.forEach((s) => {
+              if (s && s.id) {
+                map[examId][s.id] = s;
+              }
+            });
+            writeLocal(STORAGE_KEYS.EXAM_SESSIONS, map);
+          }
+          callback(getFilteredLocal());
+        });
+        unsubs.push(unsubExamLive);
+
+        // Nếu có accessCode và khác examId, lắng nghe thêm cả accessCode
+        if (accessCode && accessCode !== examId) {
+          const unsubAccessCodeLive = fbOnValue(`exams/${accessCode}/live_sessions`, (data) => {
+            if (data) {
+              const cloudSessions = Object.values(data) as ExamSession[];
+              const map = this.getLocalSessionsMap();
+              if (!map[accessCode]) map[accessCode] = {};
+              cloudSessions.forEach((s) => {
+                if (s && s.id) {
+                  map[accessCode][s.id] = s;
+                }
+              });
+              writeLocal(STORAGE_KEYS.EXAM_SESSIONS, map);
+            }
+            callback(getFilteredLocal());
+          });
+          unsubs.push(unsubAccessCodeLive);
+        }
+
+        // Lắng nghe thêm node exam_sessions (phụ)
+        const unsubLegacy = fbOnValue(`exam_sessions/${examId}`, (data) => {
+          if (data) {
+            const cloudSessions = Object.values(data) as ExamSession[];
+            const map = this.getLocalSessionsMap();
+            if (!map[examId]) map[examId] = {};
+            cloudSessions.forEach((s) => {
+              if (s && s.id) {
+                map[examId][s.id] = s;
+              }
+            });
+            writeLocal(STORAGE_KEYS.EXAM_SESSIONS, map);
+          }
+          callback(getFilteredLocal());
+        });
+        unsubs.push(unsubLegacy);
+      } catch (err) {
+        console.warn('Firebase onExamSessionsChanged listener warning:', err);
+      }
+    }
+
+    return () => {
+      if (channel) {
+        channel.removeEventListener('message', handleBroadcast);
+      }
+      window.removeEventListener('storage', handleStorage);
+      unsubs.forEach((unsub) => {
+        try {
+          unsub();
+        } catch {
+          // ignore
+        }
+      });
+    };
+  },
+
+  async getExamSessions(examId: string, accessCode?: string): Promise<ExamSession[]> {
+    const map = this.getLocalSessionsMap();
+    const sessionMap = new Map<string, ExamSession>();
+
+    // 1. Lấy từ local
+    if (map[examId]) {
+      Object.values(map[examId]).forEach((s) => {
+        if (s && s.id) sessionMap.set(s.id, s);
+      });
+    }
+    if (accessCode && map[accessCode]) {
+      Object.values(map[accessCode]).forEach((s) => {
+        if (s && s.id) sessionMap.set(s.id, s);
+      });
+    }
+    Object.values(map).forEach((group) => {
+      Object.values(group).forEach((s) => {
+        if (!s || !s.id) return;
+        if (
+          s.exam_id === examId ||
+          (accessCode &&
+            (s.access_code?.toUpperCase() === accessCode.toUpperCase() ||
+              s.exam_id?.toUpperCase() === accessCode.toUpperCase()))
+        ) {
+          sessionMap.set(s.id, s);
+        }
+      });
+    });
+
+    // 2. Lấy thêm từ Firebase Realtime Database
+    if (isFirebaseConfigured()) {
+      try {
+        // Đọc từ exams/${examId}/live_sessions (100% quyền truy cập)
+        const liveData = await fbGet<Record<string, ExamSession>>(`exams/${examId}/live_sessions`);
+        if (liveData) {
+          Object.values(liveData).forEach((s) => {
+            if (s && s.id) sessionMap.set(s.id, s);
+          });
+        }
+        if (accessCode && accessCode !== examId) {
+          const accessLiveData = await fbGet<Record<string, ExamSession>>(`exams/${accessCode}/live_sessions`);
+          if (accessLiveData) {
+            Object.values(accessLiveData).forEach((s) => {
+              if (s && s.id) sessionMap.set(s.id, s);
+            });
+          }
+        }
+        // Đọc thêm từ exam_sessions (phụ)
+        const legacyData = await fbGet<Record<string, ExamSession>>(`exam_sessions/${examId}`);
+        if (legacyData) {
+          Object.values(legacyData).forEach((s) => {
+            if (s && s.id) sessionMap.set(s.id, s);
+          });
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    return Array.from(sessionMap.values());
+  },
+
+  /** Lấy tất cả sessions của tất cả exams (cho lịch sử học tập & giám sát toàn diện) */
+  async getAllExamSessions(): Promise<ExamSession[]> {
+    const map = this.getLocalSessionsMap();
+    const sessionMap = new Map<string, ExamSession>();
+
+    // 1. Lấy từ local
+    Object.values(map).forEach((group) => {
+      Object.values(group).forEach((s) => {
+        if (s && s.id) sessionMap.set(s.id, s);
+      });
+    });
+
+    // 2. Lấy từ Firebase nếu có
+    if (isFirebaseConfigured()) {
+      try {
+        // Lấy từ exams (duyệt các đề thi để lấy live_sessions)
+        const fbExams = await fbGet<Record<string, any>>('exams');
+        if (fbExams) {
+          for (const examData of Object.values(fbExams)) {
+            if (examData && examData.live_sessions) {
+              for (const s of Object.values(examData.live_sessions as Record<string, ExamSession>)) {
+                if (s && s.id) sessionMap.set(s.id, s);
+              }
+            }
+          }
+        }
+
+        // Lấy từ exam_sessions (nếu có)
+        const legacyData = await fbGet<Record<string, Record<string, ExamSession>>>('exam_sessions');
+        if (legacyData) {
+          for (const examSessions of Object.values(legacyData)) {
+            for (const s of Object.values(examSessions)) {
+              if (s && s.id) sessionMap.set(s.id, s);
+            }
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    return Array.from(sessionMap.values());
+  },
+
+  /** Dọn dẹp/Reset phiên thi trong phòng thi (cho đề thi cụ thể hoặc toàn bộ) */
+  async clearExamSessions(examId?: string): Promise<void> {
+    const map = this.getLocalSessionsMap();
+    if (examId) {
+      delete map[examId];
+    } else {
+      for (const k of Object.keys(map)) delete map[k];
+    }
+    writeLocal(STORAGE_KEYS.EXAM_SESSIONS, map);
+
+    if (isFirebaseConfigured()) {
+      try {
+        if (examId) {
+          await fbRemove(`exams/${examId}/live_sessions`);
+          fbRemove(`exam_sessions/${examId}`).catch(() => {});
+        } else {
+          // Xóa tất cả live_sessions trong exams
+          const fbExams = await fbGet<Record<string, any>>('exams');
+          if (fbExams) {
+            for (const id of Object.keys(fbExams)) {
+              fbRemove(`exams/${id}/live_sessions`).catch(() => {});
+            }
+          }
+          fbRemove('exam_sessions').catch(() => {});
+        }
+      } catch (err) {
+        console.warn('Clear exam sessions on Firebase warning:', err);
+      }
+    }
   },
 
   // ========================================
