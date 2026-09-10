@@ -117,8 +117,39 @@ export const LiveMonitorPanel: React.FC<LiveMonitorPanelProps> = ({ exam }) => {
     }
   };
 
-  // Chọn danh sách hiển thị tùy theo filterScope
-  const activeList = filterScope === 'current' ? sessions : allSessions;
+  // Lấy danh sách assignments đã nộp để đối chiếu trạng thái
+  const assignments = storageService.getAssignments();
+
+  // Chọn danh sách hiển thị tùy theo filterScope và chuẩn hóa trạng thái đã nộp
+  const activeListRaw = filterScope === 'current' ? sessions : allSessions;
+  const activeList: ExamSession[] = activeListRaw.map((s) => {
+    // Nếu session đã có status === 'completed' thì giữ nguyên
+    if (s.status === 'completed') return s;
+
+    // Đối chiếu với danh sách assignments đã nộp:
+    // Nếu học sinh đã có bài nộp cho đề này, chắc chắn học sinh đã nộp bài!
+    const matchingAsgn = assignments.find((a) => {
+      const matchExam = a.exam_id === s.exam_id || a.exam_id === exam.id || a.exam_id === exam.access_code;
+      const matchStudent =
+        (a.student_id && s.student_id && a.student_id === s.student_id) ||
+        (a.student_name && s.student_name && a.student_name.trim().toLowerCase() === s.student_name.trim().toLowerCase());
+      return matchExam && matchStudent;
+    });
+
+    if (matchingAsgn) {
+      return {
+        ...s,
+        status: 'completed',
+        score: typeof s.score === 'number' ? s.score : matchingAsgn.score,
+        submitted_at: s.submitted_at || matchingAsgn.submitted_at || matchingAsgn.created_at,
+        tab_switch_count: typeof s.tab_switch_count === 'number' ? s.tab_switch_count : matchingAsgn.tab_switch_count,
+        answers: s.answers || matchingAsgn.answers,
+      };
+    }
+
+    return s;
+  });
+
   const inProgress = activeList.filter((s) => s.status === 'in_progress');
   const completed = activeList.filter((s) => s.status === 'completed');
 

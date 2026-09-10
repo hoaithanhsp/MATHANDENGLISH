@@ -117,6 +117,9 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
 
   // 1b. Create exam session for Live Monitoring (Local + Cloud Realtime)
   useEffect(() => {
+    // Nếu học sinh đã nộp bài, tuyệt đối KHÔNG khởi tạo lại hoặc ghi đè trạng thái in_progress
+    if (isSubmitted) return;
+
     const session: ExamSession = {
       id: sessionIdRef.current,
       exam_id: exam.id,

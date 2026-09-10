@@ -550,6 +550,15 @@ export const storageService = {
     if (!existing && accessCode && map[accessCode]?.[sessionId]) {
       existing = map[accessCode][sessionId];
     }
+    if (!existing) {
+      for (const group of Object.values(map)) {
+        if (group && group[sessionId]) {
+          existing = group[sessionId];
+          break;
+        }
+      }
+    }
+
     if (existing) {
       existing.status = 'completed';
       existing.submitted_at = now;
@@ -560,30 +569,43 @@ export const storageService = {
       existing.answers = result.answers;
       existing.tab_switch_count = result.tab_switch_count;
       this.saveLocalSession(existing);
+    } else {
+      const completedSession: ExamSession = {
+        id: sessionId,
+        exam_id: examId,
+        access_code: accessCode,
+        student_id: 'student-hp-01',
+        student_name: 'Thí sinh',
+        status: 'completed',
+        started_at: now,
+        submitted_at: now,
+        last_active_at: now,
+        score: result.score,
+        correct_count: result.correct_count,
+        wrong_count: result.wrong_count,
+        answered_count: Object.keys(result.answers || {}).length,
+        total_questions: 22,
+        answers: result.answers,
+        tab_switch_count: result.tab_switch_count,
+      };
+      existing = completedSession;
+      this.saveLocalSession(completedSession);
     }
 
-    // 2. Gửi lên Firebase Realtime Database
-    if (isFirebaseConfigured()) {
+    // 2. Gửi đồng bộ nguyên khối (atomic) lên Firebase Realtime Database
+    if (isFirebaseConfigured() && existing) {
       try {
         // Cập nhật node exams/.../live_sessions
-        await fbSet(`exams/${examId}/live_sessions/${sessionId}/status`, 'completed');
-        await fbSet(`exams/${examId}/live_sessions/${sessionId}/submitted_at`, now);
-        await fbSet(`exams/${examId}/live_sessions/${sessionId}/last_active_at`, now);
-        await fbSet(`exams/${examId}/live_sessions/${sessionId}/score`, result.score);
-        await fbSet(`exams/${examId}/live_sessions/${sessionId}/correct_count`, result.correct_count);
-        await fbSet(`exams/${examId}/live_sessions/${sessionId}/wrong_count`, result.wrong_count);
-        await fbSet(`exams/${examId}/live_sessions/${sessionId}/answers`, result.answers);
-        await fbSet(`exams/${examId}/live_sessions/${sessionId}/tab_switch_count`, result.tab_switch_count);
+        await fbSet(`exams/${examId}/live_sessions/${sessionId}`, existing);
+        if (accessCode && accessCode !== examId) {
+          await fbSet(`exams/${accessCode}/live_sessions/${sessionId}`, existing);
+        }
 
         // Cập nhật phụ vào node exam_sessions
-        fbSet(`exam_sessions/${examId}/${sessionId}/status`, 'completed').catch(() => {});
-        fbSet(`exam_sessions/${examId}/${sessionId}/submitted_at`, now).catch(() => {});
-        fbSet(`exam_sessions/${examId}/${sessionId}/last_active_at`, now).catch(() => {});
-        fbSet(`exam_sessions/${examId}/${sessionId}/score`, result.score).catch(() => {});
-        fbSet(`exam_sessions/${examId}/${sessionId}/correct_count`, result.correct_count).catch(() => {});
-        fbSet(`exam_sessions/${examId}/${sessionId}/wrong_count`, result.wrong_count).catch(() => {});
-        fbSet(`exam_sessions/${examId}/${sessionId}/answers`, result.answers).catch(() => {});
-        fbSet(`exam_sessions/${examId}/${sessionId}/tab_switch_count`, result.tab_switch_count).catch(() => {});
+        fbSet(`exam_sessions/${examId}/${sessionId}`, existing).catch(() => {});
+        if (accessCode && accessCode !== examId) {
+          fbSet(`exam_sessions_by_code/${accessCode}/${sessionId}`, existing).catch(() => {});
+        }
       } catch (err) {
         console.warn('Complete exam session on Firebase warning:', err);
       }
