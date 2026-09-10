@@ -11,10 +11,9 @@ import {
   EyeOff,
   AlertCircle,
   Loader2,
-  Users,
-  Sparkles,
+  Lock,
 } from 'lucide-react';
-import { loginWithEmailPassword, PREDEFINED_ACCOUNTS, AccountInfo } from '../services/authService';
+import { loginWithEmailPassword } from '../services/authService';
 import { Profile } from '../types';
 
 interface LoginScreenProps {
@@ -44,7 +43,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
     } catch (err: any) {
       console.error('Login error:', err);
       if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-        setError('Sai mật khẩu. Vui lòng kiểm tra lại.');
+        setError('Sai mật khẩu hoặc thông tin đăng nhập. Vui lòng kiểm tra lại.');
+      } else if (err.code === 'auth/user-not-found') {
+        setError('Tài khoản không tồn tại. Vui lòng kiểm tra lại email.');
       } else if (err.code === 'auth/invalid-email') {
         setError('Email không hợp lệ.');
       } else if (err.code === 'auth/too-many-requests') {
@@ -59,32 +60,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
     }
   };
 
-  const handleSelectAccount = async (acc: AccountInfo) => {
-    setEmail(acc.email);
-    setPassword(acc.password);
-    setError('');
-    setLoading(true);
-
-    try {
-      const { profile } = await loginWithEmailPassword(acc.email, acc.password);
-      onLoginSuccess(profile);
-    } catch (err: any) {
-      console.error('Quick login error:', err);
-      if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-        setError('Sai mật khẩu. Vui lòng kiểm tra lại.');
-      } else if (err.code === 'auth/network-request-failed') {
-        setError('Không có kết nối mạng. Vui lòng kiểm tra Internet.');
-      } else {
-        setError(`Lỗi đăng nhập: ${err.message || 'Không xác định'}`);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-emerald-50 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950 flex items-center justify-center p-4">
-      <div className="w-full max-w-lg">
+      <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-6">
           <div className="inline-flex items-center justify-center w-14 h-14 bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-500/30 mb-3">
@@ -100,17 +78,22 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
 
         {/* Login Card */}
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+          <div className="px-6 pt-5 pb-3 border-b border-slate-100 dark:border-slate-700/60 flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300">
+            <Lock className="w-4 h-4 text-indigo-500" />
+            <span>Đăng nhập hệ thống (Bảo mật cá nhân)</span>
+          </div>
+
           {/* Form */}
           <form onSubmit={handleLogin} className="p-6 space-y-4">
             <div>
               <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">
-                📧 Email
+                📧 Tài khoản Email
               </label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => { setEmail(e.target.value); setError(''); }}
-                placeholder="giaovien@hpmath.edu.vn"
+                placeholder="VD: hs01@hpmath.edu.vn"
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition"
                 disabled={loading}
                 autoFocus
@@ -126,14 +109,15 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => { setPassword(e.target.value); setError(''); }}
-                  placeholder="••••••••"
+                  placeholder="Nhập mật khẩu của bạn..."
                   className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition pr-10"
                   disabled={loading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition"
+                  title={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -152,12 +136,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 transition shadow-sm"
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 transition shadow-sm cursor-pointer"
             >
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Đang đăng nhập...
+                  Đang xác thực...
                 </>
               ) : (
                 <>
@@ -167,57 +151,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
               )}
             </button>
           </form>
-
-          {/* Quick 1-Click Login Section */}
-          <div className="px-6 pb-6 pt-2 border-t border-slate-100 dark:border-slate-700/60 bg-slate-50/70 dark:bg-slate-900/40">
-            <div className="flex items-center justify-between mb-2.5">
-              <span className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-300">
-                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                Đăng nhập nhanh 1-Click:
-              </span>
-              <span className="text-[10px] text-slate-400 font-medium">Bấm vào tên để vào app</span>
-            </div>
-
-            {/* Teacher button */}
-            <div className="mb-2">
-              <button
-                type="button"
-                disabled={loading}
-                onClick={() => handleSelectAccount(PREDEFINED_ACCOUNTS[0])}
-                className="w-full text-left p-2.5 rounded-xl text-xs font-semibold bg-indigo-100/70 dark:bg-indigo-950/50 text-indigo-800 dark:text-indigo-200 hover:bg-indigo-200/80 dark:hover:bg-indigo-900/70 transition border border-indigo-200 dark:border-indigo-800/80 flex items-center justify-between group"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="px-1.5 py-0.5 rounded bg-indigo-600 text-white text-[10px] font-bold">GIÁO VIÊN</span>
-                  <span className="truncate">{PREDEFINED_ACCOUNTS[0].displayName}</span>
-                </div>
-                <span className="text-[10px] text-indigo-500 group-hover:translate-x-0.5 transition-transform font-bold">Vào ngay →</span>
-              </button>
-            </div>
-
-            {/* 9 Students Grid */}
-            <div className="space-y-1">
-              <div className="flex items-center gap-1 text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
-                <Users className="w-3 h-3 text-emerald-500" />
-                <span>9 Học sinh Đội tuyển:</span>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-                {PREDEFINED_ACCOUNTS.slice(1).map((acc, index) => (
-                  <button
-                    key={acc.email}
-                    type="button"
-                    disabled={loading}
-                    onClick={() => handleSelectAccount(acc)}
-                    className="text-left p-2 rounded-lg text-xs bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-700 dark:hover:text-emerald-300 hover:border-emerald-300 dark:hover:border-emerald-700 transition border border-slate-200 dark:border-slate-700 shadow-2xs flex items-center justify-between group"
-                  >
-                    <span className="truncate font-medium">
-                      <strong className="text-emerald-600 dark:text-emerald-400 mr-1 font-bold">{index + 1}.</strong>
-                      {acc.displayName}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Footer */}

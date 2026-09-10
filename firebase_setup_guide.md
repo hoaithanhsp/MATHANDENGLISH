@@ -198,7 +198,8 @@ sequenceDiagram
 | 8 | Học sinh | **Vũ Mạnh Cường** | `hs08@hpmath.edu.vn` | `HS08@hpmath` |
 | 9 | Học sinh | **Vũ Ngọc Thịnh** | `hs09@hpmath.edu.vn` | `HS09@hpmath` |
 
-*(Trên màn hình Đăng nhập của ứng dụng đã có sẵn nút bấm 1-Click cho cả 10 thầy trò, không cần phải nhớ email/pass khi thao tác).*
+> [!NOTE]
+> Để bảo mật, mỗi thành viên phải tự nhập chính xác **Email** và **Mật khẩu** của mình. Màn hình đăng nhập không hiển thị công khai danh sách tài khoản hay mật khẩu để tránh truy cập trái phép. Giáo viên gửi thông tin tài khoản riêng cho từng học sinh.
 
 ---
 

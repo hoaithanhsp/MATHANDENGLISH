@@ -119,10 +119,21 @@ export const loginWithEmailPassword = async (
     user = await fbSignIn(email, password);
   } catch (error: any) {
     if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
-      // Tài khoản chưa tồn tại → tự động tạo
       const accountInfo = findAccountByEmail(email);
-      const displayName = accountInfo?.displayName || email.split('@')[0];
-      user = await fbSignUp(email, password, displayName);
+      
+      // Nếu tài khoản thuộc danh sách nhưng người dùng gõ sai mật khẩu -> Chặn ngay lập tức
+      if (accountInfo && accountInfo.password !== password) {
+        const err: any = new Error('Sai mật khẩu. Vui lòng kiểm tra lại.');
+        err.code = 'auth/wrong-password';
+        throw err;
+      }
+
+      // Nếu gõ đúng mật khẩu định sẵn mà tài khoản chưa tạo trên Firebase Auth -> khởi tạo tài khoản lần đầu
+      if (accountInfo && accountInfo.password === password) {
+        user = await fbSignUp(email, password, accountInfo.displayName);
+      } else {
+        throw error;
+      }
     } else {
       throw error;
     }
