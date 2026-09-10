@@ -262,7 +262,20 @@ export const StudyAssistant: React.FC<StudyAssistantProps> = ({
         difficulty: q.difficulty || (quizDifficulty === 'mixed' ? 'application' : quizDifficulty),
         question_en: q.question_en || '',
         question_vi: q.question_vi || '',
-        options_en: q.options_en || (q.part === 'PART_1' ? ['A', 'B', 'C', 'D'] : undefined),
+        options_en: q.options_en
+          ? q.options_en.map((opt: string) => {
+              if (typeof opt !== 'string') return opt;
+              const trimmed = opt.trim();
+              if (!trimmed.includes('$') && (trimmed.includes('\\') || /[\^_\{\}]/.test(trimmed))) {
+                const m = trimmed.match(/^([A-D]\.\s*)(.+)$/);
+                if (m) {
+                  return `${m[1]}$${m[2].trim()}$`;
+                }
+                return `$${trimmed}$`;
+              }
+              return trimmed;
+            })
+          : (q.part === 'PART_1' ? ['A', 'B', 'C', 'D'] : undefined),
         options_vi: q.options_vi || undefined,
         correct_answer: q.correct_answer || (q.part === 'PART_1' ? 'A' : '0'),
         acceptable_answers: q.acceptable_answers || [],

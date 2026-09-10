@@ -550,16 +550,16 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
                     <div>
                       <span className="text-slate-500">Bạn đã điền: </span>
                       <span className={`font-bold font-mono ${isCorrect ? 'text-emerald-600' : 'text-rose-600'}`}>
-                        {u || '(Bỏ trống)'}
+                        {u ? <MathRenderer content={u} inline /> : '(Bỏ trống)'}
                       </span>
                     </div>
                     <div>
                       <span className="text-slate-500">Đáp án chuẩn: </span>
                       <span className="font-bold font-mono text-emerald-600">
-                        {q.correct_answer}{' '}
+                        <MathRenderer content={q.correct_answer} inline />
                         {q.acceptable_answers && q.acceptable_answers.length > 0 && (
-                          <span className="text-xs text-slate-400 font-normal">
-                            (hoặc {q.acceptable_answers.join(', ')})
+                          <span className="text-xs text-slate-400 font-normal ml-1">
+                            (hoặc {q.acceptable_answers.map((ans, ai) => <span key={ai}>{ai > 0 && ', '}<MathRenderer content={ans} inline /></span>)})
                           </span>
                         )}
                       </span>

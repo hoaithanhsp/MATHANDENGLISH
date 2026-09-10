@@ -463,7 +463,7 @@ export const generateTopicPractice = async (params: GenerateTopicPracticeParams)
   if (questionType === 'mcq') {
     formatInstruction = `FORMAT: ALL ${count} questions MUST BE PART_1 (Multiple Choice with 4 options A, B, C, D).
 - "part": "PART_1"
-- "options_en": ["A. ...", "B. ...", "C. ...", "D. ..."] (English math options)
+- "options_en": ["A. $...$", "B. $...$", "C. $...$", "D. $...$"] (English math options, ALWAYS enclose formulas in $...$)
 - "correct_answer": "A", "B", "C", or "D"`;
   } else if (questionType === 'short_answer') {
     formatInstruction = `FORMAT: ALL ${count} questions MUST BE PART_2 (Short Answer - student calculates and inputs number/fraction).
@@ -512,7 +512,8 @@ CRITICAL RULES:
    - Both "solution_en" and "solution_vi" must supply clear, step-by-step mathematical reasoning.
 4. Use standard KaTeX $...$ for inline and $$...$$ for display formulas.
 5. In JSON strings, use valid LaTeX formatting ("$\\\\frac{a}{b}$", "$\\\\sqrt{x}$").
-6. Each question object schema:
+6. CRITICAL FOR OPTIONS: In "options_en", ALWAYS wrap all mathematical formulas and expressions in KaTeX dollar signs $...$, for example: ["A. $\\\\frac{64\\\\sqrt{3}}{9}$", "B. $\\\\frac{32\\\\sqrt{3}}{9}$", ...]. Never output raw naked LaTeX like "\\\\frac{a}{b}" without $...$ delimiters!
+7. Each question object schema:
 {
   "id": "quiz-q-1",
   "order_index": 1,
@@ -522,7 +523,7 @@ CRITICAL RULES:
   "difficulty": "understanding" | "application" | "advanced",
   "question_en": string,
   "question_vi": string,
-  "options_en": ["A. ...", "B. ...", "C. ...", "D. ..."] | ["A. Đúng (True)", "B. Sai (False)"] | null,
+  "options_en": ["A. $...$", "B. $...$", "C. $...$", "D. $...$"] | ["A. Đúng (True)", "B. Sai (False)"] | null,
   "correct_answer": string,
   "acceptable_answers": string[],
   "hints": ["Hint 1", "Hint 2"],

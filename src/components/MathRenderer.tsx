@@ -20,8 +20,8 @@ export const MathRenderer: React.FC<MathRendererProps> = ({ content, className =
   const renderedHtml = useMemo(() => {
     if (!content) return '';
 
-    // Step 0: Normalize and prepare content
-    let cleanedContent = content;
+    // Step 0: Normalize and prepare content with auto-wrapping for naked LaTeX formulas
+    let cleanedContent = autoWrapNakedLatex(content);
 
     // Step 1: Extract and render KaTeX formulas to safe protected placeholders
     const mathTokens: string[] = [];
@@ -242,6 +242,63 @@ function escapeHtml(str: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+}
+
+/**
+ * Automatically wraps naked LaTeX formulas that are missing $...$ or $$...$$ delimiters.
+ * Ensures that expressions like "\frac{64\sqrt{3}}{9}", "A. \frac{64\sqrt{3}}{9}", or "-\frac{1}{2}"
+ * are safely wrapped in KaTeX inline delimiters ($...$).
+ */
+function autoWrapNakedLatex(content: string): string {
+  if (!content) return '';
+
+  // 1. Temporarily protect existing properly wrapped math ($...$, $$...$$, \[...\], \(...\))
+  const protectedMath: string[] = [];
+  const existingMathRegex = /(\$\$[\s\S]+?\$\$|\\\[[\s\S]+?\\\]|\$[^\$\n]+?\$|\\\([^\n]+?\\\))/g;
+
+  let workingText = content.replace(existingMathRegex, (match) => {
+    const idx = protectedMath.length;
+    protectedMath.push(match);
+    return `@@@ALREADY_PROTECTED_${idx}@@@`;
+  });
+
+  // 2. Comprehensive regex for common LaTeX mathematical commands
+  const mathCommandRegex = /\\(frac|dfrac|tfrac|cfrac|sqrt|cbrt|binom|vec|mathbf|mathbb|mathcal|mathrm|mathit|text|textbf|textit|left|right|big|Big|bigg|Bigg|sum|prod|coprod|int|iint|iiint|oint|lim|limsup|liminf|min|max|inf|sup|gcd|deg|exp|ln|log|sin|cos|tan|csc|sec|cot|sinh|cosh|tanh|coth|arcsin|arccos|arctan|alpha|beta|gamma|delta|epsilon|varepsilon|zeta|eta|theta|vartheta|iota|kappa|lambda|mu|nu|xi|pi|varpi|rho|varrho|sigma|varsigma|tau|upsilon|phi|varphi|chi|psi|omega|Gamma|Delta|Theta|Lambda|Xi|Pi|Sigma|Upsilon|Phi|Psi|Omega|cdot|times|div|pm|mp|circ|bullet|cap|cup|uplus|wedge|vee|setminus|le|ge|leq|geq|ne|neq|ll|gg|approx|sim|simeq|cong|equiv|propto|perp|mid|parallel|subset|supset|subseteq|supseteq|in|ni|notin|forall|exists|nexists|neg|not|to|rightarrow|leftarrow|Rightarrow|Leftarrow|iff|Longleftrightarrow|implies|mapsto|partial|nabla|infty|angle|triangle|square|prime|emptyset|varnothing|top|bot|cdots|ldots|ddots|vdots|over)\b/;
+
+  const trimmed = workingText.trim();
+
+  // Case A: Multiple choice option prefix like "A. \frac{64\sqrt{3}}{9}" or "A. 2\sqrt{3}"
+  const optionPrefixMatch = trimmed.match(/^([A-D]\.\s*)(.+)$/);
+  if (optionPrefixMatch) {
+    const prefix = optionPrefixMatch[1];
+    const body = optionPrefixMatch[2].trim();
+    if ((mathCommandRegex.test(body) || /[\\^_{}]/.test(body)) && !body.includes('@@@ALREADY_PROTECTED_')) {
+      workingText = `${prefix}$${body}$`;
+    }
+  }
+  // Case B: Entire trimmed content is a naked LaTeX math expression (like "\frac{64\sqrt{3}}{9}" or "-\frac{32\sqrt{3}}{9}")
+  else if (
+    !trimmed.includes('\n') &&
+    !trimmed.includes('@@@ALREADY_PROTECTED_') &&
+    (mathCommandRegex.test(trimmed) || (trimmed.startsWith('\\') && trimmed.length > 2))
+  ) {
+    workingText = `$${trimmed}$`;
+  }
+  // Case C: Mixed text containing naked LaTeX expressions (e.g. "Find m so that \frac{x+1}{x-1} > 0")
+  else if (mathCommandRegex.test(workingText)) {
+    const nakedFormulaRegex = /((?:[-+]?\s*)?\\(?:frac|dfrac|tfrac|cfrac|sqrt|cbrt|binom|vec|sum|prod|int|lim|sin|cos|tan|log|ln|alpha|beta|gamma|pi|theta|infty|le|ge|neq|pm|times|div|cdot|in|to|left|right)[a-zA-Z0-9\s\\\{\}\[\]\^\_\+\-\*\/\=\<\>\(\)\,\.\:]+?)(?=[,;.?!]?(?:\s+[a-zA-Z\u00C0-\u1EF9]{2,}|\s*$|\n))/g;
+    workingText = workingText.replace(nakedFormulaRegex, (m) => {
+      if (m.includes('@@@ALREADY_PROTECTED_')) return m;
+      return `$${m.trim()}$`;
+    });
+  }
+
+  // 3. Restore protected tokens
+  for (let i = 0; i < protectedMath.length; i++) {
+    workingText = workingText.split(`@@@ALREADY_PROTECTED_${i}@@@`).join(protectedMath[i]);
+  }
+
+  return workingText;
 }
 
 export default MathRenderer;
