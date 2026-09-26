@@ -664,7 +664,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
               {isGenerating ? (
                 <>
                   <RotateCw className="w-4 h-4 animate-spin" />
-                  <span>Gemini đang sinh cấu trúc 22 câu...</span>
+                  <span>Gemini đang sinh đề...</span>
                 </>
               ) : (
                 <>

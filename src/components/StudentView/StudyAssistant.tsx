@@ -87,6 +87,7 @@ export const StudyAssistant: React.FC<StudyAssistantProps> = ({
   } | null>(null);
   const [quizQuestionCount, setQuizQuestionCount] = useState<number>(6);
   const [quizQuestionType, setQuizQuestionType] = useState<TopicQuestionType>('mixed');
+  const [quizSpecificProblemTypes, setQuizSpecificProblemTypes] = useState('');
   const [quizDifficulty, setQuizDifficulty] = useState<TopicDifficulty>('advanced');
   const [quizMode, setQuizMode] = useState<ExamMode>('bilingual');
   const [quizGenerationError, setQuizGenerationError] = useState<string>('');
@@ -242,6 +243,7 @@ export const StudyAssistant: React.FC<StudyAssistantProps> = ({
         mode: quizMode,
         count: quizQuestionCount,
         questionType: quizQuestionType,
+        specificProblemTypes: quizSpecificProblemTypes.trim(),
         difficulty: quizDifficulty,
         strand: quizModalTopic.strand,
       });
@@ -1291,6 +1293,25 @@ export const StudyAssistant: React.FC<StudyAssistantProps> = ({
                     </div>
                   </div>
                 </div>
+              </div>
+
+              {/* Tùy chọn bổ sung: Dạng toán cụ thể */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-800 dark:text-slate-200 block">
+                  Dạng toán cụ thể (Tùy chọn):
+                </label>
+                <textarea
+                  rows={2}
+                  value={quizSpecificProblemTypes}
+                  onChange={(e) => setQuizSpecificProblemTypes(e.target.value)}
+                  disabled={isGeneratingQuiz}
+                  placeholder="VD: Tìm GTLN - GTNN; giải phương trình mũ - logarit; bài toán thực tế..."
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-teal-500 resize-none"
+                  aria-label="Dạng toán cụ thể muốn luyện tập"
+                />
+                <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                  Có thể liệt kê nhiều dạng, ngăn cách bằng dấu phẩy hoặc dấu chấm phẩy. Để trống để AI tự chọn.
+                </p>
               </div>
 
               {/* Tùy chọn 3: Mức độ khó */}

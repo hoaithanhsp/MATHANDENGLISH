@@ -459,6 +459,7 @@ export interface GenerateTopicPracticeParams {
   mode?: string;
   count?: number;
   questionType?: TopicQuestionType;
+  specificProblemTypes?: string;
   difficulty?: TopicDifficulty;
   strand?: string;
   onModelSwitch?: (from: string, to: string, reason: string) => void;
@@ -471,6 +472,7 @@ export const generateTopicPractice = async (params: GenerateTopicPracticeParams)
     mode = 'bilingual',
     count = 6,
     questionType = 'mixed',
+    specificProblemTypes = '',
     difficulty = 'mixed',
     strand = 'algebra_calculus',
     onModelSwitch,
@@ -536,6 +538,8 @@ export const generateTopicPractice = async (params: GenerateTopicPracticeParams)
 ${formatInstruction}
 
 ${difficultyInstruction}
+
+${specificProblemTypes ? `SPECIFIC PROBLEM TYPES (must follow when generating): ${specificProblemTypes}` : 'No specific problem types were provided; choose the most relevant subtypes for the topic.'}
 
 CRITICAL RULES:
 1. ALL questions MUST BE 100% newly crafted, creative, and mathematically rigorous. Do NOT copy plain trivial examples.
