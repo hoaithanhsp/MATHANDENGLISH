@@ -208,7 +208,7 @@ export const StudyAssistant: React.FC<StudyAssistantProps> = ({
       setAiGeneratedNote(newNote);
     } catch (err: any) {
       console.error('Generate lesson error:', err);
-      setErrorMsg(err?.message || 'Có lỗi xảy ra khi tạo bài học bằng AI. Vui lòng kiểm tra API Key hoặc kết nối mạng.');
+      setErrorMsg(err?.message || 'Có lỗi xảy ra khi tạo bài học bằng AI. Vui lòng thử lại sau.');
     } finally {
       setIsLoading(false);
     }
@@ -293,9 +293,7 @@ export const StudyAssistant: React.FC<StudyAssistantProps> = ({
     } catch (err: any) {
       console.error('Quiz generation error:', err);
       const friendlyMsg = err?.message || 'Đã có lỗi xảy ra trong quá trình sinh đề bằng AI.';
-      setQuizGenerationError(
-        `${friendlyMsg}. Thầy/Cô và các bạn hãy kiểm tra lại kết nối hoặc API Key trong Cài đặt, hoặc thử giảm bớt số lượng câu hỏi.`
-      );
+      setQuizGenerationError(friendlyMsg);
     } finally {
       setIsGeneratingQuiz(false);
       setGenerationStepStatus('');

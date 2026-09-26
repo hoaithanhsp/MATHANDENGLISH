@@ -358,7 +358,8 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
         answers,
         tab_switch_count: tabSwitchCount,
       },
-      exam.access_code
+      exam.access_code,
+      totalQuestions
     );
   };
 

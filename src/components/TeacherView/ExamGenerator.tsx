@@ -24,7 +24,7 @@ import { Exam, Question, ExamMode, ExamType, MathStrand, CognitiveLevel, Assignm
 import MathRenderer from '../MathRenderer';
 import { exportExamToDocx } from '../../utils/docxExport';
 import { printExamOrNotes, printHaiPhongExam } from '../../utils/printPdf';
-import { generateExam, regenerateSingleQuestion } from '../../services/geminiService';
+import { generateExam, generateTopicPractice, regenerateSingleQuestion, TopicQuestionType } from '../../services/geminiService';
 import { storageService } from '../../services/storageService';
 
 interface ExamGeneratorProps {
@@ -70,6 +70,8 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
   const [mode, setMode] = useState<ExamMode>('bilingual');
   const [examType, setExamType] = useState<ExamType>('haiphong_matrix');
   const [questionCount, setQuestionCount] = useState<number>(22);
+  const [topicQuestionCount, setTopicQuestionCount] = useState<number>(6);
+  const [topicQuestionType, setTopicQuestionType] = useState<TopicQuestionType>('mixed');
   const [topicPrompt, setTopicPrompt] = useState('');
   const [documentText, setDocumentText] = useState('');
   const [uploadedFileName, setUploadedFileName] = useState('');
@@ -119,18 +121,38 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
 
   // Generate Exam API Call (client-side via geminiService)
   const handleGenerate = async () => {
+    if (examType === 'topic_practice' && (!Number.isInteger(topicQuestionCount) || topicQuestionCount < 1 || topicQuestionCount > 50)) {
+      setErrorMsg('Số lượng câu hỏi chuyên đề phải từ 1 đến 50.');
+      return;
+    }
+    if (examType === 'topic_practice' && !topicPrompt.trim()) {
+      setErrorMsg('Vui lòng nhập chủ đề hoặc yêu cầu trọng tâm trước khi tạo đề.');
+      return;
+    }
+
     setIsGenerating(true);
     setErrorMsg('');
     setSuccessSaved(false);
 
     try {
-      const rawQuestions = await generateExam({
-        topicPrompt,
-        mode,
-        examType,
-        questionCount: examType === 'haiphong_matrix' ? 22 : questionCount,
-        customDocumentText: documentText,
-      });
+      const rawQuestions = examType === 'topic_practice'
+        ? await generateTopicPractice({
+            topic: topicPrompt.trim() || 'High School Gifted Mathematics',
+            mode,
+            count: topicQuestionCount,
+            questionType: topicQuestionType,
+            difficulty: 'mixed',
+            onModelSwitch: (from, to) => {
+              console.info(`Chuyển model tạo đề chuyên đề: ${from} → ${to}`);
+            },
+          })
+        : await generateExam({
+            topicPrompt,
+            mode,
+            examType,
+            questionCount: examType === 'haiphong_matrix' ? 22 : questionCount,
+            customDocumentText: documentText,
+          });
 
       const questions: Question[] = (rawQuestions || []).map((q: any, i: number) => ({
         id: `gen-q-${Date.now()}-${i + 1}`,
@@ -155,7 +177,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
       storageService.incrementAiQuests(questions.length);
     } catch (err: any) {
       console.error('Exam generation failed:', err);
-      setErrorMsg(`Lỗi khi tạo đề: ${err.message}. Vui lòng thử lại hoặc kiểm tra API Key trong Cài đặt.`);
+      setErrorMsg(err?.message || 'Không thể tạo đề lúc này. Vui lòng thử lại sau.');
       setGeneratedQuestions(null);
     } finally {
       setIsGenerating(false);
@@ -529,6 +551,56 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
                 </label>
               </div>
             </div>
+
+            {examType === 'topic_practice' && (
+              <div className="rounded-xl border border-teal-200 dark:border-teal-800 bg-teal-50/50 dark:bg-teal-950/20 p-3 space-y-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Số lượng câu hỏi:
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={50}
+                    step={1}
+                    value={topicQuestionCount}
+                    onChange={(e) => setTopicQuestionCount(Math.min(50, Math.max(1, Number(e.target.value) || 1)))}
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    aria-label="Số lượng câu hỏi đề luyện tập chuyên đề"
+                  />
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">Nhập từ 1 đến 50 câu.</p>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Loại câu hỏi:
+                  </label>
+                  <div className="grid grid-cols-1 gap-1.5">
+                    {([
+                      ['mcq', 'Trắc nghiệm 4 đáp án'],
+                      ['true_false', 'Đúng - Sai'],
+                      ['short_answer', 'Trả lời ngắn'],
+                      ['mixed', 'Hỗn hợp'],
+                    ] as Array<[TopicQuestionType, string]>).map(([value, label]) => (
+                      <label key={value} className={`flex items-center gap-2 px-2.5 py-2 rounded-lg border cursor-pointer transition ${
+                        topicQuestionType === value
+                          ? 'border-teal-500 bg-white dark:bg-slate-900 text-teal-700 dark:text-teal-300'
+                          : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
+                      }`}>
+                        <input
+                          type="radio"
+                          name="topicQuestionType"
+                          value={value}
+                          checked={topicQuestionType === value}
+                          onChange={() => setTopicQuestionType(value)}
+                          className="text-teal-600 focus:ring-teal-500"
+                        />
+                        <span className="text-xs font-semibold">{label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Custom Topic / Instruction Prompt */}
             <div>

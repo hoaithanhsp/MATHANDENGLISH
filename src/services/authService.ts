@@ -59,7 +59,7 @@ export const PREDEFINED_ACCOUNTS: AccountInfo[] = [
   {
     email: 'hs05@hpmath.edu.vn',
     password: 'HS05@hpmath',
-    displayName: 'Vũ Ngọc Thịnh',
+    displayName: 'Lê Thị Huyền',
     role: 'student',
   },
   {
@@ -71,7 +71,7 @@ export const PREDEFINED_ACCOUNTS: AccountInfo[] = [
   {
     email: 'hs07@hpmath.edu.vn',
     password: 'HS07@hpmath',
-    displayName: 'Lê Thị Huyền',
+    displayName: 'Trần Thị Anh Thư',
     role: 'student',
   },
   {
@@ -81,15 +81,9 @@ export const PREDEFINED_ACCOUNTS: AccountInfo[] = [
     role: 'student',
   },
   {
-    email: 'demo@hpmath.edu.vn',
-    password: 'HS10@hpmath',
-    displayName: 'DEMO',
-    role: 'student',
-  },
-  {
     email: 'hs09@hpmath.edu.vn',
     password: 'HS09@hpmath',
-    displayName: 'Bùi Văn Đức',
+    displayName: 'Vũ Ngọc Thịnh',
     role: 'student',
   },
 ];

@@ -313,7 +313,11 @@ function safeJsonParse(text: string): any {
   const cleaned = sanitizeLatexInJson(
     text.replace(/```json\s*|```/g, '').trim()
   );
-  return JSON.parse(cleaned);
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    throw new Error('Phản hồi AI chưa hoàn chỉnh hoặc sai định dạng. Hệ thống không lưu đề lỗi; vui lòng tạo lại đề.');
+  }
 }
 
 // ============================================================
@@ -389,15 +393,28 @@ CRITICAL FORMATTING RULES:
 - Each formula must be wrapped in $ delimiters: "$\\\\frac{a}{b}$", "$\\\\triangle ABC$".
 - Options must also have proper LaTeX: "A. $6\\\\sqrt{5}$", NOT "A. 6\\sqrt{5}".`;
 
-  const result = await generateContentWithFallback({
-    contents: userPrompt,
-    systemInstruction: HAIPHONG_SYSTEM_INSTRUCTION,
-    // NO responseMimeType — allows Gemini to write LaTeX naturally
-    maxOutputTokens: 32768,
-    onModelSwitch,
-  });
+  const ranges = examType === 'haiphong_matrix' && questionCount === 22
+    ? [[1, 12], [13, 22]]
+    : [[1, questionCount]];
+  const batches = await Promise.all(ranges.map(async ([start, end]) => {
+    const expectedCount = end - start + 1;
+    const result = await generateContentWithFallback({
+      contents: `${userPrompt}
 
-  return safeJsonParse(result.text);
+IMPORTANT OVERRIDE: Return ONLY questions ${start} to ${end} (exactly ${expectedCount} objects). Do not generate any other question numbers. Keep each bilingual solution concise: at most 6 logical steps and about 160 words per language.`,
+      systemInstruction: HAIPHONG_SYSTEM_INSTRUCTION,
+      responseMimeType: 'application/json',
+      maxOutputTokens: 16384,
+      onModelSwitch,
+    });
+    const questions = safeJsonParse(result.text);
+    if (!Array.isArray(questions) || questions.length !== expectedCount) {
+      throw new Error('AI trả về thiếu câu hỏi hoặc sai cấu trúc. Hệ thống không lưu đề chưa đầy đủ; vui lòng tạo lại đề.');
+    }
+    return questions.map((question, index) => ({ ...question, order_index: start + index }));
+  }));
+
+  return batches.flat().sort((left, right) => left.order_index - right.order_index);
 };
 
 
@@ -458,6 +475,23 @@ export const generateTopicPractice = async (params: GenerateTopicPracticeParams)
     strand = 'algebra_calculus',
     onModelSwitch,
   } = params;
+
+  if (count > 4) {
+    const batchCounts = Array.from({ length: Math.ceil(count / 4) }, (_, index) => Math.min(4, count - index * 4));
+    const batches = await Promise.all(batchCounts.map((batchCount) => generateTopicPractice({
+      ...params,
+      count: batchCount,
+    })));
+    const questions = batches.flat();
+    if (questions.length !== count) {
+      throw new Error('AI trả về thiếu câu hỏi. Hệ thống không lưu đề chưa đầy đủ; vui lòng tạo lại đề.');
+    }
+    return questions.map((question, index) => ({
+      ...question,
+      id: question.id || `quiz-q-${index + 1}` ,
+      order_index: index + 1,
+    }));
+  }
 
   let formatInstruction = '';
   if (questionType === 'mcq') {
@@ -536,11 +570,16 @@ Output: Return ONLY a valid JSON array of ${count} question objects wrapped in \
   const result = await generateContentWithFallback({
     contents: prompt,
     systemInstruction: HAIPHONG_SYSTEM_INSTRUCTION,
-    maxOutputTokens: count <= 6 ? 16384 : 32768,
+    responseMimeType: 'application/json',
+    maxOutputTokens: 12288,
     onModelSwitch,
   });
 
-  return safeJsonParse(result.text);
+  const questions = safeJsonParse(result.text);
+  if (!Array.isArray(questions) || questions.length !== count) {
+    throw new Error('AI trả về thiếu câu hỏi hoặc sai cấu trúc. Hệ thống không lưu đề chưa đầy đủ; vui lòng tạo lại đề.');
+  }
+  return questions;
 };
 
 /** Regenerate / Swap a single question with matching metadata */

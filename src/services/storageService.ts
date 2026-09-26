@@ -541,7 +541,8 @@ export const storageService = {
       answers: Record<string, string>;
       tab_switch_count: number;
     },
-    accessCode?: string
+    accessCode?: string,
+    totalQuestions?: number
   ): Promise<void> {
     const now = new Date().toISOString();
     // 1. Cập nhật local cache
@@ -584,7 +585,7 @@ export const storageService = {
         correct_count: result.correct_count,
         wrong_count: result.wrong_count,
         answered_count: Object.keys(result.answers || {}).length,
-        total_questions: 22,
+        total_questions: totalQuestions || Object.keys(result.answers || {}).length,
         answers: result.answers,
         tab_switch_count: result.tab_switch_count,
       };
