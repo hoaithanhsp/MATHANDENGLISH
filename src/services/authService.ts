@@ -82,7 +82,7 @@ export const PREDEFINED_ACCOUNTS: AccountInfo[] = [
   },
   {
     email: 'demo@hpmath.edu.vn',
-    password: '12345',
+    password: 'HS10@hpmath',
     displayName: 'DEMO',
     role: 'student',
   },
