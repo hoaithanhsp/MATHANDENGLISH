@@ -476,8 +476,8 @@ export const generateTopicPractice = async (params: GenerateTopicPracticeParams)
     onModelSwitch,
   } = params;
 
-  if (count > 4) {
-    const batchCounts = Array.from({ length: Math.ceil(count / 4) }, (_, index) => Math.min(4, count - index * 4));
+  if (count > 2) {
+    const batchCounts = Array.from({ length: Math.ceil(count / 2) }, (_, index) => Math.min(2, count - index * 2));
     const batches = await Promise.all(batchCounts.map((batchCount) => generateTopicPractice({
       ...params,
       count: batchCount,
@@ -547,7 +547,8 @@ CRITICAL RULES:
 4. Use standard KaTeX $...$ for inline and $$...$$ for display formulas.
 5. In JSON strings, use valid LaTeX formatting ("$\\\\frac{a}{b}$", "$\\\\sqrt{x}$").
 6. CRITICAL FOR OPTIONS: In "options_en", ALWAYS wrap all mathematical formulas and expressions in KaTeX dollar signs $...$, for example: ["A. $\\\\frac{64\\\\sqrt{3}}{9}$", "B. $\\\\frac{32\\\\sqrt{3}}{9}$", ...]. Never output raw naked LaTeX like "\\\\frac{a}{b}" without $...$ delimiters!
-7. Each question object schema:
+7. Keep each solution_en and solution_vi concise: maximum 4 logical steps and about 90 words per language.
+8. Each question object schema:
 {
   "id": "quiz-q-1",
   "order_index": 1,
@@ -565,13 +566,13 @@ CRITICAL RULES:
   "solution_vi": string
 }
 
-Output: Return ONLY a valid JSON array of ${count} question objects wrapped in \`\`\`json ... \`\`\` code fences.`;
+Output: Return ONLY the raw valid JSON array of ${count} question objects. Do not use Markdown, code fences, commentary, or trailing text.`;
 
   const result = await generateContentWithFallback({
     contents: prompt,
     systemInstruction: HAIPHONG_SYSTEM_INSTRUCTION,
     responseMimeType: 'application/json',
-    maxOutputTokens: 12288,
+    maxOutputTokens: 8192,
     onModelSwitch,
   });
 
