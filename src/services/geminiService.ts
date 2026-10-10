@@ -119,9 +119,18 @@ interface GenerateContentOptions {
   onModelSwitch?: (from: string, to: string, reason: string) => void;
 }
 
+export interface GenerateContentResult {
+  text: string;
+  model: string;
+  /** Lý do model dừng sinh: 'STOP' | 'MAX_TOKENS' | 'SAFETY' | ... (dùng để phát hiện phản hồi bị cắt cụt) */
+  finishReason?: string;
+  /** Lý do prompt bị chặn (nếu có) — khi đó text thường rỗng */
+  blockReason?: string;
+}
+
 export const generateContentWithFallback = async (
   options: GenerateContentOptions,
-): Promise<{ text: string; model: string }> => {
+): Promise<GenerateContentResult> => {
   const apiKey = apiKeyManager.getApiKey();
   if (!apiKey) {
     throw new Error('Vui lòng cấu hình API Key trước khi sử dụng tính năng này.');
@@ -146,8 +155,9 @@ export const generateContentWithFallback = async (
       if (options.maxOutputTokens) {
         config.maxOutputTokens = options.maxOutputTokens;
       }
-      // Thinking config for planning tasks
-      if (options.thinkingLevel) {
+      // Thinking config for planning tasks — thinkingLevel chỉ hỗ trợ trên dòng Gemini 3.x,
+      // gửi cho model 2.x sẽ bị 400 INVALID_ARGUMENT và chặn luôn chuỗi fallback.
+      if (options.thinkingLevel && model.startsWith('gemini-3')) {
         config.thinkingConfig = { thinkingLevel: options.thinkingLevel };
       }
 
@@ -158,7 +168,21 @@ export const generateContentWithFallback = async (
       });
 
       const text = response.text || '';
-      return { text, model };
+      const rawFinish = response.candidates?.[0]?.finishReason;
+      const rawBlock = response.promptFeedback?.blockReason;
+      const finishReason = rawFinish ? String(rawFinish) : undefined;
+      const blockReason = rawBlock ? String(rawBlock) : undefined;
+
+      if ((finishReason && finishReason !== 'STOP') || blockReason || !text) {
+        console.warn('[Gemini] Phản hồi bất thường:', {
+          model,
+          finishReason,
+          blockReason,
+          textLength: text.length,
+        });
+      }
+
+      return { text, model, finishReason, blockReason };
     } catch (error: any) {
       lastError = error;
       const errorType = parseApiError(error);
@@ -194,6 +218,22 @@ export const generateContentWithFallback = async (
 // ============================================================
 // HAIPHONG SYSTEM INSTRUCTION — CHUẨN QUYẾT ĐỊNH SỞ GD&ĐT HẢI PHÒNG 2025
 // ============================================================
+
+/**
+ * Quy ước LaTeX + JSON DUY NHẤT cho mọi prompt (tránh mâu thuẫn 1 / 2 / 4 gạch chéo).
+ * Model nhìn thấy (sau khi template literal xử lý):
+ *   - Chuỗi JSON thô: "$\\frac{a}{b}$"  → sau JSON.parse: "$\frac{a}{b}$"
+ */
+const JSON_LATEX_RULES = `JSON + LaTeX ESCAPING RULES (follow exactly):
+- The response is JSON. Apply standard JSON string escaping EXACTLY ONCE: every single LaTeX backslash is written as two characters (\\\\) in the raw JSON text.
+  * Raw JSON: "Find the maximum of $P = 2x + 3y$ when $\\\\sqrt{x} \\\\le 3$"  → after parsing: Find the maximum of $P = 2x + 3y$ when $\\sqrt{x} \\le 3$
+  * Raw JSON: "A. $6\\\\sqrt{5}$", "$\\\\frac{a}{b}$", "$3\\\\sin(2x) - 4\\\\cos(2x)$", "$\\\\triangle ABC$"
+  * A LaTeX row break (\\\\ inside cases/matrices) is written as \\\\\\\\ in raw JSON.
+- NEVER write four backslashes before a command (\\\\\\\\frac is WRONG) and NEVER leave a lone unescaped backslash (\\frac in raw JSON is WRONG).
+- For line breaks inside a text value use the escape \\n. Never put raw newline characters inside a JSON string.
+- Do not use unescaped double quotes inside string values (use single quotes or \\" instead).
+- Return ONLY the JSON value itself: no markdown code fences, no commentary before or after.`;
+
 export const HAIPHONG_SYSTEM_INSTRUCTION = `You are an elite High School Math Olympiad author and pedagogue specialized in gifted student competitions (Kỳ thi chọn HSG môn Toán THPT bằng Tiếng Anh) following the exact examination framework and matrix issued by Hai Phong Department of Education and Training (Sở GD&ĐT Hải Phòng, Quyết định năm 2025).
 
 I. CONTEST SPECIFICATIONS (SỞ GD&ĐT HẢI PHÒNG 2025):
@@ -230,94 +270,509 @@ III. ACADEMIC ENGLISH & Olympiad STYLE:
 
 IV. MATHEMATICAL FORMATTING (KaTeX):
 - All formulas MUST use standard LaTeX delimiters: '$...$' for inline and '$$...$$' for display.
-- Every formula, equation, variable, interval, coordinate, and function must be written as real LaTeX, for example: $P = 2x + 3y$, $\\begin{cases} 2x - y + 2 \\ge 0 \\\\ x + 2y - 4 \\le 0 \\end{cases}$, $[-4; 6]$, $\\frac{a}{b}$.
+- Every formula, equation, variable, interval, coordinate, and function must be written as real LaTeX (rendered form shown here), for example: $P = 2x + 3y$, $\\begin{cases} 2x - y + 2 \\ge 0 \\\\ x + 2y - 4 \\le 0 \\end{cases}$, $[-4; 6]$, $\\frac{a}{b}$.
 - Write mathematical expressions directly inside the text. Always embed the exact math formulas and options.
-- In JSON strings, double-escape all LaTeX backslashes: use \\\\frac{a}{b} so that after JSON parse it becomes \\frac{a}{b}.
-- Example correct JSON value: "Find the maximum value of $P = 2x + 3y$ when $\\\\sqrt{x} \\\\le 3$"
-- The response must be a valid JSON array/object wrapped in ${'```'}json ... ${'```'} code fences.`;
+
+V. OUTPUT FORMAT:
+${JSON_LATEX_RULES}`;
 
 // ============================================================
 // EXTRACT & PARSE JSON FROM TEXT RESPONSE
-// Since we don't use responseMimeType: 'application/json',
-// Gemini returns text that may contain ```json...``` code fences.
-// This approach preserves LaTeX formulas perfectly because Gemini
-// writes them naturally without being constrained by JSON mode.
+// Mọi hàm sinh nội dung đều dùng responseMimeType: 'application/json'.
+// Tuy vậy model vẫn có thể: trả kèm ```json fences, viết LaTeX với 1 gạch chéo
+// (escape JSON không hợp lệ), chèn xuống dòng thô trong chuỗi, hoặc bị cắt cụt
+// do vượt maxOutputTokens. Các hàm dưới đây xử lý toàn bộ các trường hợp đó.
 // ============================================================
 
+const JSON_FORMAT_ERROR = 'Phản hồi AI chưa hoàn chỉnh hoặc sai định dạng. Hệ thống không lưu đề lỗi; vui lòng tạo lại đề.';
+const JSON_TRUNCATED_ERROR = 'Phản hồi AI bị cắt cụt do vượt giới hạn độ dài (MAX_TOKENS). Hệ thống không lưu đề lỗi; vui lòng tạo lại đề hoặc giảm số câu.';
+const QUESTION_COUNT_ERROR = 'AI trả về thiếu câu hỏi hoặc sai cấu trúc. Hệ thống không lưu đề chưa đầy đủ; vui lòng tạo lại đề.';
+
+/** Chữ cái Latin + tiếng Việt có dấu (dùng để xác định ranh giới tên lệnh LaTeX). */
+const WORD_CHAR = /[a-zA-Z\u00C0-\u024F\u1E00-\u1EFF]/;
+
 /**
- * Sanitize LaTeX backslashes that would be destroyed by JSON.parse.
- * \frac → \f = form feed ❌ | \beta → \b = backspace ❌
- * \text → \t = tab ❌      | \right → \r = CR ❌
- * \newcommand → \n = LF ❌
+ * Lệnh LaTeX bắt đầu bằng "n" (\neq, \nabla, ...). Dùng để phân biệt với escape xuống dòng "\n"
+ * của JSON (ví dụ "\nThe", "\nTọa độ"). Sắp xếp dài → ngắn để khớp tham lam.
+ */
+const LATEX_AFTER_N = [
+  'Rightarrow', 'Leftarrow', 'ormalsize', 'subseteq', 'supseteq', 'parallel', 'natural',
+  'earrow', 'exists', 'warrow', 'ewline', 'abla', 'otin', 'vdash', 'leq', 'geq', 'mid',
+  'cong', 'less', 'gtr', 'prec', 'succ', 'sim', 'ull', 'eg', 'eq', 'ot', 'e', 'u',
+].sort((a, b) => b.length - a.length);
+
+function isLatexCommandAfterN(rest: string): boolean {
+  for (const name of LATEX_AFTER_N) {
+    if (rest.startsWith(name)) {
+      const next = rest.charAt(name.length);
+      // Lệnh LaTeX phải kết thúc ở ranh giới từ; dấu câu ngay sau (vd "\ne.g.") thường là văn bản.
+      if (!next || (!WORD_CHAR.test(next) && !/[.,:;!?]/.test(next))) return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Sanitize JSON text so JSON.parse không phá hỏng / không ném lỗi vì LaTeX.
+ * Chạy theo trạng thái (chỉ xử lý bên trong chuỗi JSON) và xét escape THEO CẶP,
+ * nên không làm hỏng "\\frac" vốn đã hợp lệ.
+ *   \frac → \f = form feed ❌ | \beta → \b = backspace ❌
+ *   \text → \t = tab ❌       | \right → \r = CR ❌
+ *   \newcommand → \n = LF ❌  | \sqrt, \alpha, \{, \, ... → escape không hợp lệ ❌
+ * Đồng thời chuyển ký tự điều khiển thô (xuống dòng/tab thật) trong chuỗi thành escape hợp lệ.
  */
 function sanitizeLatexInJson(jsonText: string): string {
-  return jsonText.replace(/(?<!\\)\\([a-zA-Z])/g, (match, letter, offset) => {
-    // Check if it's \n that is actually a newline (not a LaTeX command starting with n)
-    const after = jsonText.slice(offset + 2, offset + 20);
-    if (letter === 'n') {
-      const isLatexCommand = /^(abla|atural|eg|eq|e|earrow|exists|otin|ormalsize|u\b|ull\b|warrow|Rightarrow|Leftarrow)/.test(after);
-      if (!isLatexCommand) {
-        // Giữ nguyên \n hợp lệ của JSON (ví dụ: \n-, \n\n, \nThe, \nTọa độ)
-        return match;
-      }
+  let out = '';
+  let inString = false;
+
+  for (let i = 0; i < jsonText.length; i++) {
+    const ch = jsonText[i];
+
+    if (!inString) {
+      if (ch === '"') inString = true;
+      out += ch;
+      continue;
     }
-    if (letter === 'r') {
-      const isLatexCommand = /^(ight|angle|ceil|floor|ho\b|hook|ightarrow|ightharpoon)/.test(after);
-      if (!isLatexCommand) {
-        return match; // Giữ nguyên \r
-      }
+
+    if (ch === '"') {
+      inString = false;
+      out += ch;
+      continue;
     }
-    if (letter === 't') {
-      const isLatexCommand = /^(ext|imes|heta|an\b|anh|au\b|o\b|op\b|riangle|riangleq|ilde|herefore)/.test(after);
-      if (!isLatexCommand) {
-        return match; // Giữ nguyên \t
+
+    if (ch === '\\') {
+      const next = jsonText[i + 1];
+
+      // Gạch chéo lơ lửng ở cuối (phản hồi bị cắt) → nhân đôi để chuỗi vẫn hợp lệ
+      if (next === undefined) {
+        out += '\\\\';
+        continue;
       }
+
+      // Escape JSON hợp lệ, không mơ hồ: \"  \\  \/
+      if (next === '"' || next === '\\' || next === '/') {
+        out += ch + next;
+        i++;
+        continue;
+      }
+
+      // \uXXXX hợp lệ
+      if (next === 'u' && /^[0-9a-fA-F]{4}$/.test(jsonText.slice(i + 2, i + 6))) {
+        out += ch + next;
+        i++;
+        continue;
+      }
+
+      // \n: xuống dòng JSON hay lệnh LaTeX (\neq, \nabla...)?
+      if (next === 'n') {
+        if (isLatexCommandAfterN(jsonText.slice(i + 2, i + 24))) {
+          out += '\\\\'; // giữ gạch chéo như ký tự thật; 'n' xử lý ở vòng lặp sau
+        } else {
+          out += '\\n';
+          i++;
+        }
+        continue;
+      }
+
+      // \r \t \b \f: nếu theo sau là chữ cái → gần như chắc chắn là LaTeX (\right, \text, \beta, \frac)
+      if (next === 'r' || next === 't' || next === 'b' || next === 'f') {
+        const after = jsonText.charAt(i + 2);
+        if (/[a-zA-Z]/.test(after)) {
+          out += '\\\\';
+        } else {
+          out += ch + next;
+          i++;
+        }
+        continue;
+      }
+
+      // Mọi escape khác đều KHÔNG hợp lệ trong JSON (\sqrt, \alpha, \{, \,, \;, \ ...) → nhân đôi
+      out += '\\\\';
+      continue;
     }
-    return '\\\\' + letter;
-  });
+
+    // Ký tự điều khiển thô bên trong chuỗi → escape hợp lệ
+    if (ch === '\n') { out += '\\n'; continue; }
+    if (ch === '\r') { out += '\\r'; continue; }
+    if (ch === '\t') { out += '\\t'; continue; }
+    const code = ch.charCodeAt(0);
+    if (code < 0x20) {
+      out += '\\u' + code.toString(16).padStart(4, '0');
+      continue;
+    }
+
+    out += ch;
+  }
+
+  return out;
+}
+
+interface JsonScanResult {
+  /** Vị trí dấu đóng của giá trị gốc; -1 nếu chưa đóng (bị cắt cụt) */
+  end: number;
+  /** Điểm cắt an toàn cuối cùng (ngay sau một } hoặc ] hoàn chỉnh) + ngăn xếp ngoặc đang mở tại đó */
+  lastSafe: { pos: number; stack: string[] } | null;
+}
+
+/**
+ * Quét JSON có nhận biết chuỗi: dấu [ ] { } nằm TRONG chuỗi (vd LaTeX $[-4; 6]$,
+ * \begin{cases}) không bị nhầm thành biên của JSON.
+ */
+function scanJsonValue(text: string): JsonScanResult {
+  const stack: string[] = [];
+  let inString = false;
+  let escaped = false;
+  let lastSafe: JsonScanResult['lastSafe'] = null;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (ch === '\\') escaped = true;
+      else if (ch === '"') inString = false;
+      continue;
+    }
+    if (ch === '"') {
+      inString = true;
+    } else if (ch === '[' || ch === '{') {
+      stack.push(ch);
+    } else if (ch === ']' || ch === '}') {
+      stack.pop();
+      if (stack.length === 0) return { end: i, lastSafe };
+      lastSafe = { pos: i + 1, stack: [...stack] };
+    }
+  }
+  return { end: -1, lastSafe };
+}
+
+/** Bỏ dấu phẩy thừa trước } hoặc ] (ngoài chuỗi). */
+function removeTrailingCommas(text: string): string {
+  let out = '';
+  let inString = false;
+  let escaped = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (ch === '\\') escaped = true;
+      else if (ch === '"') inString = false;
+      out += ch;
+      continue;
+    }
+    if (ch === '"') inString = true;
+    if (ch === ',') {
+      const rest = text.slice(i + 1);
+      if (/^\s*[}\]]/.test(rest)) continue;
+    }
+    out += ch;
+  }
+  return out;
+}
+
+/**
+ * Sửa JSON bị cắt cụt: lùi về điểm cắt an toàn cuối cùng rồi tự đóng các ngoặc còn mở.
+ * Phần tử đang viết dở bị loại bỏ; các phần tử đã hoàn chỉnh trước đó được giữ lại.
+ */
+function repairTruncatedJson(sanitized: string, lastSafe: JsonScanResult['lastSafe']): any {
+  if (!lastSafe) throw new Error('unrepairable');
+  const closers = [...lastSafe.stack].reverse().map((open) => (open === '[' ? ']' : '}')).join('');
+  const candidate = sanitized.slice(0, lastSafe.pos).replace(/[\s,]+$/, '') + closers;
+  return JSON.parse(removeTrailingCommas(candidate));
+}
+
+interface ParseContext {
+  label?: string;
+  model?: string;
+  finishReason?: string;
+  blockReason?: string;
+  /** Cho phép trả về phần đã hoàn chỉnh của JSON bị cắt cụt (dùng cho danh sách câu hỏi) */
+  allowPartial?: boolean;
+}
+
+interface ParseOutcome {
+  data: any;
+  /** true nếu dữ liệu được cứu từ JSON bị cắt cụt (có thể thiếu phần tử cuối) */
+  repaired: boolean;
+}
+
+function describeParseFailure(text: string, ctx: ParseContext): string {
+  if (!text.trim()) {
+    if (ctx.blockReason || (ctx.finishReason && /SAFETY|PROHIBITED|BLOCKLIST|SPII|RECITATION/.test(ctx.finishReason))) {
+      return `AI từ chối hoặc chặn nội dung (${ctx.blockReason || ctx.finishReason}). Vui lòng điều chỉnh yêu cầu rồi tạo lại đề.`;
+    }
+    return 'AI trả về phản hồi rỗng. Hệ thống không lưu đề lỗi; vui lòng tạo lại đề.';
+  }
+  if (ctx.finishReason === 'MAX_TOKENS') return JSON_TRUNCATED_ERROR;
+  return JSON_FORMAT_ERROR;
 }
 
 /**
  * Extract JSON from Gemini's text response and parse safely.
- * Handles: raw JSON, ```json fenced, ```fenced, mixed text with JSON.
+ * Handles: raw JSON, ```json fenced, ```fenced, mixed text with JSON, LaTeX escapes,
+ * raw control characters, trailing commas and (optionally) truncated output.
  */
-function safeJsonParse(text: string): any {
-  // Step 1: Try direct parse (in case text is already valid JSON)
-  const sanitized = sanitizeLatexInJson(text);
-  try {
-    return JSON.parse(sanitized);
-  } catch { /* continue */ }
+function parseJsonResponse(text: string, ctx: ParseContext = {}): ParseOutcome {
+  const raw = (text || '').replace(/^\uFEFF/, '').trim();
+  const errors: string[] = [];
 
-  // Step 2: Strip markdown code fences
-  const fenceMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-  if (fenceMatch) {
-    const extracted = sanitizeLatexInJson(fenceMatch[1].trim());
+  if (raw) {
+    // Các ứng viên vị trí bắt đầu JSON, theo thứ tự ưu tiên:
+    // nội dung trong ```json fence``` (nếu có) → lần lượt từng dấu [ / { trong phản hồi.
+    const candidates: string[] = [];
+    const fenceOpen = raw.match(/```(?:json|JSON)?\s*/);
+    if (fenceOpen && fenceOpen.index !== undefined) {
+      const afterFence = raw.slice(fenceOpen.index + fenceOpen[0].length);
+      const fenceClose = afterFence.lastIndexOf('```');
+      candidates.push(fenceClose >= 0 ? afterFence.slice(0, fenceClose) : afterFence);
+    }
+    const bracketRegex = /[\[{]/g;
+    let match: RegExpExecArray | null;
+    while ((match = bracketRegex.exec(raw)) !== null && candidates.length < 40) {
+      candidates.push(raw.slice(match.index));
+    }
+
+    let bestPartial: { sanitized: string; lastSafe: JsonScanResult['lastSafe'] } | null = null;
+
+    for (const candidate of candidates) {
+      const trimmed = candidate.trim();
+      const firstBracket = trimmed.search(/[\[{]/);
+      if (firstBracket < 0) continue;
+      const sanitized = sanitizeLatexInJson(trimmed.slice(firstBracket));
+
+      // Bước 1: parse trực tiếp
+      try {
+        return { data: JSON.parse(sanitized), repaired: false };
+      } catch (e: any) {
+        errors.push(`direct: ${e?.message}`);
+      }
+
+      // Bước 2: cắt đúng biên của giá trị JSON gốc (quét có nhận biết chuỗi)
+      const scan = scanJsonValue(sanitized);
+      if (scan.end >= 0) {
+        const exact = sanitized.slice(0, scan.end + 1);
+        try {
+          return { data: JSON.parse(exact), repaired: false };
+        } catch (e: any) {
+          errors.push(`bounded: ${e?.message}`);
+        }
+        try {
+          return { data: JSON.parse(removeTrailingCommas(exact)), repaired: false };
+        } catch (e: any) {
+          errors.push(`trailing-comma: ${e?.message}`);
+        }
+      } else if (/^[\[{]\s*["\[{\]}]/.test(sanitized)) {
+        // JSON thật nhưng chưa đóng → bị cắt cụt. Dừng tại đây: các ứng viên phía sau
+        // đều nằm BÊN TRONG giá trị này (vd câu hỏi đầu tiên), không được ưu tiên hơn
+        // việc cứu toàn bộ mảng.
+        bestPartial = { sanitized, lastSafe: scan.lastSafe };
+        break;
+      }
+    }
+
+    // Bước 3: cứu JSON bị cắt cụt (chỉ khi được phép)
+    if (ctx.allowPartial && bestPartial) {
+      try {
+        const data = repairTruncatedJson(bestPartial.sanitized, bestPartial.lastSafe);
+        console.warn(`[safeJsonParse] ${ctx.label || ''} JSON bị cắt cụt — đã cứu phần hoàn chỉnh.`, {
+          model: ctx.model,
+          finishReason: ctx.finishReason,
+        });
+        return { data, repaired: true };
+      } catch (e: any) {
+        errors.push(`repair: ${e?.message}`);
+      }
+    }
+  }
+
+  // Không "nuốt" lỗi chi tiết — log đầy đủ để chẩn đoán (F12 → Console)
+  console.error(`[safeJsonParse] Không parse được phản hồi AI ${ctx.label ? `(${ctx.label})` : ''}`, {
+    model: ctx.model,
+    finishReason: ctx.finishReason,
+    blockReason: ctx.blockReason,
+    length: raw.length,
+    head: raw.slice(0, 300),
+    tail: raw.slice(-300),
+    attempts: errors,
+  });
+  throw new Error(describeParseFailure(raw, ctx));
+}
+
+function safeJsonParse(text: string, ctx: ParseContext = {}): any {
+  return parseJsonResponse(text, ctx).data;
+}
+
+// ============================================================
+// RESILIENT GENERATION HELPERS
+// ============================================================
+
+/** Chuẩn hoá dữ liệu parse được thành mảng câu hỏi ({questions:[...]}, object đơn, ...). */
+function toQuestionArray(data: any): any[] {
+  if (Array.isArray(data)) return data;
+  if (data && typeof data === 'object') {
+    for (const key of ['questions', 'items', 'data', 'exam', 'result']) {
+      if (Array.isArray(data[key])) return data[key];
+    }
+    if (data.question_en || data.question_vi) return [data];
+  }
+  return [];
+}
+
+/** Câu hỏi đủ dùng: có đề, có đáp án, có lời giải; câu trắc nghiệm phải có phương án. */
+function isUsableQuestion(q: any): boolean {
+  if (!q || typeof q !== 'object') return false;
+  const hasStatement = typeof (q.question_en || q.question_vi) === 'string' && String(q.question_en || q.question_vi).trim().length > 0;
+  const hasAnswer = q.correct_answer !== undefined && q.correct_answer !== null && String(q.correct_answer).trim().length > 0;
+  const hasSolution = Boolean(q.solution_en || q.solution_vi);
+  const optionsOk = q.part !== 'PART_1' || (Array.isArray(q.options_en) && q.options_en.length >= 2);
+  return hasStatement && hasAnswer && hasSolution && optionsOk;
+}
+
+/** Chia [1..total] thành các khoảng liên tiếp, mỗi khoảng tối đa `size` câu. */
+function chunkRanges(total: number, size: number): Array<[number, number]> {
+  const ranges: Array<[number, number]> = [];
+  for (let start = 1; start <= total; start += size) {
+    ranges.push([start, Math.min(total, start + size - 1)]);
+  }
+  return ranges;
+}
+
+/** Chạy các tác vụ với giới hạn song song (tránh dồn hàng chục request → 429 quota). Fail-fast. */
+async function runWithConcurrency<T>(tasks: Array<() => Promise<T>>, limit: number): Promise<T[]> {
+  const results: T[] = new Array(tasks.length);
+  let next = 0;
+  let failed = false;
+  const worker = async () => {
+    while (!failed && next < tasks.length) {
+      const index = next++;
+      try {
+        results[index] = await tasks[index]();
+      } catch (err) {
+        failed = true;
+        throw err;
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.max(1, Math.min(limit, tasks.length)) }, worker));
+  return results;
+}
+
+interface QuestionRangeOptions {
+  label: string;
+  buildPrompt: (start: number, end: number) => string;
+  systemInstruction: string;
+  maxOutputTokens: number;
+  onModelSwitch?: (from: string, to: string, reason: string) => void;
+}
+
+const MAX_RANGE_DEPTH = 4;
+const ATTEMPTS_PER_RANGE = 2;
+
+/**
+ * Sinh các câu [start..end] một cách bền vững:
+ * - Đọc finishReason: nếu MAX_TOKENS → chia đôi khoảng ngay thay vì báo lỗi.
+ * - JSON bị cắt → giữ các câu hoàn chỉnh, chỉ sinh bổ sung phần còn thiếu.
+ * - Lỗi parse / thiếu câu → thử lại riêng khoảng này (không làm sập cả đề).
+ * - Lỗi tầng API (key, quota...) → ném ngay, không retry.
+ */
+async function generateQuestionRange(
+  start: number,
+  end: number,
+  opts: QuestionRangeOptions,
+  depth = 0,
+): Promise<any[]> {
+  const expected = end - start + 1;
+  const attempts = expected === 1 ? ATTEMPTS_PER_RANGE + 1 : ATTEMPTS_PER_RANGE;
+  const label = `${opts.label} câu ${start}-${end}`;
+  let lastError: Error | null = null;
+
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    // Lỗi API ném ra từ đây sẽ không bị bắt → dừng ngay (đúng quy chuẩn api.md)
+    const result = await generateContentWithFallback({
+      contents: opts.buildPrompt(start, end),
+      systemInstruction: opts.systemInstruction,
+      responseMimeType: 'application/json',
+      maxOutputTokens: opts.maxOutputTokens,
+      onModelSwitch: opts.onModelSwitch,
+    });
+    const truncated = result.finishReason === 'MAX_TOKENS';
+
+    let usable: any[] = [];
+    let attemptError: Error | null = null;
     try {
-      return JSON.parse(extracted);
-    } catch { /* continue */ }
+      const { data } = parseJsonResponse(result.text, {
+        label,
+        model: result.model,
+        finishReason: result.finishReason,
+        blockReason: result.blockReason,
+        allowPartial: true,
+      });
+      usable = toQuestionArray(data).filter(isUsableQuestion);
+    } catch (err: any) {
+      attemptError = err instanceof Error ? err : new Error(String(err));
+    }
+
+    if (usable.length > expected) {
+      // Model sinh thừa (bỏ qua chỉ thị khoảng) → ưu tiên các câu có order_index thuộc khoảng
+      const inRange = usable
+        .filter((q) => Number(q.order_index) >= start && Number(q.order_index) <= end)
+        .sort((a, b) => Number(a.order_index) - Number(b.order_index));
+      usable = inRange.length >= expected ? inRange : usable;
+    }
+    if (usable.length >= expected) return usable.slice(0, expected);
+
+    if (usable.length > 0 && depth < MAX_RANGE_DEPTH) {
+      console.warn(`[generate] ${label}: nhận ${usable.length}/${expected} câu${truncated ? ' (MAX_TOKENS)' : ''} — sinh bổ sung phần còn thiếu.`);
+      const rest = await generateQuestionRange(start + usable.length, end, opts, depth + 1);
+      return [...usable, ...rest];
+    }
+
+    lastError = attemptError ?? new Error(truncated ? JSON_TRUNCATED_ERROR : QUESTION_COUNT_ERROR);
+    console.warn(`[generate] ${label}: lần ${attempt}/${attempts} thất bại`, {
+      model: result.model,
+      finishReason: result.finishReason,
+      error: lastError.message,
+    });
+
+    // Biết chắc bị cắt vì hết token → chia nhỏ ngay, lặp lại cùng kích thước là vô ích
+    if (truncated && expected > 1) break;
   }
 
-  // Step 3: Find JSON array or object boundaries
-  const jsonStart = text.search(/[\[{]/);
-  const jsonEndBracket = text.lastIndexOf(']');
-  const jsonEndBrace = text.lastIndexOf('}');
-  const jsonEnd = Math.max(jsonEndBracket, jsonEndBrace);
-  if (jsonStart >= 0 && jsonEnd > jsonStart) {
-    const extracted = sanitizeLatexInJson(text.slice(jsonStart, jsonEnd + 1));
+  if (expected > 1 && depth < MAX_RANGE_DEPTH) {
+    const mid = start + Math.floor(expected / 2) - 1;
+    console.warn(`[generate] ${label}: chia nhỏ thành ${start}-${mid} và ${mid + 1}-${end}.`);
+    const left = await generateQuestionRange(start, mid, opts, depth + 1);
+    const right = await generateQuestionRange(mid + 1, end, opts, depth + 1);
+    return [...left, ...right];
+  }
+
+  throw lastError ?? new Error(JSON_FORMAT_ERROR);
+}
+
+/** Gọi AI trả về JSON (object đơn) với retry khi parse thất bại. */
+async function generateJsonWithRetry(
+  options: GenerateContentOptions,
+  label: string,
+  attempts = 2,
+): Promise<any> {
+  let lastError: Error | null = null;
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    const result = await generateContentWithFallback({ ...options, responseMimeType: 'application/json' });
     try {
-      return JSON.parse(extracted);
-    } catch { /* continue */ }
+      return safeJsonParse(result.text, {
+        label,
+        model: result.model,
+        finishReason: result.finishReason,
+        blockReason: result.blockReason,
+      });
+    } catch (err: any) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+      console.warn(`[generate] ${label}: lần ${attempt}/${attempts} thất bại`, {
+        model: result.model,
+        finishReason: result.finishReason,
+      });
+    }
   }
-
-  // Step 4: Last resort — aggressive cleanup
-  const cleaned = sanitizeLatexInJson(
-    text.replace(/```json\s*|```/g, '').trim()
-  );
-  try {
-    return JSON.parse(cleaned);
-  } catch {
-    throw new Error('Phản hồi AI chưa hoàn chỉnh hoặc sai định dạng. Hệ thống không lưu đề lỗi; vui lòng tạo lại đề.');
-  }
+  throw lastError ?? new Error(JSON_FORMAT_ERROR);
 }
 
 // ============================================================
@@ -342,10 +797,13 @@ export const generateExam = async (params: {
     onModelSwitch,
   } = params;
 
-  const userPrompt = `Task: Generate an authentic High School Math Olympiad examination strictly adhering to the 2025 Hai Phong Department of Education and Training (Sở GD&ĐT Hải Phòng) contest matrix.
+  const buildPrompt = (start: number, end: number) => {
+    const batchCount = end - start + 1;
+    return `Task: Generate an authentic High School Math Olympiad examination strictly adhering to the 2025 Hai Phong Department of Education and Training (Sở GD&ĐT Hải Phòng) contest matrix.
 Exam Type: ${examType}
 Language Mode: ${mode}
-Total Questions: ${questionCount}
+Full exam size: ${questionCount} questions.
+THIS REQUEST: generate ONLY questions ${start} to ${end} (exactly ${batchCount} question objects, order_index ${start}..${end}). Other questions are generated separately — do NOT output them.
 ${topicPrompt ? `Focus Topic / Custom Instruction: ${topicPrompt}` : ''}
 ${customDocumentText ? `Reference Material / Document Context:\n${customDocumentText.slice(0, 4000)}` : ''}
 
@@ -366,12 +824,13 @@ CRITICAL RULES FOR HAI PHONG OLYMPIAD 2025 MATRIX:
    - "question_en" and "question_vi" must both be provided.
    - For Part 1, "options_en" MUST BE IN ENGLISH ONLY. Do not translate options to Vietnamese.
    - Both "solution_en" and "solution_vi" must provide complete, rigorous step-by-step mathematical reasoning.
+6. LENGTH LIMIT: keep each solution concise — at most 6 logical steps and about 160 words per language.
 
 Output Schema:
-A valid JSON array containing ${questionCount} question objects:
+A valid JSON array containing exactly ${batchCount} question objects (order_index ${start} to ${end}):
 [
   {
-    "order_index": number (1 to ${questionCount}),
+    "order_index": number (${start} to ${end}),
     "part": "PART_1" or "PART_2",
     "strand": "algebra_calculus" or "geometry_measurement" or "statistics_discrete",
     "topic": string,
@@ -387,34 +846,34 @@ A valid JSON array containing ${questionCount} question objects:
 ]
 
 CRITICAL FORMATTING RULES:
-- Wrap your output inside \`\`\`json ... \`\`\` code fences.
-- Write ALL math formulas DIRECTLY using LaTeX $...$ inline, for example "$f(x) = 3\\\\sin(2x) - 4\\\\cos(2x) + 1$", "$\\\\frac{a}{b}$", "$[-4; 6]$".
-- In JSON strings, escape LaTeX backslashes properly: "\\\\frac{a}{b}", "\\\\sqrt{x}", "\\\\sin(2x)".
-- Each formula must be wrapped in $ delimiters: "$\\\\frac{a}{b}$", "$\\\\triangle ABC$".
-- Options must also have proper LaTeX: "A. $6\\\\sqrt{5}$", NOT "A. 6\\sqrt{5}".`;
+- Wrap every formula in $ delimiters, including options: raw JSON "A. $6\\\\sqrt{5}$", NOT "A. 6\\\\sqrt{5}".
+- Follow the JSON + LaTeX escaping rules from the system instruction exactly (raw JSON "$\\\\frac{a}{b}$" — one escaped backslash, never four).
+- Return ONLY the JSON array.`;
+  };
 
-  const ranges = examType === 'haiphong_matrix' && questionCount === 22
-    ? [[1, 12], [13, 22]]
-    : [[1, questionCount]];
-  const batches = await Promise.all(ranges.map(async ([start, end]) => {
-    const expectedCount = end - start + 1;
-    const result = await generateContentWithFallback({
-      contents: `${userPrompt}
+  // Chia nhỏ ngay từ đầu (≈5-6 câu / lời gọi) để tránh vượt maxOutputTokens khi sinh song ngữ
+  const ranges: Array<[number, number]> = examType === 'haiphong_matrix' && questionCount === 22
+    ? [[1, 6], [7, 12], [13, 17], [18, 22]]
+    : chunkRanges(questionCount, 6);
 
-IMPORTANT OVERRIDE: Return ONLY questions ${start} to ${end} (exactly ${expectedCount} objects). Do not generate any other question numbers. Keep each bilingual solution concise: at most 6 logical steps and about 160 words per language.`,
-      systemInstruction: HAIPHONG_SYSTEM_INSTRUCTION,
-      responseMimeType: 'application/json',
-      maxOutputTokens: 16384,
-      onModelSwitch,
-    });
-    const questions = safeJsonParse(result.text);
-    if (!Array.isArray(questions) || questions.length !== expectedCount) {
-      throw new Error('AI trả về thiếu câu hỏi hoặc sai cấu trúc. Hệ thống không lưu đề chưa đầy đủ; vui lòng tạo lại đề.');
-    }
-    return questions.map((question, index) => ({ ...question, order_index: start + index }));
-  }));
+  const rangeOptions: QuestionRangeOptions = {
+    label: 'Đề thi',
+    buildPrompt,
+    systemInstruction: HAIPHONG_SYSTEM_INSTRUCTION,
+    maxOutputTokens: 32768,
+    onModelSwitch,
+  };
 
-  return batches.flat().sort((left, right) => left.order_index - right.order_index);
+  const batches = await runWithConcurrency(
+    ranges.map(([start, end]) => () => generateQuestionRange(start, end, rangeOptions)),
+    4,
+  );
+
+  const questions = batches.flat();
+  if (questions.length !== questionCount) {
+    throw new Error(QUESTION_COUNT_ERROR);
+  }
+  return questions.map((question, index) => ({ ...question, order_index: index + 1 }));
 };
 
 
@@ -437,18 +896,15 @@ Generate a comprehensive lesson in JSON format with:
 3. "methods": Array of typical problem-solving methods:
    [{ "name_en": string, "name_vi": string, "steps": string[], "sample_problem": string (with math symbols in $...$), "solution": string (detailed step-by-step) }]
 
-Return ONLY valid JSON matching this schema, wrapped in \`\`\`json ... \`\`\` code fences.
-Write ALL math formulas directly as standard LaTeX in $...$ or $$...$$.`;
+Return ONLY a valid JSON object matching this schema.
+Write ALL math formulas directly as standard LaTeX in $...$ or $$...$$, escaped per the JSON + LaTeX rules in the system instruction.`;
 
-  const result = await generateContentWithFallback({
+  return generateJsonWithRetry({
     contents: prompt,
     systemInstruction: HAIPHONG_SYSTEM_INSTRUCTION,
-    // NO responseMimeType — allows Gemini to write LaTeX naturally
     maxOutputTokens: 32768,
     onModelSwitch,
-  });
-
-  return safeJsonParse(result.text);
+  }, 'Bài học');
 };
 
 export type TopicQuestionType = 'mcq' | 'short_answer' | 'true_false' | 'mixed';
@@ -465,6 +921,9 @@ export interface GenerateTopicPracticeParams {
   onModelSwitch?: (from: string, to: string, reason: string) => void;
 }
 
+/** Số câu mỗi lời gọi khi sinh đề chuyên đề */
+const TOPIC_BATCH_SIZE = 3;
+
 /** Generate custom topical practice quiz using AI with full question format control */
 export const generateTopicPractice = async (params: GenerateTopicPracticeParams): Promise<any[]> => {
   const {
@@ -478,63 +937,56 @@ export const generateTopicPractice = async (params: GenerateTopicPracticeParams)
     onModelSwitch,
   } = params;
 
-  if (count > 2) {
-    const batchCounts = Array.from({ length: Math.ceil(count / 2) }, (_, index) => Math.min(2, count - index * 2));
-    const batches = await Promise.all(batchCounts.map((batchCount) => generateTopicPractice({
-      ...params,
-      count: batchCount,
-    })));
-    const questions = batches.flat();
-    if (questions.length !== count) {
-      throw new Error('AI trả về thiếu câu hỏi. Hệ thống không lưu đề chưa đầy đủ; vui lòng tạo lại đề.');
-    }
-    return questions.map((question, index) => ({
-      ...question,
-      id: question.id || `quiz-q-${index + 1}` ,
-      order_index: index + 1,
-    }));
-  }
+  const totalBatches = Math.ceil(count / TOPIC_BATCH_SIZE);
 
-  let formatInstruction = '';
-  if (questionType === 'mcq') {
-    formatInstruction = `FORMAT: ALL ${count} questions MUST BE PART_1 (Multiple Choice with 4 options A, B, C, D).
+  const buildPrompt = (start: number, end: number) => {
+    const batchCount = end - start + 1;
+    const batchIndex = Math.floor((start - 1) / TOPIC_BATCH_SIZE) + 1;
+
+    let formatInstruction = '';
+    if (questionType === 'mcq') {
+      formatInstruction = `FORMAT: ALL ${batchCount} questions MUST BE PART_1 (Multiple Choice with 4 options A, B, C, D).
 - "part": "PART_1"
 - "options_en": ["A. $...$", "B. $...$", "C. $...$", "D. $...$"] (English math options, ALWAYS enclose formulas in $...$)
 - "correct_answer": "A", "B", "C", or "D"`;
-  } else if (questionType === 'short_answer') {
-    formatInstruction = `FORMAT: ALL ${count} questions MUST BE PART_2 (Short Answer - student calculates and inputs number/fraction).
+    } else if (questionType === 'short_answer') {
+      formatInstruction = `FORMAT: ALL ${batchCount} questions MUST BE PART_2 (Short Answer - student calculates and inputs number/fraction).
 - "part": "PART_2"
 - "options_en": null
 - "correct_answer": concise numerical value, integer, simplified fraction like "a/b", or decimal string
 - "acceptable_answers": [array of equivalent forms, e.g. ["1/2", "0.5"]]`;
-  } else if (questionType === 'true_false') {
-    formatInstruction = `FORMAT: ALL ${count} questions MUST BE True/False Mathematical Propositions (Đúng / Sai).
+    } else if (questionType === 'true_false') {
+      formatInstruction = `FORMAT: ALL ${batchCount} questions MUST BE True/False Mathematical Propositions (Đúng / Sai).
 - Each question presents a profound mathematical assertion, inequality, property, or convergence claim related to "${topic}".
 - "part": "PART_1"
 - "options_en": ["A. Đúng (True)", "B. Sai (False)"]
 - "correct_answer": "A" (if True) or "B" (if False)
 - In "solution_en" and "solution_vi", explain rigorously WHY it is True or furnish a clear counterexample demonstrating why it is False.`;
-  } else {
-    // Mixed format
-    formatInstruction = `FORMAT: MIX OF QUESTION TYPES distributed evenly among:
+    } else {
+      // Mixed format
+      formatInstruction = `FORMAT: MIX OF QUESTION TYPES distributed evenly among:
 1. Multiple Choice (PART_1 with 4 options A, B, C, D)
 2. True/False Propositions (PART_1 with options_en: ["A. Đúng (True)", "B. Sai (False)"] and correct_answer "A" or "B")
 3. Short Answer (PART_2 with options_en: null and correct_answer as exact number/fraction)`;
-  }
+    }
 
-  let difficultyInstruction = '';
-  if (difficulty === 'understanding') {
-    difficultyInstruction = 'COGNITIVE LEVEL: Understanding (Thông hiểu - concepts, fundamental formulas, direct applications).';
-  } else if (difficulty === 'application') {
-    difficultyInstruction = 'COGNITIVE LEVEL: Application (Vận dụng - multi-step problem solving, standard competition methods).';
-  } else if (difficulty === 'advanced') {
-    difficultyInstruction = 'COGNITIVE LEVEL: Advanced / Olympiad (Vận dụng cao - profound high-school Olympiad level, ingenious transformations, extremal reasoning).';
-  } else {
-    difficultyInstruction = 'COGNITIVE LEVEL: Balanced mix of Application (60%) and Advanced / Olympiad (40%).';
-  }
+    let difficultyInstruction = '';
+    if (difficulty === 'understanding') {
+      difficultyInstruction = 'COGNITIVE LEVEL: Understanding (Thông hiểu - concepts, fundamental formulas, direct applications).';
+    } else if (difficulty === 'application') {
+      difficultyInstruction = 'COGNITIVE LEVEL: Application (Vận dụng - multi-step problem solving, standard competition methods).';
+    } else if (difficulty === 'advanced') {
+      difficultyInstruction = 'COGNITIVE LEVEL: Advanced / Olympiad (Vận dụng cao - profound high-school Olympiad level, ingenious transformations, extremal reasoning).';
+    } else {
+      difficultyInstruction = 'COGNITIVE LEVEL: Balanced mix of Application (60%) and Advanced / Olympiad (40%).';
+    }
 
-  const prompt = `Task: Generate a brand new, authentic set of exactly ${count} math practice questions strictly on the topic: "${topic}".
+    const batchNote = totalBatches > 1
+      ? `\nBATCH NOTE: This request is part ${batchIndex} of ${totalBatches} of a larger set generated in parallel. Choose distinct sub-types, contexts and numbers (avoid the most common textbook example) so this part does not duplicate the others.\n`
+      : '';
 
+    return `Task: Generate a brand new, authentic set of exactly ${batchCount} math practice questions strictly on the topic: "${topic}".
+${batchNote}
 ${formatInstruction}
 
 ${difficultyInstruction}
@@ -549,8 +1001,8 @@ CRITICAL RULES:
    - For PART_1 MCQ options: English only.
    - Both "solution_en" and "solution_vi" must supply clear, step-by-step mathematical reasoning.
 4. Use standard KaTeX $...$ for inline and $$...$$ for display formulas.
-5. In JSON strings, use valid LaTeX formatting ("$\\\\frac{a}{b}$", "$\\\\sqrt{x}$").
-6. CRITICAL FOR OPTIONS: In "options_en", ALWAYS wrap all mathematical formulas and expressions in KaTeX dollar signs $...$, for example: ["A. $\\\\frac{64\\\\sqrt{3}}{9}$", "B. $\\\\frac{32\\\\sqrt{3}}{9}$", ...]. Never output raw naked LaTeX like "\\\\frac{a}{b}" without $...$ delimiters!
+5. In JSON strings, escape LaTeX exactly once per the system instruction: raw JSON "$\\\\frac{a}{b}$", "$\\\\sqrt{x}$" (never four backslashes, never a lone backslash).
+6. CRITICAL FOR OPTIONS: In "options_en", ALWAYS wrap all mathematical formulas and expressions in KaTeX dollar signs $...$, for example raw JSON: ["A. $\\\\frac{64\\\\sqrt{3}}{9}$", "B. $\\\\frac{32\\\\sqrt{3}}{9}$", ...]. Never output naked LaTeX without $...$ delimiters!
 7. Keep each solution_en and solution_vi concise: maximum 4 logical steps and about 90 words per language.
 8. Each question object schema:
 {
@@ -570,21 +1022,32 @@ CRITICAL RULES:
   "solution_vi": string
 }
 
-Output: Return ONLY the raw valid JSON array of ${count} question objects. Do not use Markdown, code fences, commentary, or trailing text.`;
+Output: Return ONLY the raw valid JSON array of ${batchCount} question objects. Do not use Markdown, code fences, commentary, or trailing text.`;
+  };
 
-  const result = await generateContentWithFallback({
-    contents: prompt,
+  const rangeOptions: QuestionRangeOptions = {
+    label: 'Chuyên đề',
+    buildPrompt,
     systemInstruction: HAIPHONG_SYSTEM_INSTRUCTION,
-    responseMimeType: 'application/json',
-    maxOutputTokens: 8192,
+    maxOutputTokens: 16384,
     onModelSwitch,
-  });
+  };
 
-  const questions = safeJsonParse(result.text);
-  if (!Array.isArray(questions) || questions.length !== count) {
-    throw new Error('AI trả về thiếu câu hỏi hoặc sai cấu trúc. Hệ thống không lưu đề chưa đầy đủ; vui lòng tạo lại đề.');
+  const batches = await runWithConcurrency(
+    chunkRanges(count, TOPIC_BATCH_SIZE).map(([start, end]) => () => generateQuestionRange(start, end, rangeOptions)),
+    4,
+  );
+
+  const questions = batches.flat();
+  if (questions.length !== count) {
+    throw new Error(QUESTION_COUNT_ERROR);
   }
-  return questions;
+  // Luôn gán id/order_index mới — id do model tự đặt bị trùng giữa các batch ("quiz-q-1"...)
+  return questions.map((question, index) => ({
+    ...question,
+    id: `quiz-q-${index + 1}`,
+    order_index: index + 1,
+  }));
 };
 
 /** Regenerate / Swap a single question with matching metadata */
@@ -605,7 +1068,7 @@ Provide a NEW, DIFFERENT, EQUIVALENT replacement problem with the EXACT SAME spe
 - Language Mode: ${mode}
 ${customPrompt ? `Teacher's Special Instruction: "${customPrompt}"` : ''}
 
-Output JSON format (single question object):
+Output JSON format (single question object, NOT an array):
 {
   "part": "${originalQuestion.part}",
   "order_index": ${originalQuestion.order_index},
@@ -622,15 +1085,17 @@ Output JSON format (single question object):
   "solution_vi": "string"
 }`;
 
-  const result = await generateContentWithFallback({
+  const data = await generateJsonWithRetry({
     contents: prompt,
     systemInstruction: HAIPHONG_SYSTEM_INSTRUCTION,
-    // NO responseMimeType — allows Gemini to write LaTeX naturally
     maxOutputTokens: 8192,
     onModelSwitch,
-  });
+  }, `Đổi câu ${originalQuestion.order_index}`);
 
-  const parsed = safeJsonParse(result.text);
+  const parsed = Array.isArray(data) ? data[0] : data;
+  if (!parsed || typeof parsed !== 'object' || !(parsed.question_en || parsed.question_vi)) {
+    throw new Error(QUESTION_COUNT_ERROR);
+  }
 
   // Ensure consistent identifiers
   return {
@@ -687,14 +1152,11 @@ Return ONLY a JSON object with this exact schema:
   "pedagogical_advice": "Actionable advice in Vietnamese for the student on how to write formal proofs faster and avoid losing points in municipal/national Olympiads."
 }`;
 
-  const result = await generateContentWithFallback({
+  return generateJsonWithRetry({
     contents: prompt,
-    systemInstruction: `You are an elite IMO reviewer and mathematical editor. Return valid JSON only. Keep LaTeX in standard $...$ and $$...$$.`,
-    // NO responseMimeType — allows Gemini to write LaTeX naturally
+    systemInstruction: `You are an elite IMO reviewer and mathematical editor. Keep LaTeX in standard $...$ and $$...$$.\n\n${JSON_LATEX_RULES}`,
     maxOutputTokens: 8192,
     thinkingLevel: 'low',
     onModelSwitch,
-  });
-
-  return safeJsonParse(result.text);
+  }, 'Chấm chứng minh');
 };
