@@ -187,6 +187,14 @@ export const storageService = {
     }
   },
 
+  /** Lấy danh sách đề thi đã được tạo bởi AI / đề tự luyện để học sinh & giáo viên mở lại ôn luyện */
+  getGeneratedExams(): Exam[] {
+    const exams = this.getExams();
+    return exams.filter(
+      (e) => Boolean(e && (e.is_ai_generated || e.id?.startsWith('exam-') || e.id?.startsWith('practice-') || e.exam_type === 'topic_practice'))
+    ).sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+  },
+
   async deleteExam(examId: string): Promise<void> {
     // 1. Đánh dấu vĩnh viễn vào danh sách đã xóa để không bị nạp lại
     this.markExamDeleted(examId);
@@ -625,19 +633,19 @@ export const storageService = {
 
       // Lấy từ examId
       if (map[examId]) {
-        Object.values(map[examId]).forEach((s) => {
+        (Object.values(map[examId]) as ExamSession[]).forEach((s) => {
           if (s && s.id) sessionMap.set(s.id, s);
         });
       }
       // Lấy từ accessCode
       if (accessCode && map[accessCode]) {
-        Object.values(map[accessCode]).forEach((s) => {
+        (Object.values(map[accessCode]) as ExamSession[]).forEach((s) => {
           if (s && s.id) sessionMap.set(s.id, s);
         });
       }
       // Quét toàn bộ map để không bỏ sót session nào có exam_id hoặc access_code khớp
       Object.values(map).forEach((group) => {
-        Object.values(group).forEach((s) => {
+        (Object.values(group) as ExamSession[]).forEach((s) => {
           if (!s || !s.id) return;
           const matchExamId = s.exam_id === examId;
           const matchAccessCode =
@@ -757,17 +765,17 @@ export const storageService = {
 
     // 1. Lấy từ local
     if (map[examId]) {
-      Object.values(map[examId]).forEach((s) => {
+      (Object.values(map[examId]) as ExamSession[]).forEach((s) => {
         if (s && s.id) sessionMap.set(s.id, s);
       });
     }
     if (accessCode && map[accessCode]) {
-      Object.values(map[accessCode]).forEach((s) => {
+      (Object.values(map[accessCode]) as ExamSession[]).forEach((s) => {
         if (s && s.id) sessionMap.set(s.id, s);
       });
     }
     Object.values(map).forEach((group) => {
-      Object.values(group).forEach((s) => {
+      (Object.values(group) as ExamSession[]).forEach((s) => {
         if (!s || !s.id) return;
         if (
           s.exam_id === examId ||

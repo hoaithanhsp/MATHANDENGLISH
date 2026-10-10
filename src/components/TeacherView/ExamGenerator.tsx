@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Sparkles,
   Upload,
@@ -19,6 +19,15 @@ import {
   TrendingUp,
   Activity,
   Radio,
+  History,
+  RotateCcw,
+  Copy,
+  Check,
+  Calendar,
+  Clock,
+  Search,
+  Filter,
+  BookOpen,
 } from 'lucide-react';
 import { Exam, Question, ExamMode, ExamType, MathStrand, CognitiveLevel, Assignment } from '../../types';
 import MathRenderer from '../MathRenderer';
@@ -32,6 +41,7 @@ interface ExamGeneratorProps {
   onNavigateToBank: () => void;
   isStudentMode?: boolean;
   onStartTestNow?: (exam: Exam) => void;
+  onDeleteExam?: (id: string) => void;
   exams?: Exam[];
   assignments?: Assignment[];
 }
@@ -41,6 +51,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
   onNavigateToBank,
   isStudentMode = false,
   onStartTestNow,
+  onDeleteExam,
   exams = [],
   assignments = [],
 }) => {
@@ -48,18 +59,8 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
   const [aiQuestsLive, setAiQuestsLive] = useState<number>(() => storageService.getAiQuestsToday());
   const [onlineStudents, setOnlineStudents] = useState<number>(0);
 
-  useEffect(() => {
-    const unsubQuests = storageService.onAiQuestsChanged((count) => {
-      setAiQuestsLive(count);
-    });
-    const unsubSessions = storageService.onActiveSessionsCountChanged((active) => {
-      setOnlineStudents(active);
-    });
-    return () => {
-      unsubQuests();
-      unsubSessions();
-    };
-  }, []);
+  // Tab View: 'create' (Soạn / Sinh đề AI) hoặc 'history' (Lịch sử đề đã tạo)
+  const [generatorView, setGeneratorView] = useState<'create' | 'history'>('create');
 
   // Input states
   const [examTitle, setExamTitle] = useState(
@@ -84,6 +85,114 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
   const [swappingIndex, setSwappingIndex] = useState<number | null>(null);
   const [successSaved, setSuccessSaved] = useState(false);
 
+  // Active exam tracking for current session
+  const [currentExamId, setCurrentExamId] = useState<string | null>(null);
+  const [currentAccessCode, setCurrentAccessCode] = useState<string | null>(null);
+  const [autoSavedNotice, setAutoSavedNotice] = useState<{ show: boolean; accessCode: string; title: string } | null>(null);
+
+  // History filtering & actions
+  const [historySearch, setHistorySearch] = useState('');
+  const [historyFilter, setHistoryFilter] = useState<'all' | 'bilingual' | 'english_only' | 'topic_practice'>('all');
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const unsubQuests = storageService.onAiQuestsChanged((count) => {
+      setAiQuestsLive(count);
+    });
+    const unsubSessions = storageService.onActiveSessionsCountChanged((active) => {
+      setOnlineStudents(active);
+    });
+    return () => {
+      unsubQuests();
+      unsubSessions();
+    };
+  }, []);
+
+  // Lấy danh sách đề thi đã tạo (bao gồm cả đề lưu trong storageService và exams prop)
+  const historyExams = useMemo(() => {
+    const rawList = storageService.getGeneratedExams();
+    const map = new Map<string, Exam>();
+    for (const e of rawList) {
+      if (e && e.id) map.set(e.id, e);
+    }
+    for (const e of exams) {
+      if (e && e.id && (e.is_ai_generated || e.id.startsWith('exam-') || e.id.startsWith('practice-') || e.exam_type === 'topic_practice')) {
+        map.set(e.id, e);
+      }
+    }
+    return Array.from(map.values()).sort(
+      (a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+    );
+  }, [exams, successSaved, autoSavedNotice]);
+
+  // Lọc danh sách lịch sử đề thi
+  const filteredHistoryExams = useMemo(() => {
+    return historyExams.filter((exam) => {
+      const q = historySearch.toLowerCase().trim();
+      const matchSearch =
+        !q ||
+        (exam.title && exam.title.toLowerCase().includes(q)) ||
+        (exam.access_code && exam.access_code.toLowerCase().includes(q)) ||
+        (exam.topic_focus && exam.topic_focus.toLowerCase().includes(q)) ||
+        (exam.description && exam.description.toLowerCase().includes(q));
+
+      if (!matchSearch) return false;
+
+      if (historyFilter === 'bilingual') return exam.mode === 'bilingual';
+      if (historyFilter === 'english_only') return exam.mode === 'english_only';
+      if (historyFilter === 'topic_practice') return exam.exam_type === 'topic_practice';
+      return true;
+    });
+  }, [historyExams, historySearch, historyFilter]);
+
+  // Sao chép mã phòng thi
+  const handleCopyCode = (code: string) => {
+    if (!code) return;
+    navigator.clipboard.writeText(code);
+    setCopiedCode(code);
+    setTimeout(() => setCopiedCode(null), 2000);
+  };
+
+  // Mở ra làm lại đề thi từ lịch sử
+  const handleRetakeExamFromHistory = (exam: Exam) => {
+    const currentUser = storageService.getCurrentUser();
+    if (currentUser?.id) {
+      storageService.clearExamAutoSave(exam.id, currentUser.id);
+    }
+    if (onStartTestNow) {
+      onStartTestNow(exam);
+    } else {
+      // Nếu không có onStartTestNow trực tiếp, nạp vào preview và báo người dùng
+      handleLoadExamToEditor(exam);
+    }
+  };
+
+  // Nạp lại đề thi vào editor KaTeX preview để xem lời giải hoặc hiệu chỉnh
+  const handleLoadExamToEditor = (exam: Exam) => {
+    setExamTitle(exam.title);
+    setMode(exam.mode);
+    setExamType(exam.exam_type || 'haiphong_matrix');
+    setCurrentExamId(exam.id);
+    setCurrentAccessCode(exam.access_code);
+    setGeneratedQuestions(exam.questions || []);
+    setGeneratorView('create');
+    setAutoSavedNotice({
+      show: true,
+      accessCode: exam.access_code,
+      title: exam.title,
+    });
+  };
+
+  // Xóa đề khỏi lịch sử
+  const handleDeleteExamFromHistory = async (examId: string) => {
+    await storageService.deleteExam(examId);
+    if (onDeleteExam) {
+      onDeleteExam(examId);
+    }
+    setDeleteConfirmId(null);
+  };
+
   // Swap / Regenerate a single question
   const handleSwapQuestion = async (index: number) => {
     if (!generatedQuestions) return;
@@ -98,6 +207,26 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
       updated[index] = newQ;
       setGeneratedQuestions(updated);
       storageService.incrementAiQuests(1);
+
+      // Cập nhật lại đề đã lưu trong kho nếu có currentExamId
+      if (currentExamId) {
+        const updatedExam: Exam = {
+          id: currentExamId,
+          title: examTitle.trim(),
+          description: `Đề thi ${mode === 'bilingual' ? 'Song ngữ Anh - Việt' : 'Full Tiếng Anh'} chuẩn ma trận Sở GD&ĐT Hải Phòng. ${updated.length} câu / 90 phút.`,
+          mode,
+          duration_minutes: 90,
+          is_published: true,
+          access_code: currentAccessCode || `HP-${Math.random().toString(36).substring(2, 6).toUpperCase()}-${new Date().getFullYear()}`,
+          exam_type: examType,
+          created_at: new Date().toISOString(),
+          questions: updated,
+          is_ai_generated: true,
+          topic_focus: topicPrompt.trim() || undefined,
+        };
+        await storageService.saveExam(updatedExam);
+        onSaveExam(updatedExam);
+      }
     } catch (err: any) {
       alert('Không thể đổi câu hỏi: ' + (err?.message || 'Vui lòng thử lại'));
     } finally {
@@ -120,6 +249,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
   };
 
   // Generate Exam API Call (client-side via geminiService)
+  // TỰ ĐỘNG LƯU VÀO LỊCH SỬ ĐỀ NGAY SAU KHI SINH XONG
   const handleGenerate = async () => {
     if (examType === 'topic_practice' && (!Number.isInteger(topicQuestionCount) || topicQuestionCount < 1 || topicQuestionCount > 50)) {
       setErrorMsg('Số lượng câu hỏi chuyên đề phải từ 1 đến 50.');
@@ -133,8 +263,12 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
     setIsGenerating(true);
     setErrorMsg('');
     setSuccessSaved(false);
+    setAutoSavedNotice(null);
 
     try {
+      const newExamId = `exam-${Date.now()}`;
+      const newAccessCode = `HP-${Math.random().toString(36).substring(2, 6).toUpperCase()}-${new Date().getFullYear()}`;
+
       const rawQuestions = examType === 'topic_practice'
         ? await generateTopicPractice({
             topic: topicPrompt.trim() || 'High School Gifted Mathematics',
@@ -156,7 +290,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
 
       const questions: Question[] = (rawQuestions || []).map((q: any, i: number) => ({
         id: `gen-q-${Date.now()}-${i + 1}`,
-        exam_id: `exam-${Date.now()}`,
+        exam_id: newExamId,
         part: q.part || (i < 12 ? 'PART_1' : 'PART_2'),
         order_index: q.order_index || i + 1,
         strand: q.strand || (i < 9 ? 'algebra_calculus' : i < 18 ? 'geometry_measurement' : 'statistics_discrete'),
@@ -173,8 +307,36 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
       }));
 
       setGeneratedQuestions(questions);
+      setCurrentExamId(newExamId);
+      setCurrentAccessCode(newAccessCode);
+
       // Tự động ghi nhận số lượng quest AI đã phục vụ trực tuyến hôm nay
       storageService.incrementAiQuests(questions.length);
+
+      // TỰ ĐỘNG LƯU VÀO KHO / LỊCH SỬ ĐỀ THI
+      const autoSavedExam: Exam = {
+        id: newExamId,
+        title: examTitle.trim() || (isStudentMode ? 'Đề Tự Luyện HSG Toán Tiếng Anh' : 'Đề Thi Tuyển Chọn Đội Tuyển HSG Toán THPT'),
+        description: `Đề thi ${mode === 'bilingual' ? 'Song ngữ Anh - Việt' : 'Full Tiếng Anh'} chuẩn ma trận Sở GD&ĐT Hải Phòng. ${questions.length} câu / 90 phút.`,
+        mode,
+        duration_minutes: 90,
+        is_published: true,
+        access_code: newAccessCode,
+        exam_type: examType,
+        created_at: new Date().toISOString(),
+        questions: questions,
+        is_ai_generated: true,
+        topic_focus: topicPrompt.trim() || undefined,
+      };
+
+      await storageService.saveExam(autoSavedExam);
+      onSaveExam(autoSavedExam);
+      setSuccessSaved(true);
+      setAutoSavedNotice({
+        show: true,
+        accessCode: newAccessCode,
+        title: autoSavedExam.title,
+      });
     } catch (err: any) {
       console.error('Exam generation failed:', err);
       setErrorMsg(err?.message || 'Không thể tạo đề lúc này. Vui lòng thử lại sau.');
@@ -184,12 +346,12 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
     }
   };
 
-  // Save current generated exam
+  // Save current generated exam manually
   const handleSaveExam = async (startNow = false) => {
     if (!generatedQuestions || generatedQuestions.length === 0) return;
 
-    const examId = `exam-${Date.now()}`;
-    const accessCode = `HP-${Math.random().toString(36).substring(2, 6).toUpperCase()}-${new Date().getFullYear()}`;
+    const examId = currentExamId || `exam-${Date.now()}`;
+    const accessCode = currentAccessCode || `HP-${Math.random().toString(36).substring(2, 6).toUpperCase()}-${new Date().getFullYear()}`;
     const formattedQuestions = generatedQuestions.map((q, idx) => ({
       ...q,
       id: q.id || `q-${Date.now()}-${idx + 1}`,
@@ -208,12 +370,26 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
       exam_type: examType,
       created_at: new Date().toISOString(),
       questions: formattedQuestions,
+      is_ai_generated: true,
+      topic_focus: topicPrompt.trim() || undefined,
     };
 
-    await Promise.resolve(onSaveExam(newExam));
+    await storageService.saveExam(newExam);
+    onSaveExam(newExam);
     setSuccessSaved(true);
+    setCurrentExamId(examId);
+    setCurrentAccessCode(accessCode);
+    setAutoSavedNotice({
+      show: true,
+      accessCode: accessCode,
+      title: newExam.title,
+    });
 
     if (startNow && onStartTestNow) {
+      const currentUser = storageService.getCurrentUser();
+      if (currentUser?.id) {
+        storageService.clearExamAutoSave(examId, currentUser.id);
+      }
       onStartTestNow(newExam);
     } else {
       setTimeout(() => {
@@ -226,20 +402,21 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
   const handleExportDocx = async (includeSolutions: boolean) => {
     if (!generatedQuestions) return;
     const tempExam: Exam = {
-      id: 'temp',
+      id: currentExamId || 'temp',
       title: examTitle,
       mode,
       duration_minutes: 90,
       is_published: true,
-      access_code: 'HP-PREVIEW',
+      access_code: currentAccessCode || 'HP-PREVIEW',
       exam_type: examType,
       created_at: new Date().toISOString(),
       questions: generatedQuestions,
+      is_ai_generated: true,
     };
     await exportExamToDocx({ 
       exam: tempExam, 
       includeSolutions, 
-      includeVietnamese: mode === 'bilingual' 
+      mode: mode === 'bilingual' ? 'bilingual' : 'english_only',
     });
   };
 
@@ -247,6 +424,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
   const handleAddQuestion = () => {
     const newQ: Question = {
       id: `q-custom-${Date.now()}`,
+      exam_id: currentExamId || 'custom-exam',
       order_index: (generatedQuestions?.length || 0) + 1,
       part: (generatedQuestions?.length || 0) < 12 ? 'PART_1' : 'PART_2',
       strand: 'algebra_calculus',
@@ -441,8 +619,68 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
         </div>
       </div>
 
-      {/* Configuration & Preview Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Tab Navigation: Soạn / Sinh Đề AI vs Lịch Sử Đề Đã Tạo */}
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-800 p-2.5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+        <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-900 rounded-xl">
+          <button
+            type="button"
+            onClick={() => setGeneratorView('create')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition ${
+              generatorView === 'create'
+                ? 'bg-white dark:bg-slate-800 text-teal-600 dark:text-teal-400 shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Soạn & Sinh Đề AI</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setGeneratorView('history')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition ${
+              generatorView === 'history'
+                ? 'bg-white dark:bg-slate-800 text-teal-600 dark:text-teal-400 shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <History className="w-3.5 h-3.5" />
+            <span>Lịch Sử Đề Đã Tạo</span>
+            <span
+              className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                generatorView === 'history'
+                  ? 'bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-300'
+                  : 'bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+              }`}
+            >
+              {historyExams.length}
+            </span>
+          </button>
+        </div>
+
+        {currentAccessCode && (
+          <div className="flex items-center gap-2 text-xs text-slate-500 pr-2">
+            <span>Mã đề hiện tại:</span>
+            <span className="font-mono font-bold text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/60 px-2 py-0.5 rounded border border-teal-200 dark:border-teal-800">
+              {currentAccessCode}
+            </span>
+            <button
+              type="button"
+              onClick={() => handleCopyCode(currentAccessCode)}
+              className="text-slate-400 hover:text-teal-600 p-1"
+              title="Sao chép mã phòng"
+            >
+              {copiedCode === currentAccessCode ? (
+                <Check className="w-3.5 h-3.5 text-emerald-500" />
+              ) : (
+                <Copy className="w-3.5 h-3.5" />
+              )}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {generatorView === 'create' ? (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Form Settings */}
         <div className="lg:col-span-1 space-y-5">
           <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-xs space-y-4">
@@ -751,6 +989,40 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
         {/* Right Column: Live KaTeX Preview & In-place Question Editor */}
         <div className="lg:col-span-2 space-y-4">
           <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-xs flex flex-col min-h-[600px]">
+            {/* Auto Saved Banner Notice */}
+            {autoSavedNotice?.show && (
+              <div className="mb-4 p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-xs">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <div>
+                    <span className="font-bold">Đề thi đã tự động lưu vào Lịch sử đề: </span>
+                    <span className="font-mono font-bold bg-white dark:bg-slate-800 px-2 py-0.5 rounded border border-emerald-300 dark:border-emerald-700 ml-1">
+                      {autoSavedNotice.accessCode}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setGeneratorView('history')}
+                    className="font-bold text-teal-700 dark:text-teal-300 hover:underline flex items-center gap-1"
+                  >
+                    <History className="w-3.5 h-3.5" />
+                    Xem Trong Lịch Sử
+                  </button>
+                  {onStartTestNow && (
+                    <button
+                      type="button"
+                      onClick={() => handleSaveExam(true)}
+                      className="px-3 py-1 rounded-lg bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition"
+                    >
+                      Vào Làm Bài Ngay →
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Action Bar */}
             <div className="flex flex-wrap items-center justify-between pb-4 mb-4 border-b border-slate-200 dark:border-slate-700 gap-3">
               <div>
@@ -760,7 +1032,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
                 </h3>
                 <span className="text-xs text-slate-500 dark:text-slate-400">
                   {generatedQuestions
-                    ? `${generatedQuestions.length} câu hỏi chuẩn ma trận (12 MCQ + 10 Short Answer)`
+                    ? `${generatedQuestions.length} câu hỏi (${generatedQuestions.filter((q) => q.part === 'PART_1').length} MCQ + ${generatedQuestions.filter((q) => q.part === 'PART_2').length} Điền đáp số)`
                     : 'Chưa có dữ liệu đề. Hãy bấm "Sinh đề thi bằng AI" để bắt đầu.'}
                 </span>
               </div>
@@ -786,15 +1058,16 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
                   <button
                     onClick={() => {
                       const tempExam: Exam = {
-                        id: 'temp-exam',
+                        id: currentExamId || 'temp-exam',
                         title: examTitle,
                         mode,
                         duration_minutes: 90,
                         is_published: true,
-                        access_code: 'HP-EXAM',
+                        access_code: currentAccessCode || 'HP-EXAM',
                         exam_type: examType,
                         created_at: new Date().toISOString(),
                         questions: generatedQuestions,
+                        is_ai_generated: true,
                       };
                       printHaiPhongExam(tempExam, { sheetType: 'question_sheet' });
                     }}
@@ -807,15 +1080,16 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
                   <button
                     onClick={() => {
                       const tempExam: Exam = {
-                        id: 'temp-exam',
+                        id: currentExamId || 'temp-exam',
                         title: examTitle,
                         mode,
                         duration_minutes: 90,
                         is_published: true,
-                        access_code: 'HP-EXAM',
+                        access_code: currentAccessCode || 'HP-EXAM',
                         exam_type: examType,
                         created_at: new Date().toISOString(),
                         questions: generatedQuestions,
+                        is_ai_generated: true,
                       };
                       printHaiPhongExam(tempExam, { sheetType: 'solution_sheet' });
                     }}
@@ -1057,6 +1331,277 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
           </div>
         </div>
       </div>
+      ) : (
+        <div className="space-y-5">
+          {/* Header Controls: Tìm kiếm và bộ lọc */}
+          <div className="bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex-1 max-w-md relative">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={historySearch}
+                onChange={(e) => setHistorySearch(e.target.value)}
+                placeholder="Tìm theo tên đề, mã code, chủ đề..."
+                className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+              />
+              {historySearch && (
+                <button
+                  type="button"
+                  onClick={() => setHistorySearch('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-600"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs text-slate-400 font-medium flex items-center gap-1">
+                <Filter className="w-3.5 h-3.5" /> Lọc:
+              </span>
+              <button
+                type="button"
+                onClick={() => setHistoryFilter('all')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                  historyFilter === 'all'
+                    ? 'bg-teal-600 text-white shadow-xs'
+                    : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                }`}
+              >
+                Tất cả ({historyExams.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setHistoryFilter('bilingual')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                  historyFilter === 'bilingual'
+                    ? 'bg-teal-600 text-white shadow-xs'
+                    : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                }`}
+              >
+                Song ngữ
+              </button>
+              <button
+                type="button"
+                onClick={() => setHistoryFilter('english_only')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                  historyFilter === 'english_only'
+                    ? 'bg-teal-600 text-white shadow-xs'
+                    : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                }`}
+              >
+                Tiếng Anh
+              </button>
+              <button
+                type="button"
+                onClick={() => setHistoryFilter('topic_practice')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                  historyFilter === 'topic_practice'
+                    ? 'bg-teal-600 text-white shadow-xs'
+                    : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                }`}
+              >
+                Chuyên đề
+              </button>
+            </div>
+          </div>
+
+          {/* Danh sách thẻ đề thi trong lịch sử */}
+          {filteredHistoryExams.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {filteredHistoryExams.map((exam) => {
+                const qCount = exam.questions?.length || 22;
+                const createdDate = exam.created_at ? new Date(exam.created_at) : null;
+                const formattedDate = createdDate && !isNaN(createdDate.getTime())
+                  ? createdDate.toLocaleString('vi-VN', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })
+                  : 'Gần đây';
+
+                return (
+                  <div
+                    key={exam.id}
+                    className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-xs flex flex-col justify-between hover:border-teal-400 dark:hover:border-teal-600 transition group"
+                  >
+                    <div className="space-y-3">
+                      {/* Top Badges */}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800 flex items-center gap-1">
+                            <Sparkles className="w-2.5 h-2.5" />
+                            Đề AI
+                          </span>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                            {exam.mode === 'bilingual' ? 'Song ngữ' : 'Tiếng Anh'}
+                          </span>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                            {qCount} câu
+                          </span>
+                        </div>
+
+                        {/* Access code with copy button */}
+                        <div className="flex items-center gap-1 shrink-0">
+                          <span className="font-mono text-[11px] font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-750 px-2 py-0.5 rounded">
+                            {exam.access_code}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleCopyCode(exam.access_code)}
+                            className="p-1 text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition"
+                            title="Sao chép mã phòng thi"
+                          >
+                            {copiedCode === exam.access_code ? (
+                              <Check className="w-3.5 h-3.5 text-emerald-500" />
+                            ) : (
+                              <Copy className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Exam Title */}
+                      <h4 className="font-bold text-sm text-slate-900 dark:text-white line-clamp-2 group-hover:text-teal-600 dark:group-hover:text-teal-400 transition">
+                        {exam.title}
+                      </h4>
+
+                      {/* Exam Topic / Description */}
+                      <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">
+                        {exam.topic_focus ? (
+                          <span className="text-teal-700 dark:text-teal-300 font-medium">
+                            🎯 Chủ đề: {exam.topic_focus}
+                          </span>
+                        ) : (
+                          exam.description
+                        )}
+                      </p>
+
+                      {/* Created Time & Duration */}
+                      <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" /> {formattedDate}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" /> {exam.duration_minutes || 90} phút
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-750 space-y-2">
+                      {/* Primary Retake Button */}
+                      <button
+                        type="button"
+                        onClick={() => handleRetakeExamFromHistory(exam)}
+                        className="w-full py-2 px-3 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 transition shadow-xs flex items-center justify-center gap-1.5"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        <span>Mở Ra Làm Lại Đề Này</span>
+                      </button>
+
+                      {/* Secondary Actions Row */}
+                      <div className="grid grid-cols-4 gap-1.5 pt-1">
+                        {/* Xem & Hiệu chỉnh */}
+                        <button
+                          type="button"
+                          onClick={() => handleLoadExamToEditor(exam)}
+                          className="py-1.5 px-2 rounded-lg text-[11px] font-semibold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-650 transition flex items-center justify-center gap-1"
+                          title="Nạp vào trình biên tập KaTeX để xem chi tiết hoặc chỉnh sửa"
+                        >
+                          <Edit3 className="w-3 h-3" />
+                          <span>Sửa</span>
+                        </button>
+
+                        {/* In Đề Thi PDF */}
+                        <button
+                          type="button"
+                          onClick={() => printHaiPhongExam(exam, { sheetType: 'question_sheet' })}
+                          className="py-1.5 px-2 rounded-lg text-[11px] font-semibold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-teal-50 dark:hover:bg-teal-950/60 hover:text-teal-600 transition flex items-center justify-center gap-1"
+                          title="In đề thi chuẩn mẫu Sở GD&ĐT Hải Phòng"
+                        >
+                          <Printer className="w-3 h-3" />
+                          <span>In đề</span>
+                        </button>
+
+                        {/* Xuất DOCX */}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            exportExamToDocx({
+                              exam,
+                              includeSolutions: false,
+                              mode: exam.mode === 'bilingual' ? 'bilingual' : 'english_only',
+                            })
+                          }
+                          className="py-1.5 px-2 rounded-lg text-[11px] font-semibold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 transition flex items-center justify-center gap-1"
+                          title="Xuất file DOCX giữ nguyên LaTeX"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          <span>Word</span>
+                        </button>
+
+                        {/* Xóa */}
+                        {deleteConfirmId === exam.id ? (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteExamFromHistory(exam.id)}
+                            className="py-1.5 px-2 rounded-lg text-[11px] font-bold bg-rose-600 text-white hover:bg-rose-700 transition"
+                            title="Bấm để xác nhận xóa vĩnh viễn"
+                          >
+                            Xóa!
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setDeleteConfirmId(exam.id)}
+                            className="py-1.5 px-2 rounded-lg text-[11px] font-semibold bg-slate-100 dark:bg-slate-700 text-slate-500 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition flex items-center justify-center"
+                            title="Xóa đề này khỏi lịch sử"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="bg-white dark:bg-slate-800 rounded-2xl p-12 text-center border border-slate-200 dark:border-slate-700 shadow-xs space-y-4">
+              <div className="w-14 h-14 rounded-2xl bg-teal-50 dark:bg-teal-950/40 text-teal-600 dark:text-teal-400 mx-auto flex items-center justify-center">
+                <History className="w-7 h-7" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-base font-bold text-slate-800 dark:text-slate-200">
+                  {historySearch ? 'Không tìm thấy đề thi phù hợp' : 'Chưa có đề thi nào trong lịch sử'}
+                </h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+                  {historySearch
+                    ? 'Vui lòng kiểm tra lại từ khóa tìm kiếm hoặc chọn bộ lọc khác.'
+                    : 'Khi bạn sinh đề thi mới bằng AI, đề thi sẽ tự động được lưu vào đây để bạn có thể mở ra làm lại, in PDF hoặc xuất Word bất cứ khi nào.'}
+                </p>
+              </div>
+              <div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHistorySearch('');
+                    setHistoryFilter('all');
+                    setGeneratorView('create');
+                  }}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 transition shadow-xs"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Sinh đề thi mới bằng AI ngay</span>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

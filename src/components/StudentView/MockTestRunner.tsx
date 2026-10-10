@@ -17,7 +17,8 @@ import {
   Lightbulb,
   ShieldAlert,
   BookmarkPlus,
-  HelpCircle
+  HelpCircle,
+  RotateCcw
 } from 'lucide-react';
 import { Exam, Question, Assignment, ExamSession, MistakeEntry, MistakeReason } from '../../types';
 import MathRenderer from '../MathRenderer';
@@ -369,6 +370,30 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
     storageService.updateMistakeReason(mistakeId, reason);
   };
 
+  // Retake this exam from beginning
+  const handleRetakeExam = () => {
+    const isConfirmed = window.confirm(
+      'Bạn có chắc chắn muốn làm lại đề thi này từ đầu không?\n\nKết quả bài làm vừa rồi đã được lưu vào hệ thống.'
+    );
+    if (!isConfirmed) return;
+
+    // 1. Xóa autosave cũ của đề thi này
+    storageService.clearExamAutoSave(exam.id, studentKey);
+
+    // 2. Cấp mới ID session cho lượt làm bài này
+    sessionIdRef.current = `session-${exam.id}-${studentId || 'std'}-${Date.now()}`;
+
+    // 3. Reset các trạng thái làm bài
+    setAnswers({});
+    answersRef.current = {};
+    setFlagged({});
+    setCurrentIndex(0);
+    setTimeLeft(exam.duration_minutes * 60);
+    setTabSwitchCount(0);
+    setSubmittedAssignment(null);
+    setIsSubmitted(false);
+  };
+
   // Unanswered count
   const answeredCount = Object.keys(answers).filter((k) => (answers[k] || '').trim() !== '').length;
   const unansweredCount = totalQuestions - answeredCount;
@@ -449,6 +474,14 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
             )}
 
             <div className="flex flex-wrap justify-center gap-3">
+              <button
+                onClick={handleRetakeExam}
+                className="px-5 py-2.5 rounded-xl text-xs font-bold bg-teal-500 hover:bg-teal-400 text-white transition shadow-md flex items-center gap-1.5"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                Làm Lại Đề Thi Này
+              </button>
+
               <button
                 onClick={onExit}
                 className="px-5 py-2.5 rounded-xl text-xs font-bold bg-white text-teal-900 hover:bg-teal-50 transition shadow-md"

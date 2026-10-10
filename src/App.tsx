@@ -272,6 +272,11 @@ export default function App() {
                   <ExamGenerator
                     onSaveExam={handleSaveExam}
                     onNavigateToBank={() => setActiveTab('teacher_exams')}
+                    onStartTestNow={(exam) => {
+                      handleSaveExam(exam);
+                      setActiveRunningExam(exam);
+                    }}
+                    onDeleteExam={handleDeleteExam}
                     exams={exams}
                     assignments={assignments}
                   />
@@ -323,6 +328,7 @@ export default function App() {
                       handleSaveExam(exam);
                       setActiveRunningExam(exam);
                     }}
+                    onDeleteExam={handleDeleteExam}
                     exams={exams}
                     assignments={assignments}
                   />
@@ -374,9 +380,17 @@ export default function App() {
                             >
                               <div className="space-y-2.5">
                                 <div className="flex items-center justify-between">
-                                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
-                                    {exam.questions?.length || 22} câu hỏi
-                                  </span>
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                                      {exam.questions?.length || 22} câu hỏi
+                                    </span>
+                                    {exam.is_ai_generated && (
+                                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-50 text-teal-700 dark:bg-teal-950/60 dark:text-teal-300 border border-teal-200 dark:border-teal-800 flex items-center gap-1">
+                                        <Sparkles className="w-2.5 h-2.5" />
+                                        Đề AI
+                                      </span>
+                                    )}
+                                  </div>
                                   <span className="text-[11px] font-mono text-slate-400">
                                     {exam.access_code}
                                   </span>
@@ -398,7 +412,7 @@ export default function App() {
                                   onClick={() => setActiveRunningExam(exam)}
                                   className="px-3.5 py-1.5 rounded-xl text-xs font-bold text-white bg-emerald-600 group-hover:bg-emerald-700 transition shadow-xs"
                                 >
-                                  Bắt đầu thi
+                                  {exam.is_ai_generated ? 'Làm lại / Bắt đầu' : 'Bắt đầu thi'}
                                 </button>
                               </div>
                             </div>

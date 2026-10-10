@@ -49,8 +49,10 @@ export interface Exam {
   is_published: boolean;
   access_code: string;
   exam_type: ExamType;
-  created_at: string;
   questions?: Question[];
+  is_ai_generated?: boolean;
+  topic_focus?: string;
+  created_at?: string;
 }
 
 export interface Assignment {
