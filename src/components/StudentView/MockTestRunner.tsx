@@ -18,13 +18,15 @@ import {
   ShieldAlert,
   BookmarkPlus,
   HelpCircle,
-  RotateCcw
+  RotateCcw,
+  Download
 } from 'lucide-react';
 import { Exam, Question, Assignment, ExamSession, MistakeEntry, MistakeReason } from '../../types';
 import MathRenderer from '../MathRenderer';
 import { isMathAnswerCorrect } from '../../utils/mathAnswerEvaluator';
 import { storageService } from '../../services/storageService';
 import { printHaiPhongExam } from '../../utils/printPdf';
+import { exportExamToDocx } from '../../utils/docxExport';
 
 interface MockTestRunnerProps {
   exam: Exam;
@@ -473,25 +475,43 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
               </div>
             )}
 
-            <div className="flex flex-wrap justify-center gap-3">
+            <div className="flex flex-wrap justify-center gap-2.5">
               <button
                 onClick={handleRetakeExam}
-                className="px-5 py-2.5 rounded-xl text-xs font-bold bg-teal-500 hover:bg-teal-400 text-white transition shadow-md flex items-center gap-1.5"
+                className="px-4 py-2.5 rounded-xl text-xs font-bold bg-teal-500 hover:bg-teal-400 text-white transition shadow-md flex items-center gap-1.5"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
-                Làm Lại Đề Thi Này
+                Làm Lại Đề Này
               </button>
 
               <button
                 onClick={onExit}
-                className="px-5 py-2.5 rounded-xl text-xs font-bold bg-white text-teal-900 hover:bg-teal-50 transition shadow-md"
+                className="px-4 py-2.5 rounded-xl text-xs font-bold bg-white text-teal-900 hover:bg-teal-50 transition shadow-md"
               >
-                Quay Lại Danh Sách
+                Quay Lại Kho Đề
+              </button>
+
+              <button
+                onClick={() => exportExamToDocx({ exam, includeSolutions: false })}
+                className="px-4 py-2.5 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/20 text-white border border-white/20 transition flex items-center gap-1.5"
+                title="Tải đề thi về máy dưới định dạng Word (.docx) sạch để in ấn"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Tải Đề Word (.docx)
+              </button>
+
+              <button
+                onClick={() => exportExamToDocx({ exam, includeSolutions: true })}
+                className="px-4 py-2.5 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/20 text-white border border-white/20 transition flex items-center gap-1.5"
+                title="Tải đề thi kèm đáp án và lời giải chi tiết định dạng Word (.docx)"
+              >
+                <Download className="w-3.5 h-3.5 text-teal-300" />
+                Tải Đ/Án Word (.docx)
               </button>
 
               <button
                 onClick={() => printHaiPhongExam(exam, { sheetType: 'question_sheet' })}
-                className="px-4 py-2.5 rounded-xl text-xs font-bold bg-teal-700/80 hover:bg-teal-600 text-white transition flex items-center gap-1.5"
+                className="px-3.5 py-2.5 rounded-xl text-xs font-bold bg-teal-700/80 hover:bg-teal-600 text-white transition flex items-center gap-1.5"
               >
                 <Printer className="w-3.5 h-3.5" />
                 In Đề Thi (PDF)
@@ -499,7 +519,7 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
 
               <button
                 onClick={() => printHaiPhongExam(exam, { sheetType: 'solution_sheet' })}
-                className="px-4 py-2.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition flex items-center gap-1.5"
+                className="px-3.5 py-2.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition flex items-center gap-1.5"
               >
                 <FileCheck className="w-3.5 h-3.5" />
                 In Đáp Án & Lời Giải (PDF)

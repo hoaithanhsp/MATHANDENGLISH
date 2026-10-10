@@ -93,7 +93,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   }`}
                 >
                   <FileText className="w-3.5 h-3.5" />
-                  Ngân hàng đề
+                  Kho đề thi
                 </button>
                 <button
                   onClick={() => setActiveTab('teacher_submissions')}
@@ -195,7 +195,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   }`}
                 >
                   <Clock className="w-3.5 h-3.5" />
-                  Luyện đề 90 phút
+                  Kho đề thi (90p)
                 </button>
                 <button
                   onClick={() => setActiveTab('student_proof')}
@@ -334,7 +334,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     : 'text-slate-600 dark:text-slate-300'
                 }`}
               >
-                Ngân hàng đề
+                Kho đề thi
               </button>
               <button
                 onClick={() => setActiveTab('teacher_submissions')}
@@ -428,7 +428,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     : 'text-slate-600 dark:text-slate-300'
                 }`}
               >
-                Luyện đề 90p
+                Kho đề (90p)
               </button>
               <button
                 onClick={() => setActiveTab('student_proof')}
