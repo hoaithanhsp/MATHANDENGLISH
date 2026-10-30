@@ -383,7 +383,7 @@ export const TeamCompetencyRadar: React.FC<TeamCompetencyRadarProps> = ({ assign
               <p className="flex items-start gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
                 <span>
-                  <strong>Chiến thuật thi 90 phút:</strong> Phân bổ thời gian tối ưu cho đề 22 câu: Dành <strong>35 phút</strong> hoàn thành 12 câu trắc nghiệm Part I (0.5đ/câu) và <strong>50 phút</strong> giải quyết 10 câu trả lời ngắn Part II (1.4đ/câu), dành <strong>5 phút</strong> cuối cùng rà soát đơn vị và dấu số học.
+                  <strong>Chiến thuật thi 90 phút:</strong> Phân bổ thời gian tối ưu cho đề 22 câu: Dành <strong>35 phút</strong> hoàn thành 12 câu trắc nghiệm Part I (0.25đ/câu) và <strong>50 phút</strong> giải quyết 10 câu trả lời ngắn Part II (0.7đ/câu), dành <strong>5 phút</strong> cuối cùng rà soát đơn vị và dấu số học.
                 </span>
               </p>
             </div>

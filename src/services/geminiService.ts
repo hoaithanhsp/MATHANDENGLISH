@@ -1,100 +1,180 @@
 /**
  * Gemini Service — Client-side Gemini API with model fallback
- * Theo quy chuẩn api.md:
- * - Fallback chain: gemini-3.6-flash → gemini-3.5-flash → gemini-3.5-flash-lite → ...
- * - Phân biệt MODEL_OVERLOADED vs INVALID_API_KEY vs QUOTA_EXCEEDED
- * - Không dùng temperature/topP/topK cho model 3.x
- * - Mọi call site đi qua fallback chung
+ * Theo quy chuẩn api.md (v4.3 — 24/10/2026):
+ * - Fallback chain: [model đã chọn] → gemini-3.8-flash → gemini-3.5-flash-lite → gemini-3.6-flash → ...
+ * - Phân loại lỗi đọc error.status trước; API_KEY_INVALID kiểm tra TRƯỚC 400 (mục VII.3)
+ * - 429/403/404/5xx/400 → thử model kế tiếp; key sai / lỗi mạng → dừng ngay
+ * - Không gửi temperature/topP/topK cho model 3.x; thinkingLevel chỉ gửi với Gemini API (mục VII.7)
+ * - Mọi call site đi qua generateContentWithFallback + createGoogleAiClient
  */
 
-import { GoogleGenAI } from '@google/genai';
-import { apiKeyManager, AiProvider } from './apiKeyManager';
+import { GoogleGenAI, ThinkingLevel } from '@google/genai';
+import { apiKeyManager, AiProvider, isValidGoogleAiApiKey } from './apiKeyManager';
 import { Question, ProofFeedback } from '../types';
 
 // ============================================================
-// ERROR CLASSIFICATION
+// ERROR CLASSIFICATION (api.md mục VII.3 — thứ tự kiểm tra quan trọng)
 // ============================================================
 export type ApiErrorType =
-  | 'MODEL_OVERLOADED'
-  | 'QUOTA_EXCEEDED'
   | 'INVALID_API_KEY'
+  | 'QUOTA_EXCEEDED'
+  | 'RATE_LIMIT'
   | 'PERMISSION_DENIED'
   | 'NOT_FOUND'
+  | 'SERVER_ERROR'
   | 'INVALID_ARGUMENT'
+  | 'NETWORK_ERROR'
   | 'UNKNOWN';
 
+/** Lấy mã HTTP: ưu tiên error.status (ApiError của SDK), sau đó "code": NNN trong message JSON. */
+const getHttpStatus = (error: any): number | undefined => {
+  const status = Number(error?.status ?? error?.code);
+  if (Number.isInteger(status) && status >= 100 && status < 600) return status;
+  const message = String(error?.message || '');
+  const match = message.match(/"code"\s*:\s*(\d{3})/) || message.match(/^\s*(?:got status:\s*)?(\d{3})\b/i);
+  return match ? Number(match[1]) : undefined;
+};
+
 export const parseApiError = (error: any): ApiErrorType => {
-  const message = error?.message || error?.toString() || '';
-  const serialized = JSON.stringify(error) || '';
+  const message = String(error?.message || error || '');
+  const lower = message.toLowerCase();
+  const status = getHttpStatus(error);
 
-  // Quota / Rate Limit — stop immediately, key still valid
-  if (
-    serialized.includes('429') ||
-    message.includes('RESOURCE_EXHAUSTED') ||
-    message.toLowerCase().includes('quota')
-  ) return 'QUOTA_EXCEEDED';
-
-  // Model overload — can try next model
-  if (
-    serialized.includes('503') ||
-    serialized.includes('504') ||
-    message.includes('UNAVAILABLE') ||
-    message.toLowerCase().includes('high demand') ||
-    message.toLowerCase().includes('overloaded') ||
-    message.toLowerCase().includes('try again later') ||
-    message.toLowerCase().includes('temporarily unavailable')
-  ) return 'MODEL_OVERLOADED';
-
-  // Not Found — model may not exist, try next
-  if (
-    serialized.includes('404') ||
-    message.includes('NOT_FOUND')
-  ) return 'NOT_FOUND';
-
-  // Auth errors — stop immediately
+  // 1–2. Key sai / hết hạn — Google trả dạng 400 INVALID_ARGUMENT kèm reason API_KEY_INVALID
   if (
     message.includes('API_KEY_INVALID') ||
-    serialized.includes('401')
+    lower.includes('api key not valid') ||
+    lower.includes('api key expired') ||
+    lower.includes('api_key_expired')
   ) return 'INVALID_API_KEY';
+  if (status === 401 || message.includes('UNAUTHENTICATED')) return 'INVALID_API_KEY';
 
-  if (
-    message.includes('PERMISSION_DENIED') ||
-    serialized.includes('403')
-  ) return 'PERMISSION_DENIED';
+  // 3. Quota / rate limit
+  if (status === 429 || message.includes('RESOURCE_EXHAUSTED') || lower.includes('quota')) {
+    return lower.includes('per minute') || lower.includes('rate limit') ? 'RATE_LIMIT' : 'QUOTA_EXCEEDED';
+  }
 
-  // Invalid argument — stop immediately
+  // 4. Không có quyền (có thể chỉ do model bị giới hạn, vd dòng 2.5 với key mới)
+  if (status === 403 || message.includes('PERMISSION_DENIED')) return 'PERMISSION_DENIED';
+
+  // 5. Model không tồn tại / không hỗ trợ generateContent
+  if (status === 404 || message.includes('NOT_FOUND') || lower.includes('not supported for generatecontent')) {
+    return 'NOT_FOUND';
+  }
+
+  // 6. Lỗi máy chủ / quá tải
   if (
-    serialized.includes('400') ||
-    message.includes('INVALID_ARGUMENT')
-  ) return 'INVALID_ARGUMENT';
+    (status !== undefined && status >= 500) ||
+    message.includes('INTERNAL') ||
+    message.includes('UNAVAILABLE') ||
+    message.includes('DEADLINE_EXCEEDED') ||
+    lower.includes('overloaded') ||
+    lower.includes('high demand') ||
+    lower.includes('try again later') ||
+    lower.includes('temporarily unavailable')
+  ) return 'SERVER_ERROR';
+
+  // 7. Tham số không hợp với model
+  if (status === 400 || message.includes('INVALID_ARGUMENT')) return 'INVALID_ARGUMENT';
+
+  // 8. Lỗi mạng
+  if (
+    lower.includes('failed to fetch') ||
+    lower.includes('fetch failed') ||
+    lower.includes('networkerror') ||
+    lower.includes('network error') ||
+    lower.includes('load failed') ||
+    /\berr_[a-z_]+/i.test(message)
+  ) return 'NETWORK_ERROR';
 
   return 'UNKNOWN';
 };
 
+/** Lỗi được phép thử model kế tiếp (api.md mục VII.3). */
+const isFallbackEligible = (type: ApiErrorType): boolean =>
+  type === 'QUOTA_EXCEEDED' ||
+  type === 'RATE_LIMIT' ||
+  type === 'PERMISSION_DENIED' ||
+  type === 'NOT_FOUND' ||
+  type === 'SERVER_ERROR' ||
+  type === 'INVALID_ARGUMENT';
+
 // ============================================================
 // FRIENDLY ERROR MESSAGES (Vietnamese)
 // ============================================================
-export const getFriendlyErrorMessage = (errorType: ApiErrorType): string => {
+export const getFriendlyErrorMessage = (errorType: ApiErrorType, provider: AiProvider = 'gemini'): string => {
   switch (errorType) {
     case 'INVALID_API_KEY':
       return 'API Key không hợp lệ hoặc đã hết hạn. Vui lòng kiểm tra lại trong Cài đặt.';
     case 'PERMISSION_DENIED':
-      return 'API key không có quyền truy cập. Vui lòng kiểm tra quyền API key.';
+      return provider === 'agent-platform'
+        ? 'Google đã nhận key nhưng dự án chưa được cấp quyền gọi Agent Platform API hoặc model này. Kiểm tra: đã bật Agent Platform API, billing, API restrictions và quyền dùng model.'
+        : 'API key không có quyền truy cập Gemini API (key có thể bị giới hạn theo website/IP hoặc dự án chưa bật Generative Language API).';
     case 'QUOTA_EXCEEDED':
-      return 'Đã hết quota hoặc vượt giới hạn tốc độ API. Vui lòng đợi rồi thử lại.';
-    case 'MODEL_OVERLOADED':
-      return 'Model đang quá tải; app đang tự động thử model dự phòng.';
+      return 'Đã hết quota hoặc vượt giới hạn tốc độ API. Vui lòng đợi rồi thử lại, hoặc đổi sang API key khác (tài khoản Gmail khác) trong Cài đặt.';
+    case 'RATE_LIMIT':
+      return 'Đã vượt giới hạn tốc độ API (số request mỗi phút). Vui lòng đợi khoảng 1 phút rồi thử lại.';
+    case 'SERVER_ERROR':
+      return 'Tất cả model Gemini đang quá tải hoặc máy chủ Google gặp sự cố. Vui lòng thử lại sau ít phút.';
     case 'NOT_FOUND':
-      return 'Model không khả dụng. Đang thử model dự phòng khác.';
+      return 'Không có model nào khả dụng cho API key này. Vui lòng chọn model khác trong Cài đặt.';
     case 'INVALID_ARGUMENT':
-      return 'Yêu cầu không hợp lệ. Vui lòng thử lại.';
+      return 'Yêu cầu không hợp lệ với các model hiện có. Vui lòng thử lại hoặc chọn model khác.';
+    case 'NETWORK_ERROR':
+      return 'Không kết nối được tới máy chủ Google. Vui lòng kiểm tra mạng Internet rồi thử lại.';
     default:
       return 'Đã xảy ra lỗi không xác định. Vui lòng thử lại sau.';
   }
 };
 
+/** Lý do ngắn gọn hiển thị trong banner chuyển model (api.md mục VII.2). */
+const FALLBACK_REASON: Record<ApiErrorType, string> = {
+  SERVER_ERROR: 'đang bận',
+  QUOTA_EXCEEDED: 'đã hết lượt sử dụng',
+  RATE_LIMIT: 'đang bị giới hạn tốc độ',
+  NOT_FOUND: 'không khả dụng',
+  PERMISSION_DENIED: 'không mở cho API key này',
+  INVALID_ARGUMENT: 'không nhận cấu hình yêu cầu',
+  INVALID_API_KEY: 'báo key không hợp lệ',
+  NETWORK_ERROR: 'mất kết nối',
+  UNKNOWN: 'gặp lỗi',
+};
+
+/** Lỗi AI đã được phân loại — UI dùng `type` để quyết định mở Cài đặt, gợi ý đổi key... */
+export class GeminiApiError extends Error {
+  type: ApiErrorType;
+  constructor(type: ApiErrorType, message: string) {
+    super(message);
+    this.name = 'GeminiApiError';
+    this.type = type;
+  }
+}
+
 // ============================================================
-// CLIENT FACTORY (api.md Section III)
+// FALLBACK NOTICE EVENTS (api.md mục VII.2)
+// ============================================================
+export type ModelFallbackEvent =
+  | { type: 'switch'; from: string; to: string; reason: string }
+  | { type: 'done' }
+  | { type: 'invalid-key' };
+
+let fallbackListener: ((event: ModelFallbackEvent) => void) | null = null;
+let activeCalls = 0;
+
+export const setModelFallbackListener = (listener: ((event: ModelFallbackEvent) => void) | null) => {
+  fallbackListener = listener;
+};
+
+const emitFallbackEvent = (event: ModelFallbackEvent) => {
+  try {
+    fallbackListener?.(event);
+  } catch {
+    // listener lỗi không được làm hỏng lời gọi AI
+  }
+};
+
+// ============================================================
+// CLIENT FACTORY (api.md Section III) — nơi DUY NHẤT khởi tạo SDK
 // ============================================================
 export const createGoogleAiClient = (
   apiKey: string,
@@ -107,6 +187,41 @@ export const createGoogleAiClient = (
 };
 
 // ============================================================
+// GENERATION CONFIG (api.md mục VII.7)
+// ============================================================
+interface GenerationConfigOptions {
+  systemInstruction?: string;
+  responseMimeType?: string;
+  maxOutputTokens?: number;
+  thinkingLevel?: ThinkingLevel;
+}
+
+export const getGeminiGenerationConfig = (
+  model: string,
+  provider: AiProvider,
+  options: GenerationConfigOptions = {},
+): Record<string, any> => {
+  const config: Record<string, any> = {};
+  if (options.systemInstruction) config.systemInstruction = options.systemInstruction;
+  if (options.responseMimeType) config.responseMimeType = options.responseMimeType;
+  if (options.maxOutputTokens) config.maxOutputTokens = options.maxOutputTokens;
+
+  const isGemini3 = model.startsWith('gemini-3') || model === 'gemini-flash-latest';
+  if (isGemini3) {
+    // Không gửi temperature/topP/topK. thinkingLevel chỉ với Gemini API; không dùng MINIMAL/HIGH mặc định.
+    if (provider === 'gemini') {
+      config.thinkingConfig = { thinkingLevel: options.thinkingLevel ?? ThinkingLevel.MEDIUM };
+    }
+  } else if (model.startsWith('gemini-2')) {
+    config.temperature = 0.5;
+    config.topK = 64;
+    config.topP = 0.95;
+    config.thinkingConfig = { thinkingBudget: 2048 };
+  }
+  return config;
+};
+
+// ============================================================
 // FALLBACK GENERATE CONTENT
 // ============================================================
 interface GenerateContentOptions {
@@ -114,7 +229,8 @@ interface GenerateContentOptions {
   systemInstruction?: string;
   responseMimeType?: string;
   maxOutputTokens?: number;
-  thinkingLevel?: string;
+  /** Mặc định MEDIUM cho bước sinh chính; LOW cho tác vụ phụ trợ */
+  thinkingLevel?: ThinkingLevel;
   selectedModel?: string;
   onModelSwitch?: (from: string, to: string, reason: string) => void;
 }
@@ -128,91 +244,143 @@ export interface GenerateContentResult {
   blockReason?: string;
 }
 
+/** Khi mọi model đều lỗi, báo loại lỗi có ích nhất cho người dùng. */
+const FINAL_ERROR_PRIORITY: ApiErrorType[] = [
+  'QUOTA_EXCEEDED',
+  'RATE_LIMIT',
+  'PERMISSION_DENIED',
+  'SERVER_ERROR',
+  'NOT_FOUND',
+  'INVALID_ARGUMENT',
+];
+
 export const generateContentWithFallback = async (
   options: GenerateContentOptions,
 ): Promise<GenerateContentResult> => {
-  const apiKey = apiKeyManager.getApiKey();
+  const provider = apiKeyManager.getProvider();
+  const apiKey = apiKeyManager.getApiKey(provider);
   if (!apiKey) {
-    throw new Error('Vui lòng cấu hình API Key trước khi sử dụng tính năng này.');
+    emitFallbackEvent({ type: 'invalid-key' });
+    throw new GeminiApiError('INVALID_API_KEY', 'Vui lòng cấu hình API Key trước khi sử dụng tính năng này.');
+  }
+  if (!isValidGoogleAiApiKey(apiKey)) {
+    emitFallbackEvent({ type: 'invalid-key' });
+    throw new GeminiApiError('INVALID_API_KEY', 'API Key không đúng định dạng (AIza... hoặc AQ...). Vui lòng kiểm tra lại trong Cài đặt.');
   }
 
-  const provider = apiKeyManager.getProvider();
   const ai = createGoogleAiClient(apiKey, provider);
-  const models = apiKeyManager.getOrderedFallbackModels(options.selectedModel);
-
+  const models = apiKeyManager.getOrderedFallbackModels(options.selectedModel, provider);
+  const seenErrors = new Set<ApiErrorType>();
   let lastError: any = null;
+
+  activeCalls++;
+  try {
+    for (let i = 0; i < models.length; i++) {
+      const model = models[i];
+      try {
+        const response = await ai.models.generateContent({
+          model,
+          contents: options.contents,
+          config: getGeminiGenerationConfig(model, provider, options),
+        });
+
+        const text = response.text || '';
+        const rawFinish = response.candidates?.[0]?.finishReason;
+        const rawBlock = response.promptFeedback?.blockReason;
+        const finishReason = rawFinish ? String(rawFinish) : undefined;
+        const blockReason = rawBlock ? String(rawBlock) : undefined;
+
+        if ((finishReason && finishReason !== 'STOP') || blockReason || !text) {
+          console.warn('[Gemini] Phản hồi bất thường:', {
+            model,
+            finishReason,
+            blockReason,
+            textLength: text.length,
+          });
+        }
+
+        return { text, model, finishReason, blockReason };
+      } catch (error: any) {
+        lastError = error;
+        const errorType = parseApiError(error);
+        seenErrors.add(errorType);
+        console.warn(`[Gemini] ${model} lỗi ${errorType}:`, error?.message || error);
+
+        if (!isFallbackEligible(errorType)) {
+          if (errorType === 'INVALID_API_KEY') emitFallbackEvent({ type: 'invalid-key' });
+          throw new GeminiApiError(errorType, getFriendlyErrorMessage(errorType, provider));
+        }
+
+        const next = models[i + 1];
+        if (next) {
+          const reason = FALLBACK_REASON[errorType];
+          emitFallbackEvent({ type: 'switch', from: model, to: next, reason });
+          options.onModelSwitch?.(model, next, reason);
+        }
+      }
+    }
+  } finally {
+    activeCalls--;
+    if (activeCalls <= 0) {
+      activeCalls = 0;
+      emitFallbackEvent({ type: 'done' });
+    }
+  }
+
+  const finalType = FINAL_ERROR_PRIORITY.find((t) => seenErrors.has(t)) || parseApiError(lastError);
+  throw new GeminiApiError(finalType, getFriendlyErrorMessage(finalType, provider));
+};
+
+// ============================================================
+// KIỂM TRA KEY (api.md mục VII.8)
+// ============================================================
+export interface ValidateApiKeyResult {
+  ok: boolean;
+  workingModel?: string;
+  errorType?: ApiErrorType;
+  message: string;
+}
+
+/** Gửi một request rất nhỏ lần lượt qua chuỗi model; dừng ngay khi key sai / lỗi mạng. */
+export const validateApiKey = async (
+  apiKey: string,
+  provider: AiProvider,
+  preferredModel?: string,
+): Promise<ValidateApiKeyResult> => {
+  const key = apiKey.trim();
+  if (!isValidGoogleAiApiKey(key)) {
+    return { ok: false, errorType: 'INVALID_API_KEY', message: 'Key không đúng định dạng (AIza... hoặc AQ...).' };
+  }
+
+  const ai = createGoogleAiClient(key, provider);
+  const models = apiKeyManager.getOrderedFallbackModels(preferredModel, provider);
+  const seenErrors = new Set<ApiErrorType>();
 
   for (const model of models) {
     try {
-      // Build config — không dùng temperature/topP/topK cho model 3.x (api.md Section IV)
-      const config: any = {};
-      if (options.systemInstruction) {
-        config.systemInstruction = options.systemInstruction;
-      }
-      if (options.responseMimeType) {
-        config.responseMimeType = options.responseMimeType;
-      }
-      if (options.maxOutputTokens) {
-        config.maxOutputTokens = options.maxOutputTokens;
-      }
-      // Thinking config for planning tasks — thinkingLevel chỉ hỗ trợ trên dòng Gemini 3.x,
-      // gửi cho model 2.x sẽ bị 400 INVALID_ARGUMENT và chặn luôn chuỗi fallback.
-      if (options.thinkingLevel && model.startsWith('gemini-3')) {
-        config.thinkingConfig = { thinkingLevel: options.thinkingLevel };
-      }
-
-      const response = await ai.models.generateContent({
+      await ai.models.generateContent({
         model,
-        contents: options.contents,
-        config,
+        contents: 'Trả lời đúng một từ: OK',
+        config: getGeminiGenerationConfig(model, provider, { maxOutputTokens: 64, thinkingLevel: ThinkingLevel.LOW }),
       });
-
-      const text = response.text || '';
-      const rawFinish = response.candidates?.[0]?.finishReason;
-      const rawBlock = response.promptFeedback?.blockReason;
-      const finishReason = rawFinish ? String(rawFinish) : undefined;
-      const blockReason = rawBlock ? String(rawBlock) : undefined;
-
-      if ((finishReason && finishReason !== 'STOP') || blockReason || !text) {
-        console.warn('[Gemini] Phản hồi bất thường:', {
-          model,
-          finishReason,
-          blockReason,
-          textLength: text.length,
-        });
-      }
-
-      return { text, model, finishReason, blockReason };
+      return {
+        ok: true,
+        workingModel: model,
+        message: model === models[0]
+          ? `Key hoạt động với model ${model}.`
+          : `Key hoạt động. Model ${models[0]} chưa dùng được — đã chọn ${model}.`,
+      };
     } catch (error: any) {
-      lastError = error;
       const errorType = parseApiError(error);
-
-      // Errors that should stop immediately — no more fallback
-      if (
-        errorType === 'INVALID_API_KEY' ||
-        errorType === 'QUOTA_EXCEEDED' ||
-        errorType === 'INVALID_ARGUMENT' ||
-        errorType === 'UNKNOWN'
-      ) {
-        throw new Error(getFriendlyErrorMessage(errorType));
-      }
-
-      // PERMISSION_DENIED: for Agent Platform, try next model first
-      if (errorType === 'PERMISSION_DENIED' && provider !== 'agent-platform') {
-        throw new Error(getFriendlyErrorMessage(errorType));
-      }
-
-      // MODEL_OVERLOADED or NOT_FOUND — try next model
-      if (options.onModelSwitch) {
-        const nextIdx = models.indexOf(model) + 1;
-        if (nextIdx < models.length) {
-          options.onModelSwitch(model, models[nextIdx], errorType);
-        }
+      seenErrors.add(errorType);
+      if (!isFallbackEligible(errorType)) {
+        return { ok: false, errorType, message: getFriendlyErrorMessage(errorType, provider) };
       }
     }
   }
 
-  throw lastError || new Error('Tất cả model đều thất bại. Vui lòng thử lại sau.');
+  const finalType = FINAL_ERROR_PRIORITY.find((t) => seenErrors.has(t)) || 'UNKNOWN';
+  return { ok: false, errorType: finalType, message: getFriendlyErrorMessage(finalType, provider) };
 };
 
 // ============================================================
@@ -260,7 +428,7 @@ PART II: 10 Short-Answer Questions (Questions 13 to 22) - Numerical / Fraction /
   * Trọng tâm VDC: Recurrence sequences $u_{n+1} = f(u_n)$, general terms, limits via Squeeze Theorem or Weierstrass monotone convergence; Parametric exponential/logarithmic inequalities with exact integer solution counting; Real-world linear programming profit/cost optimization.
 - Questions 17 to 20: Geometry & Measurement [1 Understanding, 2 Application, 1 Advanced]
   * Trọng tâm: Real-world conic models (semi-ellipse arch bridge height, whispering gallery focal distance, parabolic satellite dish focus); Solid geometry angles, perpendicular sections, and tri-rectangular tetrahedrons (within scope up to line perpendicular to plane).
-- Questions 21 to 22: Statistics, Probability, Discrete & Number Theory [1 Application, 1 Advanced - HAI PHONG SIGNATURE PROBLEMS]
+- Questions 21 to 22: Statistics, Probability, Discrete & Number Theory [1 Understanding, 1 Application - HAI PHONG SIGNATURE PROBLEMS]
   * Question 21: Real-world / Geometric Pigeonhole Principle (Nguyên lý Dirichlet chuồng - thỏ: points inside equilateral triangles $k^2+1$, unit squares, or 3D integer lattice points parity profiles $2^3+1 = 9$).
   * Question 22: Invariance & Monovariants (Nguyên lý bất biến và đơn biến: blackboard number operations replacing $(a, b)$ with $|a-b|$ or $a+b-1$, mutilated chessboard domino tiling coloring invariants, game termination).
 
@@ -812,7 +980,8 @@ CRITICAL RULES FOR HAI PHONG OLYMPIAD 2025 MATRIX:
 2. Question 13 to 22 MUST BE PART_2 (Short Answer with concise numerical or simplified fraction string in correct_answer).
 3. Exactly follow cognitive distribution:
    - Part I (Q1-12): 5 Understanding, 5 Application, 2 Advanced.
-   - Part II (Q13-22): 3 Understanding, 4 Application, 3 Advanced (specifically Q15, Q16, Q20, Q22 as high-order thinking).
+   - Part II (Q13-22): 3 Understanding, 4 Application, 3 Advanced (Q15, Q16 and Q20 are the three high-order thinking questions; Q21 is Understanding, Q22 is Application).
+   - Part I advanced questions: Q5 (algebra/calculus) and Q10 (geometry); Q11 Understanding, Q12 Application.
 4. Feature iconic Hai Phong competition problem types:
    - Q3 or Q14: Real-world Linear Programming optimization (factory profit, working hours).
    - Q8 or Q18: Real-world Conic sections (semi-ellipse arch bridge, whispering gallery, parabolic dish).
@@ -860,7 +1029,8 @@ CRITICAL FORMATTING RULES:
     label: 'Đề thi',
     buildPrompt,
     systemInstruction: HAIPHONG_SYSTEM_INSTRUCTION,
-    maxOutputTokens: 32768,
+    // Gồm cả token suy luận (thinkingLevel MEDIUM) — để rộng tránh MAX_TOKENS
+    maxOutputTokens: 65536,
     onModelSwitch,
   };
 
@@ -1088,7 +1258,7 @@ Output JSON format (single question object, NOT an array):
   const data = await generateJsonWithRetry({
     contents: prompt,
     systemInstruction: HAIPHONG_SYSTEM_INSTRUCTION,
-    maxOutputTokens: 8192,
+    maxOutputTokens: 16384,
     onModelSwitch,
   }, `Đổi câu ${originalQuestion.order_index}`);
 
@@ -1155,8 +1325,8 @@ Return ONLY a JSON object with this exact schema:
   return generateJsonWithRetry({
     contents: prompt,
     systemInstruction: `You are an elite IMO reviewer and mathematical editor. Keep LaTeX in standard $...$ and $$...$$.\n\n${JSON_LATEX_RULES}`,
-    maxOutputTokens: 8192,
-    thinkingLevel: 'low',
+    maxOutputTokens: 16384,
+    thinkingLevel: ThinkingLevel.LOW,
     onModelSwitch,
   }, 'Chấm chứng minh');
 };

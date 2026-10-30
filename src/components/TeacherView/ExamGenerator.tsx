@@ -31,16 +31,20 @@ import {
   BookmarkCheck,
   Layers,
   FileCheck,
+  FileJson,
+  AlertTriangle,
+  X,
 } from 'lucide-react';
 import { Exam, Question, ExamMode, ExamType, MathStrand, CognitiveLevel, Assignment } from '../../types';
 import MathRenderer from '../MathRenderer';
 import { exportExamToDocx } from '../../utils/docxExport';
-import { printExamOrNotes, printHaiPhongExam } from '../../utils/printPdf';
+import { printHaiPhongExam } from '../../utils/printPdf';
 import { generateExam, generateTopicPractice, regenerateSingleQuestion, TopicQuestionType } from '../../services/geminiService';
-import { storageService } from '../../services/storageService';
+import { storageService, SaveExamResult } from '../../services/storageService';
 
 interface ExamGeneratorProps {
-  onSaveExam: (exam: Exam) => void;
+  /** Lưu đề vào kho (App → storageService). Trả về trạng thái lưu local/Firebase. */
+  onSaveExam: (exam: Exam) => Promise<SaveExamResult | void> | void;
   onNavigateToBank: () => void;
   isStudentMode?: boolean;
   onStartTestNow?: (exam: Exam) => void;
@@ -48,6 +52,34 @@ interface ExamGeneratorProps {
   exams?: Exam[];
   assignments?: Assignment[];
 }
+
+type SaveStatus = { kind: 'saving' | 'ok' | 'warn' | 'error'; message: string };
+
+/** Ghi nhớ đề đang mở trong trình soạn để quay lại tab vẫn còn (đề đã nằm trong kho). */
+const CURRENT_EXAM_STORAGE_KEY = 'hp_generator_current_exam_id';
+/** Tự lưu chỉnh sửa vào kho sau khi ngừng gõ */
+const AUTOSAVE_DELAY_MS = 2500;
+
+const newAccessCode = () => `HP-${Math.random().toString(36).substring(2, 6).toUpperCase()}-${new Date().getFullYear()}`;
+
+const rememberCurrentExam = (id: string | null) => {
+  try {
+    if (id) localStorage.setItem(CURRENT_EXAM_STORAGE_KEY, id);
+    else localStorage.removeItem(CURRENT_EXAM_STORAGE_KEY);
+  } catch {
+    // ignore
+  }
+};
+
+const safeFileName = (title: string) =>
+  (title || 'De_thi')
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .replace(/[^a-zA-Z0-9_-]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 80) || 'De_thi';
 
 export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
   onSaveExam,
@@ -87,10 +119,15 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [swappingIndex, setSwappingIndex] = useState<number | null>(null);
   const [successSaved, setSuccessSaved] = useState(false);
+  /** Có chỉnh sửa chưa lưu vào kho */
+  const [isDirty, setIsDirty] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus | null>(null);
+  const [exportError, setExportError] = useState('');
 
   // Active exam tracking for current session
   const [currentExamId, setCurrentExamId] = useState<string | null>(null);
   const [currentAccessCode, setCurrentAccessCode] = useState<string | null>(null);
+  const [currentCreatedAt, setCurrentCreatedAt] = useState<string | null>(null);
   const [autoSavedNotice, setAutoSavedNotice] = useState<{ show: boolean; accessCode: string; title: string } | null>(null);
 
   // History filtering & actions
@@ -98,6 +135,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
   const [historyFilter, setHistoryFilter] = useState<'all' | 'bilingual' | 'english_only' | 'topic_practice'>('all');
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [importMessage, setImportMessage] = useState<{ ok: boolean; text: string } | null>(null);
 
   useEffect(() => {
     const unsubQuests = storageService.onAiQuestsChanged((count) => {
@@ -125,9 +163,9 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
       }
     }
     return Array.from(map.values()).sort(
-      (a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+      (a, b) => new Date(b.updated_at || b.created_at || 0).getTime() - new Date(a.updated_at || a.created_at || 0).getTime()
     );
-  }, [exams, successSaved, autoSavedNotice]);
+  }, [exams, successSaved, autoSavedNotice, importMessage]);
 
   // Lọc danh sách lịch sử đề thi
   const filteredHistoryExams = useMemo(() => {
@@ -149,10 +187,127 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
     });
   }, [historyExams, historySearch, historyFilter]);
 
+  // ==========================================
+  // DỰNG ĐỐI TƯỢNG ĐỀ & LƯU VÀO KHO
+  // ==========================================
+  const buildExam = (questions: Question[], overrides: Partial<Exam> = {}): Exam => {
+    const id = overrides.id || currentExamId || `exam-${Date.now()}`;
+    const now = new Date().toISOString();
+    const isTopic = examType === 'topic_practice';
+    return {
+      id,
+      teacher_id: storageService.getCurrentUser()?.id,
+      title: examTitle.trim() || (isStudentMode ? 'Đề Tự Luyện HSG Toán Tiếng Anh' : 'Đề Thi Tuyển Chọn Đội Tuyển HSG Toán THPT'),
+      description: isTopic
+        ? `Đề luyện tập chuyên đề ${mode === 'bilingual' ? 'Song ngữ Anh - Việt' : 'Full Tiếng Anh'}. ${questions.length} câu / 90 phút.`
+        : `Đề thi ${mode === 'bilingual' ? 'Song ngữ Anh - Việt' : 'Full Tiếng Anh'} chuẩn ma trận Sở GD&ĐT Hải Phòng. ${questions.length} câu / 90 phút.`,
+      mode,
+      duration_minutes: 90,
+      is_published: true,
+      access_code: currentAccessCode || newAccessCode(),
+      exam_type: examType,
+      created_at: currentCreatedAt || now,
+      updated_at: now,
+      questions: questions.map((q, idx) => ({
+        ...q,
+        id: q.id || `q-${Date.now()}-${idx + 1}`,
+        exam_id: id,
+        order_index: idx + 1,
+      })),
+      is_ai_generated: true,
+      topic_focus: topicPrompt.trim() || undefined,
+      ...overrides,
+    };
+  };
+
+  /** Lưu đề vào kho; không bao giờ ném lỗi — trả về true nếu đề đã nằm ở ít nhất một nơi lưu. */
+  const persistExam = async (exam: Exam): Promise<boolean> => {
+    setSaveStatus({ kind: 'saving', message: 'Đang lưu vào Kho đề...' });
+    try {
+      const result = (await onSaveExam(exam)) || { localSaved: true, cloudSaved: null };
+      setCurrentExamId(exam.id);
+      setCurrentAccessCode(exam.access_code);
+      setCurrentCreatedAt(exam.created_at || null);
+      rememberCurrentExam(exam.id);
+
+      if (!result.localSaved && result.cloudSaved !== true) {
+        setSuccessSaved(false);
+        setSaveStatus({
+          kind: 'error',
+          message: 'Không lưu được đề: Firebase không phản hồi và bộ nhớ trình duyệt đã đầy. Hãy tải file Word/JSON để giữ đề, rồi xóa bớt đề cũ trong Kho.',
+        });
+        return false;
+      }
+      setIsDirty(false);
+      setSuccessSaved(true);
+      if (result.cloudSaved === false) {
+        setSaveStatus({
+          kind: 'warn',
+          message: 'Đã lưu trong trình duyệt này nhưng CHƯA đồng bộ lên Firebase (mất mạng hoặc tài khoản không có quyền ghi). Bấm "Lưu Vào Kho Đề" để thử lại.',
+        });
+      } else if (!result.localSaved) {
+        setSaveStatus({ kind: 'warn', message: 'Đã lưu lên Firebase. Bộ nhớ trình duyệt đầy nên chưa có bản sao offline trên máy này.' });
+      } else {
+        setSaveStatus({
+          kind: 'ok',
+          message: result.cloudSaved ? 'Đã lưu vào Kho đề và đồng bộ Firebase.' : 'Đã lưu vào Kho đề (trên trình duyệt này).',
+        });
+      }
+      return true;
+    } catch (err: any) {
+      console.error('Lưu đề thất bại:', err);
+      setSuccessSaved(false);
+      setSaveStatus({ kind: 'error', message: `Không lưu được đề: ${err?.message || 'lỗi không xác định'}. Hãy tải file Word/JSON để giữ đề.` });
+      return false;
+    }
+  };
+
+  const markDirty = () => {
+    setIsDirty(true);
+    setSuccessSaved(false);
+  };
+
+  // Khôi phục đề đang soạn dở khi quay lại tab (đề đã được lưu trong kho)
+  useEffect(() => {
+    let savedId: string | null = null;
+    try {
+      savedId = localStorage.getItem(CURRENT_EXAM_STORAGE_KEY);
+    } catch {
+      savedId = null;
+    }
+    if (!savedId) return;
+    const exam = storageService.getExams().find((e) => e.id === savedId) || exams.find((e) => e.id === savedId);
+    if (exam && exam.questions && exam.questions.length > 0) {
+      loadExamIntoEditor(exam, false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Tự động lưu chỉnh sửa (sửa nhanh, thêm/xóa câu, đổi tiêu đề) vào kho sau khi ngừng gõ
+  useEffect(() => {
+    if (!isDirty || !currentExamId || !generatedQuestions || generatedQuestions.length === 0 || isGenerating) return;
+    const timer = setTimeout(() => {
+      persistExam(buildExam(generatedQuestions));
+    }, AUTOSAVE_DELAY_MS);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDirty, generatedQuestions, examTitle, mode, currentExamId, isGenerating]);
+
+  // Cảnh báo khi đóng tab lúc còn chỉnh sửa chưa lưu
+  useEffect(() => {
+    if (!isDirty) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [isDirty]);
+
   // Sao chép mã phòng thi
   const handleCopyCode = (code: string) => {
     if (!code) return;
-    navigator.clipboard.writeText(code);
+    navigator.clipboard?.writeText(code).catch(() => undefined);
     setCopiedCode(code);
     setTimeout(() => setCopiedCode(null), 2000);
   };
@@ -171,28 +326,57 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
     }
   };
 
-  // Nạp lại đề thi vào editor KaTeX preview để xem lời giải hoặc hiệu chỉnh
-  const handleLoadExamToEditor = (exam: Exam) => {
+  const loadExamIntoEditor = (exam: Exam, showNotice = true) => {
     setExamTitle(exam.title);
     setMode(exam.mode);
     setExamType(exam.exam_type || 'haiphong_matrix');
+    setTopicPrompt(exam.topic_focus || '');
     setCurrentExamId(exam.id);
     setCurrentAccessCode(exam.access_code);
+    setCurrentCreatedAt(exam.created_at || null);
     setGeneratedQuestions(exam.questions || []);
+    setEditingIndex(null);
+    setIsDirty(false);
+    setSuccessSaved(true);
+    setSaveStatus(null);
+    setErrorMsg('');
+    rememberCurrentExam(exam.id);
+    if (showNotice) {
+      setAutoSavedNotice({
+        show: true,
+        accessCode: exam.access_code,
+        title: exam.title,
+      });
+    }
+  };
+
+  // Nạp lại đề thi vào editor KaTeX preview để xem lời giải hoặc hiệu chỉnh
+  const handleLoadExamToEditor = (exam: Exam) => {
+    loadExamIntoEditor(exam);
     setGeneratorView('create');
-    setAutoSavedNotice({
-      show: true,
-      accessCode: exam.access_code,
-      title: exam.title,
-    });
+  };
+
+  // Đóng đề đang soạn để bắt đầu đề mới
+  const handleCloseCurrentExam = () => {
+    setGeneratedQuestions(null);
+    setCurrentExamId(null);
+    setCurrentAccessCode(null);
+    setCurrentCreatedAt(null);
+    setIsDirty(false);
+    setSuccessSaved(false);
+    setSaveStatus(null);
+    setAutoSavedNotice(null);
+    rememberCurrentExam(null);
   };
 
   // Xóa đề khỏi lịch sử
   const handleDeleteExamFromHistory = async (examId: string) => {
-    await storageService.deleteExam(examId);
     if (onDeleteExam) {
-      onDeleteExam(examId);
+      await onDeleteExam(examId);
+    } else {
+      await storageService.deleteExam(examId);
     }
+    if (examId === currentExamId) handleCloseCurrentExam();
     setDeleteConfirmId(null);
   };
 
@@ -211,24 +395,11 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
       setGeneratedQuestions(updated);
       storageService.incrementAiQuests(1);
 
-      // Cập nhật lại đề đã lưu trong kho nếu có currentExamId
+      // Cập nhật lại đề đã lưu trong kho
       if (currentExamId) {
-        const updatedExam: Exam = {
-          id: currentExamId,
-          title: examTitle.trim(),
-          description: `Đề thi ${mode === 'bilingual' ? 'Song ngữ Anh - Việt' : 'Full Tiếng Anh'} chuẩn ma trận Sở GD&ĐT Hải Phòng. ${updated.length} câu / 90 phút.`,
-          mode,
-          duration_minutes: 90,
-          is_published: true,
-          access_code: currentAccessCode || `HP-${Math.random().toString(36).substring(2, 6).toUpperCase()}-${new Date().getFullYear()}`,
-          exam_type: examType,
-          created_at: new Date().toISOString(),
-          questions: updated,
-          is_ai_generated: true,
-          topic_focus: topicPrompt.trim() || undefined,
-        };
-        await storageService.saveExam(updatedExam);
-        onSaveExam(updatedExam);
+        await persistExam(buildExam(updated));
+      } else {
+        markDirty();
       }
     } catch (err: any) {
       alert('Không thể đổi câu hỏi: ' + (err?.message || 'Vui lòng thử lại'));
@@ -249,6 +420,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
       setDocumentText(text);
     };
     reader.readAsText(file);
+    e.target.value = '';
   };
 
   // Generate Exam API Call (client-side via geminiService)
@@ -262,16 +434,20 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
       setErrorMsg('Vui lòng nhập chủ đề hoặc yêu cầu trọng tâm trước khi tạo đề.');
       return;
     }
+    if (isDirty && generatedQuestions && !window.confirm('Đề đang mở còn chỉnh sửa chưa lưu. Tạo đề mới sẽ thay thế đề này trên màn hình. Tiếp tục?')) {
+      return;
+    }
 
     setIsGenerating(true);
     setErrorMsg('');
+    setExportError('');
     setSuccessSaved(false);
+    setSaveStatus(null);
     setAutoSavedNotice(null);
 
+    let questions: Question[];
+    const newExamId = `exam-${Date.now()}`;
     try {
-      const newExamId = `exam-${Date.now()}`;
-      const newAccessCode = `HP-${Math.random().toString(36).substring(2, 6).toUpperCase()}-${new Date().getFullYear()}`;
-
       const rawQuestions = examType === 'topic_practice'
         ? await generateTopicPractice({
             topic: topicPrompt.trim() || 'High School Gifted Mathematics',
@@ -279,9 +455,6 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
             count: topicQuestionCount,
             questionType: topicQuestionType,
             difficulty: 'mixed',
-            onModelSwitch: (from, to) => {
-              console.info(`Chuyển model tạo đề chuyên đề: ${from} → ${to}`);
-            },
           })
         : await generateExam({
             topicPrompt,
@@ -291,7 +464,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
             customDocumentText: documentText,
           });
 
-      const questions: Question[] = (rawQuestions || []).map((q: any, i: number) => ({
+      questions = (rawQuestions || []).map((q: any, i: number) => ({
         id: `gen-q-${Date.now()}-${i + 1}`,
         exam_id: newExamId,
         part: q.part || (i < 12 ? 'PART_1' : 'PART_2'),
@@ -303,124 +476,186 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
         question_vi: q.question_vi || '',
         options_en: q.options_en || (q.part === 'PART_1' ? ['A', 'B', 'C', 'D'] : undefined),
         options_vi: q.options_vi || undefined,
-        correct_answer: q.correct_answer || 'A',
-        acceptable_answers: q.acceptable_answers || [],
+        correct_answer: String(q.correct_answer ?? 'A'),
+        acceptable_answers: Array.isArray(q.acceptable_answers) ? q.acceptable_answers.map(String) : [],
+        hints: Array.isArray(q.hints) ? q.hints : undefined,
         solution_en: q.solution_en || '',
         solution_vi: q.solution_vi || '',
       }));
-
-      setGeneratedQuestions(questions);
-      setCurrentExamId(newExamId);
-      setCurrentAccessCode(newAccessCode);
-
-      // Tự động ghi nhận số lượng quest AI đã phục vụ trực tuyến hôm nay
-      storageService.incrementAiQuests(questions.length);
-
-      // TỰ ĐỘNG LƯU VÀO KHO / LỊCH SỬ ĐỀ THI
-      const autoSavedExam: Exam = {
-        id: newExamId,
-        title: examTitle.trim() || (isStudentMode ? 'Đề Tự Luyện HSG Toán Tiếng Anh' : 'Đề Thi Tuyển Chọn Đội Tuyển HSG Toán THPT'),
-        description: `Đề thi ${mode === 'bilingual' ? 'Song ngữ Anh - Việt' : 'Full Tiếng Anh'} chuẩn ma trận Sở GD&ĐT Hải Phòng. ${questions.length} câu / 90 phút.`,
-        mode,
-        duration_minutes: 90,
-        is_published: true,
-        access_code: newAccessCode,
-        exam_type: examType,
-        created_at: new Date().toISOString(),
-        questions: questions,
-        is_ai_generated: true,
-        topic_focus: topicPrompt.trim() || undefined,
-      };
-
-      await storageService.saveExam(autoSavedExam);
-      onSaveExam(autoSavedExam);
-      setSuccessSaved(true);
-      setAutoSavedNotice({
-        show: true,
-        accessCode: newAccessCode,
-        title: autoSavedExam.title,
-      });
     } catch (err: any) {
       console.error('Exam generation failed:', err);
+      // Giữ nguyên đề đang hiển thị (nếu có) — chỉ báo lỗi sinh đề
       setErrorMsg(err?.message || 'Không thể tạo đề lúc này. Vui lòng thử lại sau.');
-      setGeneratedQuestions(null);
-    } finally {
       setIsGenerating(false);
+      return;
     }
+
+    // Đề đã sinh xong: hiển thị ngay, lỗi lưu (nếu có) không được làm mất đề
+    setGeneratedQuestions(questions);
+    setEditingIndex(null);
+    setIsDirty(false);
+    storageService.incrementAiQuests(questions.length);
+
+    const accessCode = newAccessCode();
+    const autoSavedExam = buildExam(questions, {
+      id: newExamId,
+      access_code: accessCode,
+      created_at: new Date().toISOString(),
+    });
+    setCurrentExamId(newExamId);
+    setCurrentAccessCode(accessCode);
+    setCurrentCreatedAt(autoSavedExam.created_at || null);
+    setIsGenerating(false);
+
+    // TỰ ĐỘNG LƯU VÀO KHO / LỊCH SỬ ĐỀ THI
+    const saved = await persistExam(autoSavedExam);
+    if (!saved) setIsDirty(true);
+    setAutoSavedNotice({
+      show: true,
+      accessCode,
+      title: autoSavedExam.title,
+    });
   };
 
   // Save current generated exam manually
   const handleSaveExam = async (startNow = false, navigateAfterSave = false) => {
     if (!generatedQuestions || generatedQuestions.length === 0) return;
 
-    const examId = currentExamId || `exam-${Date.now()}`;
-    const accessCode = currentAccessCode || `HP-${Math.random().toString(36).substring(2, 6).toUpperCase()}-${new Date().getFullYear()}`;
-    const formattedQuestions = generatedQuestions.map((q, idx) => ({
-      ...q,
-      id: q.id || `q-${Date.now()}-${idx + 1}`,
-      exam_id: examId,
-      order_index: idx + 1,
-    }));
-
-    const newExam: Exam = {
-      id: examId,
-      title: examTitle.trim() || (isStudentMode ? 'Đề Tự Luyện HSG Toán Tiếng Anh' : 'Đề Thi Tuyển Chọn Đội Tuyển HSG Toán THPT'),
-      description: `Đề thi ${mode === 'bilingual' ? 'Song ngữ Anh - Việt' : 'Full Tiếng Anh'} chuẩn ma trận Sở GD&ĐT Hải Phòng. ${generatedQuestions.length} câu / 90 phút.`,
-      mode,
-      duration_minutes: 90,
-      is_published: true,
-      access_code: accessCode,
-      exam_type: examType,
-      created_at: new Date().toISOString(),
-      questions: formattedQuestions,
-      is_ai_generated: true,
-      topic_focus: topicPrompt.trim() || undefined,
-    };
-
-    await storageService.saveExam(newExam);
-    onSaveExam(newExam);
-    setSuccessSaved(true);
-    setCurrentExamId(examId);
-    setCurrentAccessCode(accessCode);
+    const newExam = buildExam(generatedQuestions);
+    const saved = await persistExam(newExam);
     setAutoSavedNotice({
       show: true,
-      accessCode: accessCode,
+      accessCode: newExam.access_code,
       title: newExam.title,
     });
 
     if (startNow && onStartTestNow) {
       const currentUser = storageService.getCurrentUser();
       if (currentUser?.id) {
-        storageService.clearExamAutoSave(examId, currentUser.id);
+        storageService.clearExamAutoSave(newExam.id, currentUser.id);
       }
       onStartTestNow(newExam);
-    } else if (navigateAfterSave) {
+    } else if (navigateAfterSave && saved) {
       setTimeout(() => {
         onNavigateToBank();
       }, 800);
     }
   };
 
-  // Export DOCX
-  const handleExportDocx = async (includeSolutions: boolean) => {
-    if (!generatedQuestions) return;
-    const tempExam: Exam = {
-      id: currentExamId || 'temp',
-      title: examTitle,
-      mode,
-      duration_minutes: 90,
-      is_published: true,
-      access_code: currentAccessCode || 'HP-PREVIEW',
-      exam_type: examType,
+  // Lưu thành đề mới (bản sao với mã phòng thi mới) — giữ nguyên đề gốc
+  const handleSaveAsCopy = async () => {
+    if (!generatedQuestions || generatedQuestions.length === 0) return;
+    const copyId = `exam-${Date.now()}`;
+    const copy = buildExam(generatedQuestions, {
+      id: copyId,
+      access_code: newAccessCode(),
+      title: `${examTitle.trim() || 'Đề thi'} (bản sao)`,
       created_at: new Date().toISOString(),
-      questions: generatedQuestions,
-      is_ai_generated: true,
-    };
-    await exportExamToDocx({ 
-      exam: tempExam, 
-      includeSolutions, 
-      mode: mode === 'bilingual' ? 'bilingual' : 'english_only',
     });
+    setExamTitle(copy.title);
+    const saved = await persistExam(copy);
+    if (saved) {
+      setAutoSavedNotice({ show: true, accessCode: copy.access_code, title: copy.title });
+    }
+  };
+
+  // Export DOCX
+  const exportDocx = async (exam: Exam, includeSolutions: boolean) => {
+    setExportError('');
+    try {
+      await exportExamToDocx({
+        exam,
+        includeSolutions,
+        mode: exam.mode === 'bilingual' ? 'bilingual' : 'english_only',
+      });
+    } catch (err: any) {
+      console.error('Xuất Word thất bại:', err);
+      const msg = `Không xuất được file Word: ${err?.message || 'lỗi không xác định'}`;
+      setExportError(msg);
+      if (generatorView === 'history') alert(msg);
+    }
+  };
+
+  const handleExportDocx = async (includeSolutions: boolean) => {
+    if (!generatedQuestions || generatedQuestions.length === 0) {
+      setExportError('Chưa có đề để xuất. Hãy sinh đề hoặc mở một đề trong "Kho Đề Đã Lưu".');
+      return;
+    }
+    await exportDocx(buildExam(generatedQuestions), includeSolutions);
+  };
+
+  const handlePrint = (sheetType: 'question_sheet' | 'solution_sheet') => {
+    if (!generatedQuestions || generatedQuestions.length === 0) {
+      setExportError('Chưa có đề để in. Hãy sinh đề hoặc mở một đề trong "Kho Đề Đã Lưu".');
+      return;
+    }
+    setExportError('');
+    printHaiPhongExam(buildExam(generatedQuestions), { sheetType });
+  };
+
+  // Sao lưu đề ra file JSON (mở lại được bằng "Nhập đề từ file")
+  const handleExportJson = (exam: Exam) => {
+    const blob = new Blob([JSON.stringify({ format: 'hp-math-exam', version: 1, exam }, null, 2)], {
+      type: 'application/json',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${safeFileName(exam.title)}_${exam.access_code || exam.id}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
+  // Nhập đề từ file JSON đã sao lưu
+  const handleImportJson = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const parsed = JSON.parse(String(event.target?.result || ''));
+        const raw: any = parsed?.exam || parsed;
+        if (!raw || !Array.isArray(raw.questions) || raw.questions.length === 0) {
+          throw new Error('File không chứa danh sách câu hỏi hợp lệ.');
+        }
+        const id = `exam-${Date.now()}`;
+        const accessExists = storageService.getExams().some(
+          (x) => x.access_code?.toUpperCase() === String(raw.access_code || '').toUpperCase(),
+        );
+        const imported: Exam = {
+          ...raw,
+          id,
+          title: String(raw.title || file.name.replace(/\.json$/i, '')),
+          mode: raw.mode === 'english_only' ? 'english_only' : 'bilingual',
+          exam_type: raw.exam_type || 'haiphong_matrix',
+          duration_minutes: Number(raw.duration_minutes) || 90,
+          is_published: raw.is_published !== false,
+          is_ai_generated: true,
+          access_code: raw.access_code && !accessExists ? String(raw.access_code) : newAccessCode(),
+          created_at: raw.created_at || new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          questions: raw.questions.map((q: any, idx: number) => ({
+            ...q,
+            id: q.id || `q-${Date.now()}-${idx + 1}`,
+            exam_id: id,
+            order_index: idx + 1,
+          })),
+        };
+        const result = (await onSaveExam(imported)) || { localSaved: true, cloudSaved: null };
+        setImportMessage({
+          ok: result.localSaved || result.cloudSaved === true,
+          text: result.localSaved || result.cloudSaved === true
+            ? `Đã nhập đề "${imported.title}" (${imported.questions?.length} câu) — mã ${imported.access_code}.`
+            : 'Không lưu được đề vừa nhập (bộ nhớ đầy và Firebase không phản hồi).',
+        });
+      } catch (err: any) {
+        setImportMessage({ ok: false, text: `Không đọc được file: ${err?.message || 'sai định dạng JSON'}` });
+      }
+    };
+    reader.readAsText(file);
   };
 
   // Add a new empty question
@@ -441,6 +676,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
       solution_vi: 'Lời giải chi tiết...',
     };
     setGeneratedQuestions([...(generatedQuestions || []), newQ]);
+    markDirty();
   };
 
   // Delete a question
@@ -448,6 +684,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
     if (!generatedQuestions) return;
     const updated = generatedQuestions.filter((_, i) => i !== index);
     setGeneratedQuestions(updated);
+    markDirty();
   };
 
   // Update a single question field
@@ -456,6 +693,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
     const updated = [...generatedQuestions];
     updated[index] = { ...updated[index], [field]: value };
     setGeneratedQuestions(updated);
+    markDirty();
   };
 
   // ==========================================
@@ -486,9 +724,8 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
   if (totalSubmissions > 0) {
     const sumScore = validSubmissions.reduce((sum, a) => sum + (a.score ?? 0), 0);
     const rawAvg = sumScore / totalSubmissions;
-    // Điểm thang 20.00 chuẩn Hải Phòng quy đổi sang thang 10
-    const avg10 = rawAvg > 10 ? rawAvg / 2 : rawAvg;
-    avgScoreDisplay = `${avg10.toFixed(2)}/10`;
+    // Điểm đã được quy đổi về thang 10 khi đọc (utils/scoring.ts)
+    avgScoreDisplay = `${rawAvg.toFixed(2)}/10`;
 
     if (totalSubmissions >= 2) {
       const sorted = [...validSubmissions].sort(
@@ -502,7 +739,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
       const avgOld = older.reduce((s, a) => s + (a.score ?? 0), 0) / older.length;
       const avgNew = newer.reduce((s, a) => s + (a.score ?? 0), 0) / newer.length;
       const diffRaw = avgNew - avgOld;
-      const diff10 = rawAvg > 10 ? diffRaw / 2 : diffRaw;
+      const diff10 = diffRaw;
       isPerfPositive = diff10 >= 0;
       performanceText = `${diff10 >= 0 ? '+' : ''}${diff10.toFixed(1)} performance (${totalSubmissions} bài nộp)`;
     } else {
@@ -700,7 +937,10 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
               <input
                 type="text"
                 value={examTitle}
-                onChange={(e) => setExamTitle(e.target.value)}
+                onChange={(e) => {
+                  setExamTitle(e.target.value);
+                  if (generatedQuestions) markDirty();
+                }}
                 className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
                 placeholder="VD: Đề thi chọn HSG TP Hải Phòng năm 2026"
               />
@@ -714,7 +954,10 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
-                  onClick={() => setMode('bilingual')}
+                  onClick={() => {
+                    setMode('bilingual');
+                    if (generatedQuestions && mode !== 'bilingual') markDirty();
+                  }}
                   className={`px-3 py-2 rounded-xl text-xs font-semibold border transition ${
                     mode === 'bilingual'
                       ? 'bg-teal-50 dark:bg-teal-950/40 border-teal-500 text-teal-700 dark:text-teal-300'
@@ -725,7 +968,10 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
                 </button>
                 <button
                   type="button"
-                  onClick={() => setMode('english_only')}
+                  onClick={() => {
+                    setMode('english_only');
+                    if (generatedQuestions && mode !== 'english_only') markDirty();
+                  }}
                   className={`px-3 py-2 rounded-xl text-xs font-semibold border transition ${
                     mode === 'english_only'
                       ? 'bg-teal-50 dark:bg-teal-950/40 border-teal-500 text-teal-700 dark:text-teal-300'
@@ -762,7 +1008,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
                       Chuẩn Ma trận Sở Hải Phòng (22 câu)
                     </span>
                     <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-0.5">
-                      6 Thông hiểu, 9 Vận dụng, 7 Vận dụng cao (9 Đại/Giải tích, 9 Hình học, 4 Rời rạc/Xác suất/Số học).
+                      8 Thông hiểu, 9 Vận dụng, 5 Vận dụng cao (9 Đại số – Giải tích, 9 Hình học, 4 Thống kê – Xác suất – Rời rạc). Thang 10 điểm.
                     </span>
                   </div>
                 </label>
@@ -918,9 +1164,17 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
 
           {/* Error / Alert notice */}
           {errorMsg && (
-            <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs flex items-start gap-2.5">
+            <div role="alert" className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300 text-xs flex items-start gap-2.5">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-              <div>{errorMsg}</div>
+              <div className="flex-1">
+                <div>{errorMsg}</div>
+                {generatedQuestions && (
+                  <div className="mt-1 text-[11px] text-rose-600/80 dark:text-rose-300/80">Đề đang mở trên màn hình vẫn được giữ nguyên.</div>
+                )}
+              </div>
+              <button type="button" onClick={() => setErrorMsg('')} className="text-rose-400 hover:text-rose-600" aria-label="Ẩn thông báo">
+                <X className="w-3.5 h-3.5" />
+              </button>
             </div>
           )}
 
@@ -934,10 +1188,10 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
               <div>
                 <div className="flex justify-between text-xs mb-1">
                   <span className="text-slate-600 dark:text-slate-300 font-medium">Understanding (TH)</span>
-                  <span className="text-slate-400 font-mono">6/22 (27%)</span>
+                  <span className="text-slate-400 font-mono">8/22 (36%)</span>
                 </div>
                 <div className="w-full bg-slate-100 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
-                  <div className="bg-emerald-400 h-full w-[27%] rounded-full"></div>
+                  <div className="bg-emerald-400 h-full w-[36%] rounded-full"></div>
                 </div>
               </div>
               <div>
@@ -952,10 +1206,10 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
               <div>
                 <div className="flex justify-between text-xs mb-1">
                   <span className="text-slate-600 dark:text-slate-300 font-medium">Advanced (VDC)</span>
-                  <span className="text-slate-400 font-mono">7/22 (32%)</span>
+                  <span className="text-slate-400 font-mono">5/22 (23%)</span>
                 </div>
                 <div className="w-full bg-slate-100 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
-                  <div className="bg-teal-500 h-full w-[32%] rounded-full"></div>
+                  <div className="bg-teal-500 h-full w-[23%] rounded-full"></div>
                 </div>
               </div>
             </div>
@@ -974,18 +1228,39 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
               <button
                 type="button"
                 onClick={() => handleExportDocx(false)}
-                className="bg-white hover:bg-slate-50 text-teal-900 py-2 rounded-lg text-xs font-bold transition shadow-xs"
+                disabled={!generatedQuestions}
+                className="bg-white hover:bg-slate-50 text-teal-900 py-2 rounded-lg text-xs font-bold transition shadow-xs disabled:opacity-60"
               >
-                DOCX (LaTeX)
+                Word Đề
               </button>
               <button
                 type="button"
-                onClick={() => printExamOrNotes(examTitle)}
-                className="bg-teal-500/80 hover:bg-teal-500 text-white py-2 rounded-lg text-xs font-bold transition border border-teal-400/40"
+                onClick={() => handleExportDocx(true)}
+                disabled={!generatedQuestions}
+                className="bg-white hover:bg-slate-50 text-teal-900 py-2 rounded-lg text-xs font-bold transition shadow-xs disabled:opacity-60"
               >
-                PDF (Print)
+                Word Đáp Án
+              </button>
+              <button
+                type="button"
+                onClick={() => handlePrint('question_sheet')}
+                disabled={!generatedQuestions}
+                className="bg-teal-500/80 hover:bg-teal-500 text-white py-2 rounded-lg text-xs font-bold transition border border-teal-400/40 disabled:opacity-60"
+              >
+                PDF Đề
+              </button>
+              <button
+                type="button"
+                onClick={() => handlePrint('solution_sheet')}
+                disabled={!generatedQuestions}
+                className="bg-teal-500/80 hover:bg-teal-500 text-white py-2 rounded-lg text-xs font-bold transition border border-teal-400/40 disabled:opacity-60"
+              >
+                PDF Đáp Án
               </button>
             </div>
+            {!generatedQuestions && (
+              <p className="text-[11px] text-teal-100/90 mt-2">Sinh đề hoặc mở một đề trong Kho để xuất file.</p>
+            )}
           </div>
         </div>
 
@@ -1080,7 +1355,17 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
                         <span>Mục 2: Lưu vào "Kho đề"</span>
                       </div>
                       <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
-                        {successSaved ? '✓ Đã đồng bộ' : 'Tự động lưu'}
+                        {saveStatus?.kind === 'saving'
+                          ? 'Đang lưu...'
+                          : saveStatus?.kind === 'error'
+                          ? '✗ Chưa lưu được'
+                          : saveStatus?.kind === 'warn'
+                          ? '⚠ Chưa đồng bộ Firebase'
+                          : isDirty
+                          ? 'Có thay đổi — tự lưu sau vài giây'
+                          : successSaved
+                          ? '✓ Đã lưu'
+                          : 'Tự động lưu'}
                       </span>
                     </div>
 
@@ -1120,7 +1405,41 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
                         <Layers className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />
                         <span>Mở Kho Đề</span>
                       </button>
+                      <button
+                        type="button"
+                        onClick={handleSaveAsCopy}
+                        className="px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 hover:bg-slate-50 border border-slate-300 dark:border-slate-600 transition flex items-center justify-center gap-1.5"
+                        title="Lưu thành một đề mới với mã phòng thi mới (giữ nguyên đề gốc)"
+                      >
+                        <Copy className="w-3.5 h-3.5 shrink-0" />
+                        <span>Lưu thành bản sao</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => generatedQuestions && handleExportJson(buildExam(generatedQuestions))}
+                        className="px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 hover:bg-slate-50 border border-slate-300 dark:border-slate-600 transition flex items-center justify-center gap-1.5"
+                        title="Tải file JSON sao lưu đề — nhập lại được ở Kho Đề Đã Lưu"
+                      >
+                        <FileJson className="w-3.5 h-3.5 shrink-0" />
+                        <span>Sao lưu file JSON</span>
+                      </button>
                     </div>
+
+                    {saveStatus && saveStatus.kind !== 'saving' && (
+                      <div
+                        role={saveStatus.kind === 'error' ? 'alert' : 'status'}
+                        className={`text-[11px] p-2 rounded-lg flex items-start gap-1.5 ${
+                          saveStatus.kind === 'ok'
+                            ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'
+                            : saveStatus.kind === 'warn'
+                            ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300'
+                            : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300'
+                        }`}
+                      >
+                        {saveStatus.kind === 'ok' ? <Check className="w-3.5 h-3.5 shrink-0" /> : <AlertTriangle className="w-3.5 h-3.5 shrink-0" />}
+                        <span>{saveStatus.message}</span>
+                      </div>
+                    )}
 
                     <div className="text-[11px] text-slate-500 dark:text-slate-400 pt-0.5">
                       📌 Bạn có thể quay lại Kho đề thi bất cứ lúc nào để làm lại hoặc chia sẻ mã đề <span className="font-mono font-bold text-teal-700 dark:text-teal-300">{currentAccessCode}</span>.
@@ -1163,26 +1482,20 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
                     Word Đáp Án
                   </button>
                   <button
-                    onClick={() => {
-                      const tempExam: Exam = {
-                        id: currentExamId || 'temp-exam',
-                        title: examTitle,
-                        mode,
-                        duration_minutes: 90,
-                        is_published: true,
-                        access_code: currentAccessCode || 'HP-EXAM',
-                        exam_type: examType,
-                        created_at: new Date().toISOString(),
-                        questions: generatedQuestions,
-                        is_ai_generated: true,
-                      };
-                      printHaiPhongExam(tempExam, { sheetType: 'question_sheet' });
-                    }}
+                    onClick={() => handlePrint('question_sheet')}
                     className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 transition"
-                    title="In Đề Thi chuẩn mẫu Sở GD&ĐT Hải Phòng"
+                    title="In / lưu PDF Đề thi chuẩn mẫu Sở GD&ĐT Hải Phòng"
                   >
                     <Printer className="w-3.5 h-3.5" />
                     In Đề (PDF)
+                  </button>
+                  <button
+                    onClick={() => handlePrint('solution_sheet')}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 transition"
+                    title="In / lưu PDF Hướng dẫn chấm & lời giải"
+                  >
+                    <Printer className="w-3.5 h-3.5" />
+                    In Đáp Án (PDF)
                   </button>
                   <button
                     onClick={() => handleSaveExam(false, false)}
@@ -1193,9 +1506,22 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
                     }`}
                   >
                     <Save className="w-3.5 h-3.5" />
-                    {successSaved
+                    {saveStatus?.kind === 'saving'
+                      ? 'Đang lưu...'
+                      : successSaved && !isDirty
                       ? 'Đã Lưu Vào Kho Đề!'
                       : 'Lưu Vào Kho Đề'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (isDirty && !window.confirm('Còn chỉnh sửa chưa lưu. Vẫn đóng đề này?')) return;
+                      handleCloseCurrentExam();
+                    }}
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition"
+                    title="Đóng đề đang mở (đề vẫn nằm trong Kho)"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    Đóng
                   </button>
                   {onStartTestNow && (
                     <button
@@ -1209,6 +1535,14 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
                 </div>
               )}
             </div>
+
+            {exportError && (
+              <div role="alert" className="mb-4 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span className="flex-1">{exportError}</span>
+                <button type="button" onClick={() => setExportError('')} aria-label="Ẩn thông báo"><X className="w-3.5 h-3.5" /></button>
+              </div>
+            )}
 
             {/* Questions List */}
             {generatedQuestions ? (
@@ -1281,7 +1615,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
                         {q.options_en.map((opt, oIdx) => {
                           const letters = ['A', 'B', 'C', 'D'];
                           const letter = letters[oIdx];
-                          const isCorrect = q.correct_answer.trim().toUpperCase() === letter;
+                          const isCorrect = String(q.correct_answer ?? '').trim().toUpperCase() === letter;
                           return (
                             <div
                               key={oIdx}
@@ -1401,10 +1735,87 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
                             className="w-full p-2 rounded-lg border bg-white dark:bg-slate-900 font-mono text-xs text-slate-900 dark:text-white"
                           />
                         </div>
+
+                        {q.part === 'PART_1' && (
+                          <div>
+                            <label className="block font-medium mb-1">Các phương án (tiếng Anh, công thức trong $...$):</label>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              {(q.options_en && q.options_en.length > 0 ? q.options_en : ['A. ', 'B. ', 'C. ', 'D. ']).map((opt, oIdx, arr) => (
+                                <input
+                                  key={oIdx}
+                                  type="text"
+                                  value={opt}
+                                  onChange={(e) => {
+                                    const next = [...arr];
+                                    next[oIdx] = e.target.value;
+                                    updateQuestion(idx, 'options_en', next);
+                                  }}
+                                  className="w-full p-2 rounded-lg border bg-white dark:bg-slate-900 font-mono text-xs text-slate-900 dark:text-white"
+                                  aria-label={`Phương án ${String.fromCharCode(65 + oIdx)}`}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {q.part === 'PART_2' && (
+                          <div>
+                            <label className="block font-medium mb-1">Đáp số tương đương được chấp nhận (cách nhau bởi dấu phẩy):</label>
+                            <input
+                              type="text"
+                              value={(q.acceptable_answers || []).join(', ')}
+                              onChange={(e) =>
+                                updateQuestion(
+                                  idx,
+                                  'acceptable_answers',
+                                  e.target.value.split(',').map((v) => v.trim()).filter(Boolean),
+                                )
+                              }
+                              placeholder="VD: 1/2, 0.5"
+                              className="w-full p-2 rounded-lg border bg-white dark:bg-slate-900 font-mono text-xs text-slate-900 dark:text-white"
+                            />
+                          </div>
+                        )}
+
+                        {mode === 'bilingual' && (
+                          <div>
+                            <label className="block font-medium mb-1">Lời giải tiếng Việt:</label>
+                            <textarea
+                              rows={2}
+                              value={q.solution_vi || ''}
+                              onChange={(e) => updateQuestion(idx, 'solution_vi', e.target.value)}
+                              className="w-full p-2 rounded-lg border bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white"
+                            />
+                          </div>
+                        )}
+
+                        <div className="flex justify-end">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (window.confirm(`Xóa câu ${q.order_index} khỏi đề?`)) {
+                                handleDeleteQuestion(idx);
+                                setEditingIndex(null);
+                              }
+                            }}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            Xóa câu này
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
                 ))}
+                <button
+                  type="button"
+                  onClick={handleAddQuestion}
+                  className="w-full py-2.5 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-600 text-xs font-semibold text-slate-500 hover:border-teal-400 hover:text-teal-600 transition flex items-center justify-center gap-1.5"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  Thêm câu hỏi tự soạn
+                </button>
               </div>
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center text-center p-8 text-slate-400">
@@ -1445,6 +1856,14 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
+              <label
+                className="cursor-pointer px-3 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-teal-400 transition flex items-center gap-1"
+                title="Nhập lại đề từ file JSON đã sao lưu"
+              >
+                <Upload className="w-3.5 h-3.5" />
+                Nhập đề (.json)
+                <input type="file" accept=".json,application/json" onChange={handleImportJson} className="hidden" />
+              </label>
               <span className="text-xs text-slate-400 font-medium flex items-center gap-1">
                 <Filter className="w-3.5 h-3.5" /> Lọc:
               </span>
@@ -1494,6 +1913,20 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
               </button>
             </div>
           </div>
+
+          {importMessage && (
+            <div
+              role="status"
+              className={`p-3 rounded-xl text-xs flex items-start gap-2 ${
+                importMessage.ok
+                  ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'
+                  : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300'
+              }`}
+            >
+              <span className="flex-1">{importMessage.text}</span>
+              <button type="button" onClick={() => setImportMessage(null)} aria-label="Ẩn thông báo"><X className="w-3.5 h-3.5" /></button>
+            </div>
+          )}
 
           {/* Danh sách thẻ đề thi trong lịch sử */}
           {filteredHistoryExams.length > 0 ? (
@@ -1592,17 +2025,11 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
                       </button>
 
                       {/* Secondary Actions Row */}
-                      <div className="grid grid-cols-5 gap-1 pt-1 text-[11px]">
+                      <div className="grid grid-cols-3 sm:grid-cols-6 gap-1 pt-1 text-[11px]">
                         {/* Tải Đề Word */}
                         <button
                           type="button"
-                          onClick={() =>
-                            exportExamToDocx({
-                              exam,
-                              includeSolutions: false,
-                              mode: exam.mode === 'bilingual' ? 'bilingual' : 'english_only',
-                            })
-                          }
+                          onClick={() => exportDocx(exam, false)}
                           className="py-1.5 px-1 rounded-lg font-semibold bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 transition flex items-center justify-center gap-0.5 border border-blue-200 dark:border-blue-900/40"
                           title="Tải file Word đề thi (.docx)"
                         >
@@ -1613,13 +2040,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
                         {/* Tải Đáp Án Word */}
                         <button
                           type="button"
-                          onClick={() =>
-                            exportExamToDocx({
-                              exam,
-                              includeSolutions: true,
-                              mode: exam.mode === 'bilingual' ? 'bilingual' : 'english_only',
-                            })
-                          }
+                          onClick={() => exportDocx(exam, true)}
                           className="py-1.5 px-1 rounded-lg font-semibold bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 hover:bg-teal-100 transition flex items-center justify-center gap-0.5 border border-teal-200 dark:border-teal-900/40"
                           title="Tải file Word kèm đáp án & lời giải (.docx)"
                         >
@@ -1636,6 +2057,17 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
                         >
                           <Printer className="w-3 h-3" />
                           <span>In PDF</span>
+                        </button>
+
+                        {/* Sao lưu JSON */}
+                        <button
+                          type="button"
+                          onClick={() => handleExportJson(exam)}
+                          className="py-1.5 px-1 rounded-lg font-semibold bg-slate-100 dark:bg-slate-750 text-slate-700 dark:text-slate-300 hover:bg-slate-200 transition flex items-center justify-center gap-0.5"
+                          title="Tải file JSON sao lưu đề (nhập lại được)"
+                        >
+                          <FileJson className="w-3 h-3" />
+                          <span>JSON</span>
                         </button>
 
                         {/* Xem & Hiệu chỉnh */}

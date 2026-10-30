@@ -53,6 +53,7 @@ export interface Exam {
   is_ai_generated?: boolean;
   topic_focus?: string;
   created_at?: string;
+  updated_at?: string;
 }
 
 export interface Assignment {
@@ -61,7 +62,8 @@ export interface Assignment {
   student_id: string;
   student_name?: string;
   status: 'assigned' | 'completed';
-  score?: number; // scale 20.00 (theo chuẩn HSG Hải Phòng)
+  score?: number; // thang 10 (bài cũ thiếu score_scale là thang 20 — xem utils/scoring.ts)
+  score_scale?: number;
   answers: Record<string, string>; // question_id -> student answer
   tab_switch_count?: number; // Count of tab switches during live exam
   teacher_feedback?: string; // Lời phê / phản hồi dặn dò của giáo viên
@@ -84,6 +86,7 @@ export interface ExamSession {
   total_questions: number;
   submitted_at?: string;
   score?: number;
+  score_scale?: number;
   correct_count?: number;
   wrong_count?: number;
   answers?: Record<string, string>;

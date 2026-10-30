@@ -14,34 +14,53 @@ function renderLatexToHtml(text: string): string {
     .replace(/\\+n(?!(nabla|natural|neg|neq|ne|nearrow|nexists|notin|normalsize|nu|null|nwarrow|nRightarrow|nLeftarrow)\b)/g, '\n')
     .replace(/(^|\n)\s*[\*\-•]\s*/g, '$1• ');
 
-  // Block math: $$...$$
-  let processed = normalized.replace(/\$\$([\s\S]+?)\$\$/g, (_, math) => {
-    try {
-      return `<div class="katex-display-block">${katex.renderToString(math.trim(), {
-        displayMode: true,
-        throwOnError: false,
-        output: 'html',
-      })}</div>`;
-    } catch {
-      return `<div class="katex-error">[Math: ${math}]</div>`;
-    }
-  });
+  // Tách công thức ($$...$$ / $...$) khỏi văn bản; phần văn bản được escape HTML để
+  // dấu < > & trong đề (vd "x < 3" ngoài công thức) không làm vỡ trang in.
+  const parts = normalized.split(/(\$\$[\s\S]+?\$\$|\$[^\$\n]+?\$)/g);
+  return parts
+    .map((part) => {
+      if (part.length > 4 && part.startsWith('$$') && part.endsWith('$$')) {
+        const math = part.slice(2, -2);
+        try {
+          return `<div class="katex-display-block">${katex.renderToString(math.trim(), {
+            displayMode: true,
+            throwOnError: false,
+            output: 'html',
+          })}</div>`;
+        } catch {
+          return `<div class="katex-error">[Math: ${escapeHtml(math)}]</div>`;
+        }
+      }
+      if (part.length > 2 && part.startsWith('$') && part.endsWith('$')) {
+        const math = part.slice(1, -1);
+        try {
+          return katex.renderToString(math.trim(), {
+            displayMode: false,
+            throwOnError: false,
+            output: 'html',
+          });
+        } catch {
+          return `[Math: ${escapeHtml(math)}]`;
+        }
+      }
+      return escapeHtml(part).replace(/\n/g, '<br/>');
+    })
+    .join('');
+}
 
-  // Inline math: $...$
-  processed = processed.replace(/\$([^\$\n]+?)\$/g, (_, math) => {
-    try {
-      return katex.renderToString(math.trim(), {
-        displayMode: false,
-        throwOnError: false,
-        output: 'html',
-      });
-    } catch {
-      return `[Math: ${math}]`;
-    }
-  });
+function escapeHtml(text: string): string {
+  return String(text ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
 
-  // Convert newlines to breaks
-  return processed.replace(/\n/g, '<br/>');
+/** Chia mảng thành các nhóm cố định (bảng đáp án mỗi hàng 11 câu). */
+function chunk<T>(list: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < list.length; i += size) out.push(list.slice(i, i + size));
+  return out;
 }
 
 export interface PrintExamOptions {
@@ -57,12 +76,20 @@ export function printHaiPhongExam(exam: Exam, options: PrintExamOptions = {}): v
   const { sheetType = 'question_sheet' } = options;
   const questions = exam.questions || [];
   const part1 = questions.filter((q) => q.part === 'PART_1');
-  const part2 = questions.filter((q) => q.part === 'PART_2');
+  const part2 = questions.filter((q) => q.part !== 'PART_1');
 
   const isSolution = sheetType === 'solution_sheet';
+  const now = new Date();
+  const schoolYearStart = now.getMonth() >= 7 ? now.getFullYear() : now.getFullYear() - 1;
+  const isStandard22 = part1.length === 12 && part2.length === 10;
+  // Thang 10: Phần I 0,25 đ/câu, Phần II 0,7 đ/câu (chỉ ghi điểm khi đúng cấu trúc 22 câu)
+  const part1Score = isStandard22 ? ' – 3.0 ĐIỂM' : '';
+  const part2Score = isStandard22 ? ' – 7.0 ĐIỂM' : '';
+  const safeTitle = escapeHtml(exam.title || '');
+  const katexCss = `https://cdn.jsdelivr.net/npm/katex@${katex.version || '0.16.11'}/dist/katex.min.css`;
   const pageTitle = isSolution
-    ? `HƯỚNG DẪN CHẤM VÀ ĐÁP ÁN - ${exam.title}`
-    : `ĐỀ THI HSG - ${exam.title}`;
+    ? `HƯỚNG DẪN CHẤM VÀ ĐÁP ÁN - ${safeTitle}`
+    : `ĐỀ THI HSG - ${safeTitle}`;
 
   // CSS KaTeX inline để đảm bảo khi mở window.print() công thức hiển thị hoàn hảo
   const printHtml = `<!DOCTYPE html>
@@ -70,7 +97,7 @@ export function printHaiPhongExam(exam: Exam, options: PrintExamOptions = {}): v
 <head>
   <meta charset="utf-8"/>
   <title>${pageTitle}</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css"/>
+  <link rel="stylesheet" href="${katexCss}"/>
   <style>
     @page {
       size: A4 portrait;
@@ -264,14 +291,15 @@ export function printHaiPhongExam(exam: Exam, options: PrintExamOptions = {}): v
         <div>ỦY BAN NHÂN DÂN THÀNH PHỐ HẢI PHÒNG</div>
         <div class="main-title">SỞ GIÁO DỤC VÀ ĐÀO TẠO</div>
         <div class="divider-line"></div>
-        <div class="exam-badge">${isSolution ? 'HƯỚNG DẪN CHẤM CHÍNH THỨC' : 'ĐỀ THI CHÍNH THỨC'}</div>
+        <div class="exam-badge">${isSolution ? 'HƯỚNG DẪN CHẤM (THAM KHẢO)' : 'ĐỀ THI THỬ / LUYỆN TẬP'}</div>
       </td>
       <td class="header-right">
         <div class="main-title">KỲ THI CHỌN HỌC SINH GIỎI CẤP THÀNH PHỐ</div>
-        <div class="sub-title">NĂM HỌC 2026 - 2027</div>
+        <div class="sub-title">NĂM HỌC ${schoolYearStart} - ${schoolYearStart + 1}</div>
         <div><strong>Môn thi: TOÁN HỌC (BẰNG TIẾNG ANH) - LỚP 11</strong></div>
         <div><em>Thời gian: 90 phút (không kể thời gian phát đề)</em></div>
-        <div style="font-size: 10pt; margin-top: 2px;">Mã đề thi: <strong>${exam.access_code || 'HP-MATH'}</strong></div>
+        <div style="font-size: 10pt; margin-top: 2px;">Mã đề thi: <strong>${escapeHtml(exam.access_code || 'HP-MATH')}</strong> · ${questions.length} câu</div>
+        <div style="font-size: 10pt; margin-top: 2px;"><em>${safeTitle}</em></div>
       </td>
     </tr>
   </table>
@@ -288,7 +316,7 @@ export function printHaiPhongExam(exam: Exam, options: PrintExamOptions = {}): v
         <div style="margin-top: 4px;">Số báo danh: <strong>[ &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; ]</strong> &nbsp; &nbsp; &nbsp; Phòng thi số: .........</div>
       </td>
       <td style="width: 35%; text-align: center;">
-        <div style="font-weight: bold; margin-bottom: 2px;">ĐIỂM BÀI THI / 20.00</div>
+        <div style="font-weight: bold; margin-bottom: 2px;">ĐIỂM BÀI THI / 10</div>
         <div style="font-size: 10pt; height: 35px; border: 1px dashed #666; margin: 3px 0;"></div>
         <div style="font-size: 9.5pt;">Chữ ký Giám khảo 1 / Giám khảo 2</div>
       </td>
@@ -303,42 +331,26 @@ export function printHaiPhongExam(exam: Exam, options: PrintExamOptions = {}): v
       ? `
   <!-- BẢNG TỔNG HỢP ĐÁP ÁN NHANH -->
   <div style="font-weight: bold; margin: 10px 0 4px 0; font-size: 12pt;">I. BẢNG TỔNG HỢP ĐÁP ÁN (ANSWER KEY MATRIX)</div>
-  <table class="answer-summary-table">
-    <thead>
-      <tr>
-        ${questions.slice(0, 11).map((q) => `<th>Câu ${q.order_index}</th>`).join('')}
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        ${questions.slice(0, 11).map((q) => `<td><strong>${q.correct_answer}</strong></td>`).join('')}
-      </tr>
-    </tbody>
-  </table>
-  <table class="answer-summary-table">
-    <thead>
-      <tr>
-        ${questions.slice(11, 22).map((q) => `<th>Câu ${q.order_index}</th>`).join('')}
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        ${questions.slice(11, 22).map((q) => `<td><strong>${q.correct_answer}</strong></td>`).join('')}
-      </tr>
-    </tbody>
-  </table>
+  ${chunk(questions, 11)
+    .map(
+      (row) => `<table class="answer-summary-table">
+    <thead><tr>${row.map((q) => `<th>Câu ${q.order_index}</th>`).join('')}</tr></thead>
+    <tbody><tr>${row.map((q) => `<td><strong>${escapeHtml(String(q.correct_answer ?? ''))}</strong></td>`).join('')}</tr></tbody>
+  </table>`,
+    )
+    .join('')}
   <div style="font-weight: bold; margin: 14px 0 4px 0; font-size: 12pt;">II. HƯỚNG DẪN GIẢI CHI TIẾT TỪNG CÂU</div>
   `
       : ''
   }
 
   <!-- PHẦN I: MULTIPLE CHOICE -->
-  <div class="section-header">
-    PHẦN I. CÂU HỎI TRẮC NGHIỆM NHIỀU LỰA CHỌN (12 CÂU – 6.0 ĐIỂM)
+  ${part1.length > 0 ? `<div class="section-header">
+    PHẦN I. CÂU HỎI TRẮC NGHIỆM NHIỀU LỰA CHỌN (${part1.length} CÂU${part1Score})
     <span style="font-size: 10pt; font-weight: normal; text-transform: none; display: block;">
       (Thí sinh chọn 01 phương án đúng duy nhất cho mỗi câu hỏi)
     </span>
-  </div>
+  </div>` : ''}
 
   ${part1
     .map((q) => {
@@ -363,7 +375,7 @@ export function printHaiPhongExam(exam: Exam, options: PrintExamOptions = {}): v
           isSolution
             ? `
         <div class="solution-box">
-          <div class="sol-ans">✓ Đáp án đúng: ${q.correct_answer}</div>
+          <div class="sol-ans">✓ Đáp án đúng: ${escapeHtml(String(q.correct_answer ?? ''))}</div>
           <div><strong>Solution:</strong> ${solEn}</div>
           ${solVi ? `<div style="margin-top: 4px; color: #333;"><strong>Lời giải tiếng Việt:</strong> ${solVi}</div>` : ''}
         </div>
@@ -376,12 +388,12 @@ export function printHaiPhongExam(exam: Exam, options: PrintExamOptions = {}): v
     .join('')}
 
   <!-- PHẦN II: SHORT ANSWER -->
-  <div class="section-header" style="page-break-before: auto;">
-    PHẦN II. CÂU HỎI TRẢ LỜI NGẮN (10 CÂU – 14.0 ĐIỂM)
+  ${part2.length > 0 ? `<div class="section-header" style="page-break-before: auto;">
+    PHẦN II. CÂU HỎI TRẢ LỜI NGẮN (${part2.length} CÂU${part2Score})
     <span style="font-size: 10pt; font-weight: normal; text-transform: none; display: block;">
       (Thí sinh viết câu trả lời hoặc số/biểu thức đáp số vào ô quy định)
     </span>
-  </div>
+  </div>` : ''}
 
   ${part2
     .map((q) => {
@@ -411,7 +423,7 @@ export function printHaiPhongExam(exam: Exam, options: PrintExamOptions = {}): v
           isSolution
             ? `
         <div class="solution-box">
-          <div class="sol-ans">✓ Đáp số chuẩn: ${q.correct_answer} ${q.acceptable_answers ? `(Chấp nhận: ${q.acceptable_answers.join(', ')})` : ''}</div>
+          <div class="sol-ans">✓ Đáp số chuẩn: ${renderLatexToHtml(String(q.correct_answer ?? ''))} ${(q.acceptable_answers || []).filter(Boolean).length > 0 ? `(Chấp nhận: ${escapeHtml((q.acceptable_answers || []).filter(Boolean).join(', '))})` : ''}</div>
           <div><strong>Solution:</strong> ${solEn}</div>
           ${solVi ? `<div style="margin-top: 4px; color: #333;"><strong>Lời giải tiếng Việt:</strong> ${solVi}</div>` : ''}
         </div>
@@ -433,7 +445,8 @@ export function printHaiPhongExam(exam: Exam, options: PrintExamOptions = {}): v
 
   <script>
     window.onload = function() {
-      window.print();
+      var go = function() { setTimeout(function() { window.print(); }, 150); };
+      if (document.fonts && document.fonts.ready) { document.fonts.ready.then(go, go); } else { go(); }
     };
   </script>
 </body>
@@ -446,11 +459,7 @@ export function printHaiPhongExam(exam: Exam, options: PrintExamOptions = {}): v
     printWindow.document.write(printHtml);
     printWindow.document.close();
   } else {
-    // Fallback: nếu browser chặn popup, in trang hiện tại
-    const originalTitle = document.title;
-    document.title = pageTitle;
-    window.print();
-    document.title = originalTitle;
+    alert('Trình duyệt đã chặn cửa sổ in. Hãy cho phép cửa sổ bật lên (popup) cho trang này rồi bấm lại nút In / PDF.');
   }
 }
 

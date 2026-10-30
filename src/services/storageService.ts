@@ -14,6 +14,7 @@ import {
   fbRemove,
   fbOnValue,
 } from '../lib/firebase';
+import { normalizeAssignment, SCORE_SCALE } from '../utils/scoring';
 
 const STORAGE_KEYS = {
   CURRENT_USER: 'hp_math_current_user',
@@ -82,10 +83,23 @@ const readLocal = <T>(key: string, fallback: T): T => {
   return fallback;
 };
 
-// Helper: write to localStorage
-const writeLocal = (key: string, data: any): void => {
-  localStorage.setItem(key, JSON.stringify(data));
+// Helper: write to localStorage — không ném lỗi khi bộ nhớ trình duyệt đầy (QuotaExceededError)
+const writeLocal = (key: string, data: any): boolean => {
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+    return true;
+  } catch (err) {
+    console.warn(`[storage] Không ghi được localStorage (${key}) — có thể bộ nhớ trình duyệt đã đầy.`, err);
+    return false;
+  }
 };
+
+export interface SaveExamResult {
+  /** Đã ghi vào bộ nhớ trình duyệt */
+  localSaved: boolean;
+  /** Đã ghi lên Firebase (null nếu không cấu hình Firebase) */
+  cloudSaved: boolean | null;
+}
 
 export const storageService = {
   // ========================================
@@ -167,7 +181,7 @@ export const storageService = {
     return Array.from(map.values());
   },
 
-  async saveExam(exam: Exam): Promise<void> {
+  async saveExam(exam: Exam): Promise<SaveExamResult> {
     // Phục hồi lại nếu trước đó từng bị đánh dấu xóa
     this.unmarkExamDeleted(exam.id);
 
@@ -179,12 +193,11 @@ export const storageService = {
     } else {
       exams.unshift(exam);
     }
-    writeLocal(STORAGE_KEYS.EXAMS, exams);
+    const localSaved = writeLocal(STORAGE_KEYS.EXAMS, exams);
 
     // Also save to Firebase if configured
-    if (isFirebaseConfigured()) {
-      await fbSet(`exams/${exam.id}`, exam);
-    }
+    const cloudSaved = isFirebaseConfigured() ? await fbSet(`exams/${exam.id}`, exam) : null;
+    return { localSaved, cloudSaved };
   },
 
   /** Lấy danh sách đề thi đã được tạo bởi AI / đề tự luyện để học sinh & giáo viên mở lại ôn luyện */
@@ -313,7 +326,8 @@ export const storageService = {
   // Assignments
   // ========================================
   getAssignments(): Assignment[] {
-    return readLocal<Assignment[]>(STORAGE_KEYS.ASSIGNMENTS, []);
+    // Điểm cũ (thang 20) được quy đổi sang thang 10 khi đọc
+    return readLocal<Assignment[]>(STORAGE_KEYS.ASSIGNMENTS, []).map(normalizeAssignment);
   },
 
   async saveAssignment(assignment: Assignment): Promise<void> {
@@ -400,7 +414,7 @@ export const storageService = {
 
     const fbData = await fbGet<Record<string, Assignment>>('assignments');
     if (fbData) {
-      const list = Object.values(fbData);
+      const list = Object.values(fbData).map(normalizeAssignment);
       if (list.length > 0) {
         writeLocal(STORAGE_KEYS.ASSIGNMENTS, list);
         return list;
@@ -415,7 +429,7 @@ export const storageService = {
 
     return fbOnValue('assignments', (data) => {
       if (data) {
-        const list = Object.values(data) as Assignment[];
+        const list = (Object.values(data) as Assignment[]).map(normalizeAssignment);
         writeLocal(STORAGE_KEYS.ASSIGNMENTS, list);
         callback(list);
       }
@@ -573,6 +587,7 @@ export const storageService = {
       existing.submitted_at = now;
       existing.last_active_at = now;
       existing.score = result.score;
+      existing.score_scale = SCORE_SCALE;
       existing.correct_count = result.correct_count;
       existing.wrong_count = result.wrong_count;
       existing.answers = result.answers;
@@ -590,6 +605,7 @@ export const storageService = {
         submitted_at: now,
         last_active_at: now,
         score: result.score,
+        score_scale: SCORE_SCALE,
         correct_count: result.correct_count,
         wrong_count: result.wrong_count,
         answered_count: Object.keys(result.answers || {}).length,

@@ -70,7 +70,7 @@ export const StudentSubmissions: React.FC<StudentSubmissionsProps> = ({
     );
   });
 
-  // Calculate team metrics (Scale 20.00)
+  // Calculate team metrics (thang 10)
   const totalSubmissions = assignments.length;
   const avgScore =
     totalSubmissions > 0
@@ -179,7 +179,7 @@ export const StudentSubmissions: React.FC<StudentSubmissionsProps> = ({
             Quản Lý Bài Nộp & Phản Hồi Học Sinh (Đội Tuyển K11)
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Chấm điểm tự động theo thang điểm chuẩn <strong>20.00</strong> Sở GD&ĐT Hải Phòng, giám sát đổi tab và gửi lời phê 2 chiều.
+            Chấm điểm tự động theo thang điểm <strong>10</strong> theo cấu trúc đề Sở GD&ĐT Hải Phòng, giám sát đổi tab và gửi lời phê 2 chiều.
           </p>
         </div>
 
@@ -234,7 +234,7 @@ export const StudentSubmissions: React.FC<StudentSubmissionsProps> = ({
               Điểm TB Đội tuyển
             </span>
             <h4 className="text-2xl font-bold text-slate-900 dark:text-white">
-              {avgScore} <span className="text-xs font-normal text-slate-400">/ 20.00</span>
+              {avgScore} <span className="text-xs font-normal text-slate-400">/ 10</span>
             </h4>
           </div>
         </div>
@@ -248,7 +248,7 @@ export const StudentSubmissions: React.FC<StudentSubmissionsProps> = ({
               Điểm cao nhất (Thủ khoa)
             </span>
             <h4 className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-              {maxScore} <span className="text-xs font-normal text-slate-400">/ 20.00</span>
+              {maxScore} <span className="text-xs font-normal text-slate-400">/ 10</span>
             </h4>
           </div>
         </div>
@@ -318,14 +318,14 @@ export const StudentSubmissions: React.FC<StudentSubmissionsProps> = ({
                           <td className="px-4 py-3 text-center">
                             <span
                               className={`font-mono font-bold text-xs ${
-                                score >= 16.0
+                                score >= 8.0
                                   ? 'text-emerald-600 dark:text-emerald-400'
-                                  : score >= 10.0
+                                  : score >= 5.0
                                   ? 'text-teal-600 dark:text-teal-400'
                                   : 'text-amber-600 dark:text-amber-400'
                               }`}
                             >
-                              {score.toFixed(2)} / 20.00
+                              {score.toFixed(2)} / 10
                             </span>
                           </td>
                           <td className="px-4 py-3">
@@ -422,7 +422,7 @@ export const StudentSubmissions: React.FC<StudentSubmissionsProps> = ({
               <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
                 <span className="text-xs font-medium text-slate-600 dark:text-slate-400">Điểm tổng kết:</span>
                 <span className="font-mono text-base font-bold text-emerald-600 dark:text-emerald-400">
-                  {(selectedAssignment.score ?? 0).toFixed(2)} / 20.00
+                  {(selectedAssignment.score ?? 0).toFixed(2)} / 10
                 </span>
               </div>
 
@@ -633,7 +633,7 @@ export const StudentSubmissions: React.FC<StudentSubmissionsProps> = ({
                   Đề thi: {getExamTitle(resetSingleTarget.exam_id)}
                 </p>
                 <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-mono font-semibold mt-0.5">
-                  Điểm hiện tại: {(resetSingleTarget.score ?? 0).toFixed(2)} / 20.00
+                  Điểm hiện tại: {(resetSingleTarget.score ?? 0).toFixed(2)} / 10
                 </p>
               </div>
               <p className="text-[11px] text-slate-500 dark:text-slate-400">

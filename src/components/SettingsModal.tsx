@@ -1,10 +1,10 @@
 ﻿/**
  * Settings Modal — API Key, Model, Firebase Configuration
  * Theo quy chuẩn api.md:
- * - Hai tab: Gemini API và Agent Platform API
- * - Key lưu riêng, không ghi đè nhau
- * - Validate key format: AIzaSy... và AQ...
- * - Không tự suy đoán provider từ tiền tố key
+ * - Hai tab: Gemini API và Agent Platform API — người dùng tự chọn dịch vụ
+ * - Key lưu riêng, không ghi đè nhau; không suy đoán provider từ tiền tố key
+ * - Validate key format: AIza... và AQ...; nút "Kiểm tra key" gọi validateApiKey
+ * - Chọn model dạng thẻ; nút "Xóa key" cho máy dùng chung
  */
 
 import React, { useState, useEffect } from 'react';
@@ -19,126 +19,142 @@ import {
   Eye,
   EyeOff,
   Database,
-  Shield,
+  Trash2,
+  Loader2,
+  ShieldCheck,
 } from 'lucide-react';
 import {
   apiKeyManager,
   AiProvider,
   isValidGoogleAiApiKey,
-  GEMINI_MODELS,
-  AGENT_PLATFORM_MODELS,
+  GEMINI_API_KEY_URL,
+  AGENT_PLATFORM_API_KEY_URL,
 } from '../services/apiKeyManager';
-import {
-  saveFirebaseConfig,
-  getFirebaseConfig,
-  isFirebaseConfigured,
-  FirebaseConfig,
-} from '../lib/firebase';
+import { validateApiKey, ValidateApiKeyResult } from '../services/geminiService';
+import { getFirebaseConfig } from '../lib/firebase';
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-type SettingsTab = 'gemini' | 'agent-platform' | 'firebase';
+type SettingsTab = AiProvider | 'firebase';
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState<SettingsTab>('gemini');
-
-  // Gemini API state
-  const [geminiKey, setGeminiKey] = useState('');
-  const [geminiModel, setGeminiModel] = useState('');
-
-  // Agent Platform state
-  const [agentKey, setAgentKey] = useState('');
-  const [agentModel, setAgentModel] = useState('');
-
-  // Provider selection
   const [selectedProvider, setSelectedProvider] = useState<AiProvider>('gemini');
 
-  // Firebase state
-  const [fbConfigJson, setFbConfigJson] = useState('');
-  const [fbStatus, setFbStatus] = useState<'none' | 'valid' | 'invalid'>('none');
+  const [keys, setKeys] = useState<Record<AiProvider, string>>({ gemini: '', 'agent-platform': '' });
+  const [models, setModels] = useState<Record<AiProvider, string>>({
+    gemini: apiKeyManager.getDefaultModel('gemini'),
+    'agent-platform': apiKeyManager.getDefaultModel('agent-platform'),
+  });
+  const [showKey, setShowKey] = useState(false);
 
-  // UI state
-  const [showGeminiKey, setShowGeminiKey] = useState(false);
-  const [showAgentKey, setShowAgentKey] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [checkResult, setCheckResult] = useState<ValidateApiKeyResult | null>(null);
   const [saveMessage, setSaveMessage] = useState('');
+  const [saveError, setSaveError] = useState('');
 
   // Load saved values
   useEffect(() => {
-    if (isOpen) {
-      setGeminiKey(apiKeyManager.getApiKey('gemini'));
-      setAgentKey(apiKeyManager.getApiKey('agent-platform'));
-      setSelectedProvider(apiKeyManager.getProvider());
-      setGeminiModel(apiKeyManager.getSelectedModel());
-      setAgentModel(apiKeyManager.getSelectedModel());
-
-      const fbConfig = getFirebaseConfig();
-      if (fbConfig) {
-        setFbConfigJson(JSON.stringify(fbConfig, null, 2));
-        setFbStatus('valid');
-      }
-    }
+    if (!isOpen) return;
+    const provider = apiKeyManager.getProvider();
+    setSelectedProvider(provider);
+    setActiveTab(provider);
+    setKeys({
+      gemini: apiKeyManager.getApiKey('gemini'),
+      'agent-platform': apiKeyManager.getApiKey('agent-platform'),
+    });
+    setModels({
+      gemini: apiKeyManager.getSelectedModel('gemini'),
+      'agent-platform': apiKeyManager.getSelectedModel('agent-platform'),
+    });
+    setShowKey(false);
+    setCheckResult(null);
+    setSaveMessage('');
+    setSaveError('');
   }, [isOpen]);
 
+  const currentProvider: AiProvider = activeTab === 'agent-platform' ? 'agent-platform' : 'gemini';
+  const currentKey = keys[currentProvider];
+  const keyFormatOk = isValidGoogleAiApiKey(currentKey);
+
+  const updateKey = (value: string) => {
+    setKeys((prev) => ({ ...prev, [currentProvider]: value }));
+    setCheckResult(null);
+    setSaveError('');
+  };
+
+  const handleCheckKey = async () => {
+    setChecking(true);
+    setCheckResult(null);
+    try {
+      const result = await validateApiKey(currentKey, currentProvider, models[currentProvider]);
+      setCheckResult(result);
+      if (result.ok && result.workingModel && result.workingModel !== models[currentProvider]) {
+        const allowed = apiKeyManager.getModelOptions(currentProvider).some((m) => m.id === result.workingModel);
+        if (allowed) setModels((prev) => ({ ...prev, [currentProvider]: result.workingModel! }));
+      }
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  const handleClearKey = () => {
+    apiKeyManager.clearApiKey(currentProvider);
+    setKeys((prev) => ({ ...prev, [currentProvider]: '' }));
+    setCheckResult(null);
+    setSaveMessage('Đã xóa key khỏi trình duyệt này.');
+    setTimeout(() => setSaveMessage(''), 2000);
+  };
+
   const handleSave = () => {
-    // Save provider
-    apiKeyManager.setProvider(selectedProvider);
-
-    // Save keys
-    if (geminiKey.trim()) {
-      apiKeyManager.setApiKey(geminiKey.trim(), 'gemini');
+    setSaveError('');
+    const providerKey = keys[selectedProvider].trim();
+    if (!providerKey) {
+      setSaveError(`Chưa nhập API key cho ${selectedProvider === 'gemini' ? 'Gemini API' : 'Agent Platform API'} (dịch vụ đang chọn).`);
+      setActiveTab(selectedProvider);
+      return;
     }
-    if (agentKey.trim()) {
-      apiKeyManager.setApiKey(agentKey.trim(), 'agent-platform');
-    }
-
-    // Save model
-    const model = selectedProvider === 'agent-platform' ? agentModel : geminiModel;
-    apiKeyManager.setSelectedModel(model);
-
-    // Save Firebase config
-    if (fbConfigJson.trim()) {
-      try {
-        const config = JSON.parse(fbConfigJson.trim()) as FirebaseConfig;
-        if (config.apiKey && config.databaseURL && config.projectId) {
-          saveFirebaseConfig(config);
-          setFbStatus('valid');
-        } else {
-          setFbStatus('invalid');
-        }
-      } catch {
-        if (fbConfigJson.trim().length > 0) {
-          setFbStatus('invalid');
-        }
+    for (const p of ['gemini', 'agent-platform'] as AiProvider[]) {
+      const k = keys[p].trim();
+      if (k && !isValidGoogleAiApiKey(k)) {
+        setSaveError('API key không đúng định dạng (bắt đầu bằng AIza... hoặc AQ..., không chứa dấu cách).');
+        setActiveTab(p);
+        return;
       }
     }
+
+    for (const p of ['gemini', 'agent-platform'] as AiProvider[]) {
+      const k = keys[p].trim();
+      if (k) apiKeyManager.setApiKey(k, p);
+    }
+    apiKeyManager.setProvider(selectedProvider);
+    apiKeyManager.setSelectedModel(models[selectedProvider]);
 
     setSaveMessage('✅ Đã lưu cấu hình thành công!');
     setTimeout(() => {
       setSaveMessage('');
       onClose();
-    }, 1200);
-  };
-
-  const maskKey = (key: string): string => {
-    if (key.length <= 8) return key;
-    return key.slice(0, 6) + '•'.repeat(key.length - 10) + key.slice(-4);
+    }, 1000);
   };
 
   if (!isOpen) return null;
 
+  const fbConfig = getFirebaseConfig();
+  const isAgent = currentProvider === 'agent-platform';
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" role="dialog" aria-modal="true" aria-labelledby="settings-title">
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-slate-200 dark:border-slate-700">
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-slate-200 dark:border-slate-700">
           <div className="flex items-center gap-2.5">
             <Settings className="w-5 h-5 text-teal-500" />
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white">Cài Đặt Hệ Thống</h2>
+            <h2 id="settings-title" className="text-lg font-bold text-slate-900 dark:text-white">Cài Đặt API Key & Model</h2>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition">
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition" aria-label="Đóng">
             <X className="w-5 h-5 text-slate-500" />
           </button>
         </div>
@@ -147,12 +163,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
         <div className="flex border-b border-slate-200 dark:border-slate-700">
           {[
             { id: 'gemini' as SettingsTab, label: 'Gemini API', icon: Zap },
-            { id: 'agent-platform' as SettingsTab, label: 'Agent Platform', icon: Cloud },
+            { id: 'agent-platform' as SettingsTab, label: 'Agent Platform API', icon: Cloud },
             { id: 'firebase' as SettingsTab, label: 'Firebase', icon: Database },
           ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => {
+                setActiveTab(tab.id);
+                setCheckResult(null);
+                setShowKey(false);
+              }}
               className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-semibold transition border-b-2 ${
                 activeTab === tab.id
                   ? 'border-teal-500 text-teal-600 dark:text-teal-400'
@@ -161,210 +181,182 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
             >
               <tab.icon className="w-4 h-4" />
               {tab.label}
+              {tab.id === selectedProvider && (
+                <span className="ml-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-teal-100 text-teal-700 dark:bg-teal-900/60 dark:text-teal-300">ĐANG DÙNG</span>
+              )}
             </button>
           ))}
         </div>
 
         {/* Content */}
         <div className="p-5 space-y-5">
-          {/* ============ GEMINI API TAB ============ */}
-          {activeTab === 'gemini' && (
+          {activeTab !== 'firebase' && (
             <div className="space-y-4">
               {/* Provider selection */}
-              <div className="p-3 rounded-xl bg-teal-50 dark:bg-teal-950/30 border border-teal-200 dark:border-teal-800">
+              <div className={`p-3 rounded-xl border ${isAgent ? 'bg-violet-50 dark:bg-violet-950/30 border-violet-200 dark:border-violet-800' : 'bg-teal-50 dark:bg-teal-950/30 border-teal-200 dark:border-teal-800'}`}>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="radio"
                     name="provider"
-                    checked={selectedProvider === 'gemini'}
-                    onChange={() => setSelectedProvider('gemini')}
-                    className="accent-teal-600"
+                    checked={selectedProvider === currentProvider}
+                    onChange={() => setSelectedProvider(currentProvider)}
+                    className={isAgent ? 'accent-violet-600' : 'accent-teal-600'}
                   />
-                  <span className="text-sm font-semibold text-teal-700 dark:text-teal-300">
-                    Sử dụng Gemini API làm dịch vụ chính
+                  <span className={`text-sm font-semibold ${isAgent ? 'text-violet-700 dark:text-violet-300' : 'text-teal-700 dark:text-teal-300'}`}>
+                    Sử dụng {isAgent ? 'Agent Platform API' : 'Gemini API'} làm dịch vụ chính
                   </span>
                 </label>
               </div>
 
               {/* API Key */}
               <div>
-                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">
+                <label htmlFor="api-key-input" className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">
                   <Key className="w-3.5 h-3.5 inline mr-1" />
-                  Gemini API Key
+                  {isAgent ? 'Agent Platform API Key' : 'Gemini API Key'}
                 </label>
                 <div className="relative">
                   <input
-                    type={showGeminiKey ? 'text' : 'password'}
-                    value={geminiKey}
-                    onChange={(e) => setGeminiKey(e.target.value)}
-                    placeholder="AIzaSy... hoặc AQ..."
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm font-mono focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 transition pr-10"
+                    id="api-key-input"
+                    type={showKey ? 'text' : 'password'}
+                    value={currentKey}
+                    onChange={(e) => updateKey(e.target.value)}
+                    placeholder="AIza... hoặc AQ..."
+                    autoComplete="off"
+                    spellCheck={false}
+                    className={`w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm font-mono focus:ring-2 transition pr-10 ${
+                      isAgent ? 'focus:ring-violet-500/50 focus:border-violet-500' : 'focus:ring-teal-500/50 focus:border-teal-500'
+                    }`}
                   />
                   <button
-                    onClick={() => setShowGeminiKey(!showGeminiKey)}
+                    type="button"
+                    onClick={() => setShowKey(!showKey)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    aria-label={showKey ? 'Ẩn key' : 'Hiện key'}
                   >
-                    {showGeminiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
-                {geminiKey && (
-                  <p className={`text-xs mt-1 ${isValidGoogleAiApiKey(geminiKey) ? 'text-emerald-600' : 'text-red-500'}`}>
-                    {isValidGoogleAiApiKey(geminiKey) ? '✓ Key hợp lệ' : '✗ Key không đúng định dạng (AIzaSy... hoặc AQ...)'}
+                {currentKey && (
+                  <p className={`text-xs mt-1 ${keyFormatOk ? 'text-emerald-600' : 'text-red-500'}`}>
+                    {keyFormatOk ? '✓ Đúng định dạng key' : '✗ Key không đúng định dạng (AIza... hoặc AQ..., không có dấu cách)'}
                   </p>
                 )}
-                <p className="text-[10px] text-slate-400 mt-1">
+                <p className="text-[11px] text-slate-500 mt-1">
                   Lấy key tại{' '}
-                  <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="text-teal-500 underline">
-                    aistudio.google.com/apikey
-                  </a>
-                </p>
-              </div>
-
-              {/* Model selection */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">
-                  Model mặc định
-                </label>
-                <select
-                  value={geminiModel}
-                  onChange={(e) => setGeminiModel(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm focus:ring-2 focus:ring-teal-500/50 transition"
-                >
-                  {GEMINI_MODELS.map((m) => (
-                    <option key={m} value={m}>{m}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          )}
-
-          {/* ============ AGENT PLATFORM TAB ============ */}
-          {activeTab === 'agent-platform' && (
-            <div className="space-y-4">
-              <div className="p-3 rounded-xl bg-violet-50 dark:bg-violet-950/30 border border-violet-200 dark:border-violet-800">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="provider"
-                    checked={selectedProvider === 'agent-platform'}
-                    onChange={() => setSelectedProvider('agent-platform')}
-                    className="accent-violet-600"
-                  />
-                  <span className="text-sm font-semibold text-violet-700 dark:text-violet-300">
-                    Sử dụng Agent Platform API làm dịch vụ chính
-                  </span>
-                </label>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">
-                  <Key className="w-3.5 h-3.5 inline mr-1" />
-                  Agent Platform API Key
-                </label>
-                <div className="relative">
-                  <input
-                    type={showAgentKey ? 'text' : 'password'}
-                    value={agentKey}
-                    onChange={(e) => setAgentKey(e.target.value)}
-                    placeholder="AIzaSy... hoặc AQ..."
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm font-mono focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition pr-10"
-                  />
-                  <button
-                    onClick={() => setShowAgentKey(!showAgentKey)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  <a
+                    href={isAgent ? AGENT_PLATFORM_API_KEY_URL : GEMINI_API_KEY_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-teal-600 underline font-semibold"
                   >
-                    {showAgentKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {isAgent ? 'hướng dẫn Agent Platform API key' : 'aistudio.google.com/apikey'}
+                  </a>
+                  . Key chỉ lưu trong trình duyệt này, không gửi đi đâu ngoài Google.
+                </p>
+
+                <div className="flex flex-wrap items-center gap-2 mt-2.5">
+                  <button
+                    type="button"
+                    onClick={handleCheckKey}
+                    disabled={!keyFormatOk || checking}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border border-teal-300 dark:border-teal-700 text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/40 hover:bg-teal-100 transition disabled:opacity-50"
+                  >
+                    {checking ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-3.5 h-3.5" />}
+                    {checking ? 'Đang kiểm tra...' : 'Kiểm tra key'}
                   </button>
+                  {apiKeyManager.getApiKey(currentProvider) && (
+                    <button
+                      type="button"
+                      onClick={handleClearKey}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      Xóa key khỏi máy này
+                    </button>
+                  )}
                 </div>
-                {agentKey && (
-                  <p className={`text-xs mt-1 ${isValidGoogleAiApiKey(agentKey) ? 'text-emerald-600' : 'text-red-500'}`}>
-                    {isValidGoogleAiApiKey(agentKey) ? '✓ Key hợp lệ' : '✗ Key không đúng định dạng'}
-                  </p>
+
+                {checkResult && (
+                  <div
+                    role="status"
+                    className={`mt-2 p-2.5 rounded-lg text-xs flex items-start gap-2 ${
+                      checkResult.ok
+                        ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'
+                        : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300'
+                    }`}
+                  >
+                    {checkResult.ok ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
+                    <span>{checkResult.message}</span>
+                  </div>
                 )}
               </div>
 
+              {/* Model selection — dạng thẻ */}
               <div>
-                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">
-                  Model mặc định
-                </label>
-                <select
-                  value={agentModel}
-                  onChange={(e) => setAgentModel(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm focus:ring-2 focus:ring-violet-500/50 transition"
-                >
-                  {AGENT_PLATFORM_MODELS.map((m) => (
-                    <option key={m} value={m}>{m}</option>
-                  ))}
-                </select>
+                <div className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">
+                  Model ưu tiên <span className="font-normal text-slate-400">(lỗi/quá tải sẽ tự chuyển model dự phòng)</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2" role="radiogroup" aria-label="Chọn model">
+                  {apiKeyManager.getModelOptions(currentProvider).map((m) => {
+                    const active = models[currentProvider] === m.id;
+                    const isDefault = m.id === apiKeyManager.getDefaultModel(currentProvider);
+                    return (
+                      <button
+                        key={m.id}
+                        type="button"
+                        role="radio"
+                        aria-checked={active}
+                        onClick={() => setModels((prev) => ({ ...prev, [currentProvider]: m.id }))}
+                        className={`text-left p-3 rounded-xl border transition ${
+                          active
+                            ? 'border-teal-500 bg-teal-50 dark:bg-teal-950/40 ring-1 ring-teal-500'
+                            : 'border-slate-200 dark:border-slate-700 hover:border-teal-300'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs font-bold text-slate-900 dark:text-white">{m.label}</span>
+                          {isDefault && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">MẶC ĐỊNH</span>
+                          )}
+                        </div>
+                        <div className="text-[10px] font-mono text-slate-400 mt-0.5">{m.id}</div>
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">{m.note}</div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           )}
 
           {/* ============ FIREBASE TAB ============ */}
           {activeTab === 'firebase' && (
-            <div className="space-y-4">
-              <div className={`p-3 rounded-xl border ${
-                isFirebaseConfigured()
-                  ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800'
-                  : 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800'
-              }`}>
-                <div className="flex items-center gap-2 text-sm font-semibold">
-                  {isFirebaseConfigured() ? (
-                    <>
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                      <span className="text-emerald-700 dark:text-emerald-300">Firebase đã được cấu hình</span>
-                    </>
-                  ) : (
-                    <>
-                      <AlertCircle className="w-4 h-4 text-amber-600" />
-                      <span className="text-amber-700 dark:text-amber-300">Firebase chưa được cấu hình — dùng localStorage</span>
-                    </>
-                  )}
-                </div>
+            <div className="space-y-3">
+              <div className="p-3 rounded-xl border bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 flex items-center gap-2 text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                Firebase đã được cấu hình sẵn trong ứng dụng
               </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">
-                  <Shield className="w-3.5 h-3.5 inline mr-1" />
-                  Firebase Config (JSON)
-                </label>
-                <textarea
-                  value={fbConfigJson}
-                  onChange={(e) => {
-                    setFbConfigJson(e.target.value);
-                    setFbStatus('none');
-                  }}
-                  placeholder={`{
-  "apiKey": "AIzaSy...",
-  "authDomain": "your-app.firebaseapp.com",
-  "databaseURL": "https://your-app-default-rtdb.asia-southeast1.firebasedatabase.app",
-  "projectId": "your-app",
-  "storageBucket": "your-app.firebasestorage.app",
-  "messagingSenderId": "123...",
-  "appId": "1:123...:web:abc..."
-}`}
-                  rows={10}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-xs font-mono focus:ring-2 focus:ring-emerald-500/50 transition resize-none"
-                />
-                {fbStatus === 'invalid' && (
-                  <p className="text-xs text-red-500 mt-1">
-                    ✗ JSON không hợp lệ hoặc thiếu trường bắt buộc (apiKey, databaseURL, projectId)
-                  </p>
-                )}
-                <p className="text-[10px] text-slate-400 mt-1.5">
-                  Lấy config tại{' '}
-                  <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" className="text-teal-500 underline">
-                    Firebase Console
-                  </a>{' '}
-                  → Project Settings → Your apps → Web
-                </p>
-              </div>
+              <dl className="text-xs grid grid-cols-[auto,1fr] gap-x-3 gap-y-1.5 text-slate-600 dark:text-slate-300">
+                <dt className="font-semibold">Project</dt>
+                <dd className="font-mono break-all">{fbConfig.projectId}</dd>
+                <dt className="font-semibold">Database</dt>
+                <dd className="font-mono break-all">{fbConfig.databaseURL}</dd>
+              </dl>
+              <p className="text-[11px] text-slate-500">
+                Đề thi, bài làm được lưu lên Firebase Realtime Database và sao lưu trong trình duyệt. Muốn đổi dự án Firebase, sửa
+                <code className="mx-1">src/lib/firebase.ts</code> rồi build lại.
+              </p>
             </div>
           )}
 
-          {/* Save Message */}
+          {saveError && (
+            <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-start gap-2" role="alert">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              {saveError}
+            </div>
+          )}
           {saveMessage && (
-            <div className="p-3 rounded-xl bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-sm font-semibold text-center">
+            <div className="p-3 rounded-xl bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-sm font-semibold text-center" role="status">
               {saveMessage}
             </div>
           )}

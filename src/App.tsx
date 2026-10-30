@@ -18,7 +18,9 @@ import { JoinExamModal } from './components/StudentView/JoinExamModal';
 import { SchemaModal } from './components/SchemaModal';
 import { SettingsModal } from './components/SettingsModal';
 import { VisitCounter } from './components/VisitCounter';
-import { storageService } from './services/storageService';
+import { storageService, SaveExamResult } from './services/storageService';
+import { setModelFallbackListener } from './services/geminiService';
+import { apiKeyManager } from './services/apiKeyManager';
 import { onAuthChanged, logout, getProfileFromDb, getRoleFromEmail, findAccountByEmail } from './services/authService';
 import { fbSet } from './lib/firebase';
 import { Exam, Assignment, StudentStudyNote, Profile, UserRole, Question } from './types';
@@ -69,6 +71,23 @@ export default function App() {
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
+  // Banner vàng khi tự chuyển model dự phòng (api.md mục VII.2) — tự xóa khi lần gọi AI kết thúc
+  const [fallbackNotice, setFallbackNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    setModelFallbackListener((event) => {
+      if (event.type === 'switch') {
+        setFallbackNotice(`Đang tự động chuyển từ ${event.from} sang ${event.to} (do ${event.from} ${event.reason})...`);
+      } else if (event.type === 'done') {
+        setFallbackNotice(null);
+      } else if (event.type === 'invalid-key') {
+        setFallbackNotice(null);
+        setIsSettingsModalOpen(true);
+      }
+    });
+    return () => setModelFallbackListener(null);
+  }, []);
+
   // Kho đề thi (Student Mock Bank) search & filters
   const [mockSearch, setMockSearch] = useState('');
   const [mockFilter, setMockFilter] = useState<'all' | 'ai' | 'official'>('all');
@@ -113,6 +132,18 @@ export default function App() {
 
     return () => unsub();
   }, []);
+
+  // Chưa có API key → mở Cài đặt một lần mỗi phiên đăng nhập
+  useEffect(() => {
+    if (!authProfile || apiKeyManager.hasApiKey()) return;
+    try {
+      if (sessionStorage.getItem('hp_api_key_prompted')) return;
+      sessionStorage.setItem('hp_api_key_prompted', '1');
+    } catch {
+      // sessionStorage bị chặn — vẫn mở Cài đặt
+    }
+    setIsSettingsModalOpen(true);
+  }, [authProfile]);
 
   // Theme setup effect
   useEffect(() => {
@@ -177,9 +208,11 @@ export default function App() {
   };
 
   // Exam actions
-  const handleSaveExam = async (exam: Exam) => {
-    await storageService.saveExam(exam);
-    setExams(storageService.getExams());
+  const handleSaveExam = async (exam: Exam): Promise<SaveExamResult> => {
+    const result = await storageService.saveExam(exam);
+    // Bộ nhớ trình duyệt đầy → vẫn hiển thị đề vừa lưu trong phiên hiện tại
+    setExams(result.localSaved ? storageService.getExams() : (prev) => [exam, ...prev.filter((e) => e.id !== exam.id)]);
+    return result;
   };
 
   const handleDeleteExam = async (id: string) => {
@@ -278,6 +311,16 @@ export default function App() {
         onLogout={handleLogout}
       />
 
+      {fallbackNotice && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="sticky top-16 z-30 w-full bg-amber-50 dark:bg-amber-950/80 border-b border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 text-xs font-medium px-4 py-2 text-center"
+        >
+          {fallbackNotice}
+        </div>
+      )}
+
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {/* If an active exam is being taken */}
@@ -300,10 +343,7 @@ export default function App() {
                   <ExamGenerator
                     onSaveExam={handleSaveExam}
                     onNavigateToBank={() => setActiveTab('teacher_exams')}
-                    onStartTestNow={(exam) => {
-                      handleSaveExam(exam);
-                      setActiveRunningExam(exam);
-                    }}
+                    onStartTestNow={(exam) => setActiveRunningExam(exam)}
                     onDeleteExam={handleDeleteExam}
                     exams={exams}
                     assignments={assignments}
@@ -356,10 +396,7 @@ export default function App() {
                     isStudentMode={true}
                     onSaveExam={handleSaveExam}
                     onNavigateToBank={() => setActiveTab('student_mock')}
-                    onStartTestNow={(exam) => {
-                      handleSaveExam(exam);
-                      setActiveRunningExam(exam);
-                    }}
+                    onStartTestNow={(exam) => setActiveRunningExam(exam)}
                     onDeleteExam={handleDeleteExam}
                     exams={exams}
                     assignments={assignments}
@@ -553,7 +590,7 @@ export default function App() {
                                     {exam.duration_minutes} phút
                                   </span>
                                   <span className="text-[11px] italic">
-                                    {exam.questions?.length || 22} câu / 20.0 điểm
+                                    {exam.questions?.length || 22} câu / thang 10 điểm
                                   </span>
                                 </div>
 

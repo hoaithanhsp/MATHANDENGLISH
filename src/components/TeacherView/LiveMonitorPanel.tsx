@@ -20,6 +20,7 @@ import {
 import { ExamSession, Exam } from '../../types';
 import { storageService } from '../../services/storageService';
 import { isMathAnswerCorrect } from '../../utils/mathAnswerEvaluator';
+import { toScale10, SCORE_SCALE } from '../../utils/scoring';
 
 interface LiveMonitorPanelProps {
   exam: Exam;
@@ -140,7 +141,8 @@ export const LiveMonitorPanel: React.FC<LiveMonitorPanelProps> = ({ exam }) => {
       return {
         ...s,
         status: 'completed',
-        score: typeof s.score === 'number' ? s.score : matchingAsgn.score,
+        score: typeof s.score === 'number' ? toScale10(s.score, s.score_scale) : matchingAsgn.score,
+        score_scale: SCORE_SCALE,
         submitted_at: s.submitted_at || matchingAsgn.submitted_at || matchingAsgn.created_at,
         tab_switch_count: typeof s.tab_switch_count === 'number' ? s.tab_switch_count : matchingAsgn.tab_switch_count,
         answers: s.answers || matchingAsgn.answers,
@@ -421,7 +423,7 @@ export const LiveMonitorPanel: React.FC<LiveMonitorPanelProps> = ({ exam }) => {
                           <div className="flex items-center gap-1.5">
                             <Award className="w-4 h-4 text-amber-500" />
                             <span className="text-base font-bold text-slate-800 dark:text-white">
-                              {(session.score ?? 0).toFixed(2)}/20.00
+                              {(toScale10(session.score, session.score_scale) ?? 0).toFixed(2)}/10
                             </span>
                           </div>
                           <div className="text-[11px] text-slate-500 flex items-center gap-2">

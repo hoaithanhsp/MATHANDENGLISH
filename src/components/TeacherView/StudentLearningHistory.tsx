@@ -73,7 +73,7 @@ export const StudentLearningHistory: React.FC<StudentLearningHistoryProps> = ({ 
         total_tests: 0,
         avg_score: 0,
         best_score: 0,
-        worst_score: 20,
+        worst_score: 10,
         last_test_date: '',
         tests: [],
       });
@@ -172,16 +172,16 @@ export const StudentLearningHistory: React.FC<StudentLearningHistoryProps> = ({ 
   const getExamTitle = (examId: string) => exams.find((e) => e.id === examId)?.title || 'Đề thi';
 
   const getScoreColor = (score: number) => {
-    if (score >= 16) return 'text-emerald-600 dark:text-emerald-400';
-    if (score >= 12) return 'text-blue-600 dark:text-blue-400';
-    if (score >= 8) return 'text-amber-600 dark:text-amber-400';
+    if (score >= 8) return 'text-emerald-600 dark:text-emerald-400';
+    if (score >= 6) return 'text-blue-600 dark:text-blue-400';
+    if (score >= 4) return 'text-amber-600 dark:text-amber-400';
     return 'text-rose-600 dark:text-rose-400';
   };
 
   const getScoreBg = (score: number) => {
-    if (score >= 16) return 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800';
-    if (score >= 12) return 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800';
-    if (score >= 8) return 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800';
+    if (score >= 8) return 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800';
+    if (score >= 6) return 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800';
+    if (score >= 4) return 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800';
     return 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800';
   };
 
@@ -389,9 +389,9 @@ export const StudentLearningHistory: React.FC<StudentLearningHistoryProps> = ({ 
                           >
                             {/* Timeline dot */}
                             <div className={`absolute -left-[5px] top-1 w-3 h-3 rounded-full border-2 ${
-                              score >= 16 ? 'bg-emerald-500 border-emerald-300' :
-                              score >= 12 ? 'bg-blue-500 border-blue-300' :
-                              score >= 8 ? 'bg-amber-500 border-amber-300' :
+                              score >= 8 ? 'bg-emerald-500 border-emerald-300' :
+                              score >= 6 ? 'bg-blue-500 border-blue-300' :
+                              score >= 4 ? 'bg-amber-500 border-amber-300' :
                               'bg-rose-500 border-rose-300'
                             }`} />
 
@@ -406,7 +406,7 @@ export const StudentLearningHistory: React.FC<StudentLearningHistoryProps> = ({ 
                                 <div className="flex items-center gap-1.5">
                                   <Award className="w-3.5 h-3.5 text-amber-500" />
                                   <span className={`text-sm font-bold ${getScoreColor(score)}`}>
-                                    {score.toFixed(2)}/20.00
+                                    {score.toFixed(2)}/10
                                   </span>
                                 </div>
                               </div>

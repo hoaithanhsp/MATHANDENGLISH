@@ -27,6 +27,7 @@ import { isMathAnswerCorrect } from '../../utils/mathAnswerEvaluator';
 import { storageService } from '../../services/storageService';
 import { printHaiPhongExam } from '../../utils/printPdf';
 import { exportExamToDocx } from '../../utils/docxExport';
+import { computeScore, SCORE_SCALE } from '../../utils/scoring';
 
 interface MockTestRunnerProps {
   exam: Exam;
@@ -315,15 +316,8 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
       }
     });
 
-    // Score on 20.00 scale (Hai Phong Math Olympiad Standard: Part I = 12 * 0.5 = 6.0đ; Part II = 10 * 1.4 = 14.0đ)
-    let finalScore = 0;
-    const hasStandardParts = questions.some((q) => q.part === 'PART_1') && questions.some((q) => q.part === 'PART_2');
-    if (hasStandardParts && totalQuestions === 22) {
-      finalScore = Number((part1Correct * 0.5 + part2Correct * 1.4).toFixed(2));
-    } else {
-      // Custom topic practice / quizzes: scale proportionally to 20.00
-      finalScore = totalQuestions > 0 ? Number(((correctCount / totalQuestions) * 20).toFixed(2)) : 0;
-    }
+    // Thang 10 (Phần I 0,25đ/câu; Phần II 0,7đ/câu). Đề chuyên đề: theo tỉ lệ câu đúng.
+    const finalScore = computeScore(questions, part1Correct, part2Correct);
 
     const newAssignment: Assignment = {
       id: `assign-${Date.now()}`,
@@ -332,6 +326,7 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
       student_name: studentName,
       status: 'completed',
       score: finalScore,
+      score_scale: SCORE_SCALE,
       answers,
       tab_switch_count: tabSwitchCount,
       submitted_at: new Date().toISOString(),
@@ -433,19 +428,19 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
             <div className="my-6">
               <div className="text-5xl sm:text-6xl font-black tracking-tight text-white font-mono">
                 {score.toFixed(2)}
-                <span className="text-2xl font-normal text-teal-200"> / 20.00</span>
+                <span className="text-2xl font-normal text-teal-200"> / 10</span>
               </div>
               <p className="text-sm text-emerald-300 font-medium mt-2">
                 Đúng {correctCount} / {totalQuestions} câu ({((correctCount / totalQuestions) * 100).toFixed(1)}%)
               </p>
               <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-white/10 backdrop-blur-sm text-amber-300 border border-white/10">
-                {score >= 18.0
+                {score >= 9.0
                   ? '🌟 Thành tích Xuất sắc — Ứng viên Đội tuyển Giải Nhất Thành phố'
-                  : score >= 15.0
+                  : score >= 7.5
                   ? '🎯 Thành tích Giỏi — Đạt chuẩn Đội tuyển HSG K11 Hải Phòng'
-                  : score >= 12.0
+                  : score >= 6.0
                   ? '📈 Thành tích Khá — Cần bồi dưỡng thêm chuyên đề nâng cao'
-                  : score >= 10.0
+                  : score >= 5.0
                   ? '⚡ Đạt Yêu cầu Cơ bản — Cần tăng tốc luyện đề và từ vựng'
                   : '⚠️ Cần Nỗ lực Nhiều Hơn — Xem kỹ lại lời giải chi tiết và sổ tay câu sai'}
               </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   GraduationCap,
   Sparkles,
@@ -22,6 +22,7 @@ import {
   BarChart3,
 } from 'lucide-react';
 import { Profile, UserRole } from '../types';
+import { apiKeyManager, API_CONFIG_CHANGED_EVENT } from '../services/apiKeyManager';
 
 interface NavbarProps {
   currentUser: Profile;
@@ -49,6 +50,17 @@ export const Navbar: React.FC<NavbarProps> = ({
   onLogout,
 }) => {
   const isTeacher = currentUser.role === 'teacher';
+  const [hasApiKey, setHasApiKey] = useState(() => apiKeyManager.hasApiKey());
+
+  useEffect(() => {
+    const refresh = () => setHasApiKey(apiKeyManager.hasApiKey());
+    window.addEventListener(API_CONFIG_CHANGED_EVENT, refresh);
+    window.addEventListener('storage', refresh);
+    return () => {
+      window.removeEventListener(API_CONFIG_CHANGED_EVENT, refresh);
+      window.removeEventListener('storage', refresh);
+    };
+  }, []);
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition-colors">
@@ -281,13 +293,25 @@ export const Navbar: React.FC<NavbarProps> = ({
               <Database className="w-4 h-4 text-teal-600 dark:text-teal-400" />
             </button>
 
-            {/* Settings Button */}
+            {/* Settings Button — luôn hiện, kèm chữ đỏ khi chưa có API key */}
             <button
               onClick={onOpenSettings}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
-              title="Cài đặt API Key & Firebase"
+              className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg transition hover:bg-slate-50 dark:hover:bg-slate-800 ${
+                hasApiKey ? 'text-slate-500 dark:text-slate-400' : 'text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/60'
+              }`}
+              title="Cài đặt API Key & Model"
             >
-              <Settings className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <Settings className={`w-4 h-4 ${hasApiKey ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`} />
+              <span className="text-[11px] font-semibold whitespace-nowrap">
+                {hasApiKey ? (
+                  <span className="hidden lg:inline">API Key</span>
+                ) : (
+                  <>
+                    <span className="hidden lg:inline">Lấy API key để sử dụng app</span>
+                    <span className="lg:hidden">API key</span>
+                  </>
+                )}
+              </span>
             </button>
 
             {/* Theme Toggle */}
