@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Assignment, Exam, Question, MathStrand, HAIPHONG_MATRIX_RULES } from '../../types';
 import { isMathAnswerCorrect } from '../../utils/mathAnswerEvaluator';
+import { findStudentAccountByName } from '../../services/authService';
 
 interface TeamCompetencyRadarProps {
   assignments: Assignment[];
@@ -35,22 +36,27 @@ interface StrandStats {
 export const TeamCompetencyRadar: React.FC<TeamCompetencyRadarProps> = ({ assignments, exams }) => {
   const [selectedStudentId, setSelectedStudentId] = useState<string>('all');
 
+  // Chỉ tính bài của học sinh còn trong danh sách tài khoản (gộp theo tài khoản)
+  const teamAssignments = useMemo(
+    () => assignments.filter((a) => Boolean(findStudentAccountByName(a.student_name))),
+    [assignments],
+  );
+
   // Unique list of students
   const studentList = useMemo(() => {
     const map = new Map<string, string>();
-    assignments.forEach((a) => {
-      if (a.student_id && a.student_name) {
-        map.set(a.student_id, a.student_name);
-      }
+    teamAssignments.forEach((a) => {
+      const account = findStudentAccountByName(a.student_name)!;
+      map.set(account.email, account.displayName);
     });
     return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
-  }, [assignments]);
+  }, [teamAssignments]);
 
   // Filter assignments based on selected student
   const activeAssignments = useMemo(() => {
-    if (selectedStudentId === 'all') return assignments;
-    return assignments.filter((a) => a.student_id === selectedStudentId);
-  }, [assignments, selectedStudentId]);
+    if (selectedStudentId === 'all') return teamAssignments;
+    return teamAssignments.filter((a) => findStudentAccountByName(a.student_name)?.email === selectedStudentId);
+  }, [teamAssignments, selectedStudentId]);
 
   // Compute stats across 3 Hai Phong strands
   const strandStats: StrandStats[] = useMemo(() => {

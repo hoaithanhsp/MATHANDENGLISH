@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { Assignment, Exam, ExamSession } from '../../types';
 import { storageService } from '../../services/storageService';
+import { findStudentAccountByName } from '../../services/authService';
 
 interface StudentLearningHistoryProps {
   assignments: Assignment[];
@@ -54,6 +55,8 @@ export const StudentLearningHistory: React.FC<StudentLearningHistoryProps> = ({ 
   const [sessions, setSessions] = useState<ExamSession[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  /** Hiện cả bài của người không còn trong danh sách học sinh (HS cũ, tài khoản GV làm thử) */
+  const [showFormer, setShowFormer] = useState(false);
 
   useEffect(() => {
     storageService.getAllExamSessions().then((all) => {
@@ -62,14 +65,23 @@ export const StudentLearningHistory: React.FC<StudentLearningHistoryProps> = ({ 
     });
   }, []);
 
-  // Build student summaries from assignments
+  // Build student summaries from assignments — chỉ học sinh còn trong danh sách tài khoản,
+  // gộp theo tài khoản (cùng một HS có thể có nhiều UID nếu tài khoản từng được tạo lại)
   const studentMap = new Map<string, StudentSummary>();
+  let formerCount = 0;
+  const formerNames = new Set<string>();
   assignments.forEach((a) => {
-    const key = a.student_id;
+    const account = findStudentAccountByName(a.student_name);
+    if (!account) {
+      formerCount += 1;
+      formerNames.add(a.student_name || a.student_id);
+      if (!showFormer) return;
+    }
+    const key = account ? account.email : `former:${a.student_id}:${a.student_name || ''}`;
     if (!studentMap.has(key)) {
       studentMap.set(key, {
         student_id: key,
-        student_name: a.student_name || 'Học sinh',
+        student_name: account ? account.displayName : `${a.student_name || 'Không rõ tên'} (không còn trong danh sách)`,
         total_tests: 0,
         avg_score: 0,
         best_score: 0,
@@ -208,6 +220,23 @@ export const StudentLearningHistory: React.FC<StudentLearningHistoryProps> = ({ 
         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
           Theo dõi lịch sử hoạt động, phân tích điểm mạnh/yếu từng chuyên đề của mỗi học sinh trong đội tuyển.
         </p>
+        {formerCount > 0 && (
+          <label className="mt-3 inline-flex items-start gap-2 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showFormer}
+              onChange={(e) => {
+                setShowFormer(e.target.checked);
+                setSelectedStudentId(null);
+              }}
+              className="mt-0.5 accent-indigo-600"
+            />
+            <span>
+              Hiện cả {formerCount} bài của người không còn trong danh sách học sinh
+              <span className="text-slate-400"> ({Array.from(formerNames).slice(0, 4).join(', ')}{formerNames.size > 4 ? ', …' : ''})</span>
+            </span>
+          </label>
+        )}
       </div>
 
       {students.length === 0 ? (

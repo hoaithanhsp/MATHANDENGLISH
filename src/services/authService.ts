@@ -98,6 +98,22 @@ export const getRoleFromEmail = (email: string): UserRole => {
   return 'student';
 };
 
+/** Chuẩn hóa họ tên để so khớp (bỏ khác biệt hoa/thường, khoảng trắng, dạng Unicode). */
+export const normalizePersonName = (name?: string): string =>
+  (name || '').normalize('NFC').replace(/\s+/g, ' ').trim().toLowerCase();
+
+/** Danh sách học sinh đội tuyển hiện tại */
+export const STUDENT_ACCOUNTS = PREDEFINED_ACCOUNTS.filter((a) => a.role === 'student');
+
+/**
+ * Tìm học sinh hiện tại theo tên ghi trên bài làm. Khi một tài khoản hsXX được giao cho học sinh mới,
+ * bài cũ vẫn mang tên học sinh trước → không khớp → không bị tính nhầm cho học sinh mới.
+ */
+export const findStudentAccountByName = (name?: string): AccountInfo | undefined => {
+  const n = normalizePersonName(name);
+  return n ? STUDENT_ACCOUNTS.find((a) => normalizePersonName(a.displayName) === n) : undefined;
+};
+
 /** Tìm account info từ email */
 export const findAccountByEmail = (email: string): AccountInfo | undefined => {
   return PREDEFINED_ACCOUNTS.find((a) => a.email === email);

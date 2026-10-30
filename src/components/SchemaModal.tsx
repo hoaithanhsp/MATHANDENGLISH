@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Database, Copy, Check, X, Shield, Layers, Flame } from 'lucide-react';
+// Rules thật của dự án — cùng file dùng cho "firebase deploy --only database"
+import FIREBASE_RULES_JSON from '../../database.rules.json?raw';
 
 interface SchemaModalProps {
   isOpen: boolean;
@@ -91,96 +93,15 @@ const FIREBASE_SCHEMA_TEXT = `// ===============================================
 }
 
 // ====================================================================
-// FIREBASE REALTIME DATABASE SECURITY RULES (Production-Ready)
-// Dán vào: Firebase Console → Realtime Database → Rules
+// FIREBASE REALTIME DATABASE SECURITY RULES — KHÔNG HẾT HẠN (thay "test mode" 30 ngày)
+// Dán vào: Firebase Console → Realtime Database → Rules → Publish
+// (bấm nút "Sao chép Rules" bên dưới để chỉ chép phần JSON)
 // ====================================================================
-{
-  "rules": {
-    // ── EXAMS: Ai cũng đọc được (để HS tìm đề), chỉ GV mới ghi ──
-    "exams": {
-      ".read": true,
-      ".write": true,
-      "$examId": {
-        ".validate": "newData.hasChildren(['id', 'title', 'access_code', 'exam_type', 'mode', 'duration_minutes', 'is_published', 'created_at'])",
-        "id":               { ".validate": "newData.isString() && newData.val().length > 0" },
-        "title":            { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 500" },
-        "description":      { ".validate": "newData.isString()" },
-        "mode":             { ".validate": "newData.isString() && (newData.val() === 'bilingual' || newData.val() === 'english_only')" },
-        "duration_minutes": { ".validate": "newData.isNumber() && newData.val() >= 5 && newData.val() <= 300" },
-        "is_published":     { ".validate": "newData.isBoolean()" },
-        "access_code":      { ".validate": "newData.isString() && newData.val().length >= 3 && newData.val().length <= 30" },
-        "exam_type":        { ".validate": "newData.isString() && (newData.val() === 'haiphong_matrix' || newData.val() === 'topic_practice' || newData.val() === 'custom')" },
-        "created_at":       { ".validate": "newData.isString()" },
-        "teacher_id":       { ".validate": "newData.isString()" },
-        "questions": {
-          "$questionId": {
-            ".validate": "newData.hasChildren(['id', 'part', 'order_index', 'strand', 'difficulty', 'question_en', 'correct_answer', 'solution_en'])",
-            "part":       { ".validate": "newData.isString() && (newData.val() === 'PART_1' || newData.val() === 'PART_2')" },
-            "order_index":{ ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 50" },
-            "strand":     { ".validate": "newData.isString() && (newData.val() === 'algebra_calculus' || newData.val() === 'geometry_measurement' || newData.val() === 'statistics_discrete')" },
-            "difficulty": { ".validate": "newData.isString() && (newData.val() === 'understanding' || newData.val() === 'application' || newData.val() === 'advanced')" }
-          }
-        }
-      }
-    },
-
-    // ── ASSIGNMENTS: Đọc và ghi bài nộp, hỗ trợ chấm điểm và lời phê GV ──
-    "assignments": {
-      ".read": true,
-      ".write": true,
-      "$assignmentId": {
-        ".validate": "newData.hasChildren(['id', 'exam_id', 'student_id', 'status', 'created_at'])",
-        "id":           { ".validate": "newData.isString() && newData.val().length > 0" },
-        "exam_id":      { ".validate": "newData.isString() && newData.val().length > 0" },
-        "student_id":   { ".validate": "newData.isString() && newData.val().length > 0" },
-        "student_name": { ".validate": "newData.isString() && newData.val().length <= 200" },
-        "status":       { ".validate": "newData.isString() && (newData.val() === 'assigned' || newData.val() === 'completed')" },
-        "score":        { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 20" },
-        "score_scale":  { ".validate": "newData.isNumber()" },
-        "answers":      { ".validate": "newData.hasChildren()" },
-        "created_at":   { ".validate": "newData.isString()" },
-        "teacher_feedback": { ".validate": "newData.isString()" },
-        "graded_at":    { ".validate": "newData.isString()" }
-      }
-    },
-
-    // ── PROFILES: Đăng nhập & lưu thông tin GV/HS ──
-    "profiles": {
-      ".read": true,
-      ".write": true,
-      "$userId": {
-        ".validate": "newData.hasChildren(['id', 'email', 'role', 'full_name'])",
-        "id":        { ".validate": "newData.isString()" },
-        "email":     { ".validate": "newData.isString()" },
-        "role":      { ".validate": "newData.isString() && (newData.val() === 'teacher' || newData.val() === 'student')" },
-        "full_name": { ".validate": "newData.isString()" }
-      }
-    },
-
-    // ── STUDY NOTES: Ai cũng đọc/ghi (HS tự quản lý ghi chú) ──
-    "study_notes": {
-      ".read": true,
-      ".write": true,
-      "$noteId": {
-        ".validate": "newData.hasChildren(['id', 'student_id', 'topic', 'content_markdown', 'created_at'])",
-        "id":               { ".validate": "newData.isString()" },
-        "student_id":       { ".validate": "newData.isString()" },
-        "topic":            { ".validate": "newData.isString() && newData.val().length > 0" },
-        "mode":             { ".validate": "newData.isString() && (newData.val() === 'bilingual' || newData.val() === 'english_only')" },
-        "content_markdown": { ".validate": "newData.isString()" },
-        "created_at":       { ".validate": "newData.isString()" }
-      }
-    },
-
-    // ── Chặn ghi vào các path không xác định ──
-    "$other": {
-      ".validate": false
-    }
-  }
-}`;
+${FIREBASE_RULES_JSON}`;
 
 export const SchemaModal: React.FC<SchemaModalProps> = ({ isOpen, onClose }) => {
   const [copied, setCopied] = useState(false);
+  const [rulesCopied, setRulesCopied] = useState(false);
 
   if (!isOpen) return null;
 
@@ -188,6 +109,12 @@ export const SchemaModal: React.FC<SchemaModalProps> = ({ isOpen, onClose }) => 
     navigator.clipboard.writeText(FIREBASE_SCHEMA_TEXT);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleCopyRules = () => {
+    navigator.clipboard.writeText(FIREBASE_RULES_JSON);
+    setRulesCopied(true);
+    setTimeout(() => setRulesCopied(false), 2000);
   };
 
   return (
@@ -222,7 +149,7 @@ export const SchemaModal: React.FC<SchemaModalProps> = ({ isOpen, onClose }) => 
             <Layers className="w-3.5 h-3.5" /> 3 Node: exams, assignments, study_notes
           </span>
           <span className="flex items-center gap-1 font-medium ml-3">
-            <Shield className="w-3.5 h-3.5" /> Security Rules: Validate dữ liệu tự động
+            <Shield className="w-3.5 h-3.5" /> Security Rules: bắt buộc đăng nhập, không hết hạn
           </span>
           <span className="flex items-center gap-1 font-medium ml-3">
             <Database className="w-3.5 h-3.5" /> Realtime Sync: Cập nhật tức thời giữa GV & HS
@@ -240,6 +167,13 @@ export const SchemaModal: React.FC<SchemaModalProps> = ({ isOpen, onClose }) => 
             Dán Security Rules vào <strong>Firebase Console → Realtime Database → Rules</strong>
           </span>
           <div className="flex gap-2">
+            <button
+              onClick={handleCopyRules}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 transition shadow-sm"
+            >
+              {rulesCopied ? <Check className="w-4 h-4 text-white" /> : <Shield className="w-4 h-4" />}
+              {rulesCopied ? 'Đã sao chép Rules!' : 'Sao chép Rules'}
+            </button>
             <button
               onClick={handleCopy}
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-amber-600 text-white hover:bg-amber-700 transition shadow-sm"

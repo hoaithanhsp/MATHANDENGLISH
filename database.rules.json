@@ -1,0 +1,56 @@
+{
+  "rules": {
+    "profiles": {
+      ".read": "auth != null",
+      "$uid": {
+        ".write": "auth != null && auth.uid === $uid",
+        ".validate": "newData.hasChildren(['id', 'email', 'role', 'full_name'])",
+        "role": { ".validate": "newData.val() === 'teacher' || newData.val() === 'student'" }
+      }
+    },
+
+    "exams": {
+      ".read": "auth != null",
+      "$examId": {
+        ".write": "auth != null"
+      }
+    },
+
+    "assignments": {
+      ".read": "auth != null",
+      ".write": "auth != null && auth.token.email === 'giaovien@hpmath.edu.vn'",
+      "$assignmentId": {
+        ".write": "auth != null",
+        "score": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 20" },
+        "score_scale": { ".validate": "newData.isNumber()" }
+      }
+    },
+
+    "exam_sessions": {
+      ".read": "auth != null",
+      ".write": "auth != null && auth.token.email === 'giaovien@hpmath.edu.vn'",
+      "$examId": {
+        ".write": "auth != null"
+      }
+    },
+
+    "exam_sessions_by_code": {
+      ".read": "auth != null",
+      "$code": {
+        ".write": "auth != null"
+      }
+    },
+
+    "study_notes": {
+      ".read": "auth != null",
+      "$noteId": {
+        ".write": "auth != null"
+      }
+    },
+
+    "stats": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    }
+  }
+}
