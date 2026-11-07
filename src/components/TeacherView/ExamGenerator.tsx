@@ -34,9 +34,25 @@ import {
   FileJson,
   AlertTriangle,
   X,
+  Folder,
+  FolderOpen,
+  Timer,
+  Shuffle,
+  ListPlus,
+  ChevronRight,
 } from 'lucide-react';
 import { Exam, Question, ExamMode, ExamType, MathStrand, CognitiveLevel, Assignment } from '../../types';
 import MathRenderer from '../MathRenderer';
+import TranslateButton from '../TranslateButton';
+import {
+  YEAR_FOLDER_2026_2027,
+  YEAR_VARIANT_INFO,
+  YearVariant,
+  EXTRA_TOPIC_OPTIONS,
+  CODE_901_BLUEPRINT,
+  buildExtendedBlueprint,
+  DURATION_PRESETS,
+} from '../../data/examYearFolders';
 import { exportExamToDocx } from '../../utils/docxExport';
 import { printHaiPhongExam } from '../../utils/printPdf';
 import { generateExam, generateTopicPractice, regenerateSingleQuestion, TopicQuestionType } from '../../services/geminiService';
@@ -111,6 +127,20 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
   const [topicPrompt, setTopicPrompt] = useState('');
   const [documentText, setDocumentText] = useState('');
   const [uploadedFileName, setUploadedFileName] = useState('');
+  /** Thời gian làm bài (phút) — học sinh tự động nộp bài khi hết giờ */
+  const [durationMinutes, setDurationMinutes] = useState<number>(90);
+
+  // Thư mục đề theo năm học (2026-2027)
+  const [yearFolderOpen, setYearFolderOpen] = useState(false);
+  const [yearVariant, setYearVariant] = useState<YearVariant | null>(null);
+  const [extraTopicIds, setExtraTopicIds] = useState<string[]>([]);
+  const [customExtraTopic, setCustomExtraTopic] = useState('');
+  /** Hướng sinh đề của đề đang mở (gắn nhãn năm học khi lưu) */
+  const [currentYearVariant, setCurrentYearVariant] = useState<YearVariant | undefined>(undefined);
+
+  // Song ngữ: bản dịch tiếng Việt chỉ hiện khi bấm "Dịch"
+  const [shownVi, setShownVi] = useState<Record<string, boolean>>({});
+  const toggleVi = (key: string) => setShownVi((prev) => ({ ...prev, [key]: !prev[key] }));
 
   // Generation & editing states
   const [isGenerating, setIsGenerating] = useState(false);
@@ -132,7 +162,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
 
   // History filtering & actions
   const [historySearch, setHistorySearch] = useState('');
-  const [historyFilter, setHistoryFilter] = useState<'all' | 'bilingual' | 'english_only' | 'topic_practice'>('all');
+  const [historyFilter, setHistoryFilter] = useState<'all' | 'bilingual' | 'english_only' | 'topic_practice' | 'year_2026_2027'>('all');
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [importMessage, setImportMessage] = useState<{ ok: boolean; text: string } | null>(null);
@@ -183,6 +213,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
       if (historyFilter === 'bilingual') return exam.mode === 'bilingual';
       if (historyFilter === 'english_only') return exam.mode === 'english_only';
       if (historyFilter === 'topic_practice') return exam.exam_type === 'topic_practice';
+      if (historyFilter === 'year_2026_2027') return exam.school_year === YEAR_FOLDER_2026_2027.school_year;
       return true;
     });
   }, [historyExams, historySearch, historyFilter]);
@@ -194,15 +225,24 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
     const id = overrides.id || currentExamId || `exam-${Date.now()}`;
     const now = new Date().toISOString();
     const isTopic = examType === 'topic_practice';
+    // Nhãn năm học theo đề đang mở (không theo lựa chọn hiện tại trong thư mục)
+    const examYearVariant = 'year_variant' in overrides ? overrides.year_variant : currentYearVariant;
+    const isYear = Boolean(examYearVariant) && !isTopic;
+    const minutes = Math.min(300, Math.max(5, Math.round(durationMinutes) || 90));
+    const langText = mode === 'bilingual' ? 'Song ngữ Anh - Việt' : 'Full Tiếng Anh';
     return {
       id,
       teacher_id: storageService.getCurrentUser()?.id,
       title: examTitle.trim() || (isStudentMode ? 'Đề Tự Luyện HSG Toán Tiếng Anh' : 'Đề Thi Tuyển Chọn Đội Tuyển HSG Toán THPT'),
       description: isTopic
-        ? `Đề luyện tập chuyên đề ${mode === 'bilingual' ? 'Song ngữ Anh - Việt' : 'Full Tiếng Anh'}. ${questions.length} câu / 90 phút.`
-        : `Đề thi ${mode === 'bilingual' ? 'Song ngữ Anh - Việt' : 'Full Tiếng Anh'} chuẩn ma trận Sở GD&ĐT Hải Phòng. ${questions.length} câu / 90 phút.`,
+        ? `Đề luyện tập chuyên đề ${langText}. ${questions.length} câu / ${minutes} phút.`
+        : isYear
+        ? `Thư mục ${YEAR_FOLDER_2026_2027.title} — ${YEAR_VARIANT_INFO[examYearVariant!].title} (dựa trên đề 2025 - 2026 Code 901). ${langText}. ${questions.length} câu / ${minutes} phút.`
+        : `Đề thi ${langText} chuẩn ma trận Sở GD&ĐT Hải Phòng. ${questions.length} câu / ${minutes} phút.`,
       mode,
-      duration_minutes: 90,
+      duration_minutes: minutes,
+      school_year: isYear ? YEAR_FOLDER_2026_2027.school_year : undefined,
+      year_variant: isYear ? examYearVariant : undefined,
       is_published: true,
       access_code: currentAccessCode || newAccessCode(),
       exam_type: examType,
@@ -291,7 +331,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
     }, AUTOSAVE_DELAY_MS);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDirty, generatedQuestions, examTitle, mode, currentExamId, isGenerating]);
+  }, [isDirty, generatedQuestions, examTitle, mode, durationMinutes, currentExamId, isGenerating]);
 
   // Cảnh báo khi đóng tab lúc còn chỉnh sửa chưa lưu
   useEffect(() => {
@@ -331,6 +371,10 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
     setMode(exam.mode);
     setExamType(exam.exam_type || 'haiphong_matrix');
     setTopicPrompt(exam.topic_focus || '');
+    setDurationMinutes(exam.duration_minutes || 90);
+    setYearVariant(exam.year_variant || null);
+    setCurrentYearVariant(exam.year_variant);
+    setShownVi({});
     setCurrentExamId(exam.id);
     setCurrentAccessCode(exam.access_code);
     setCurrentCreatedAt(exam.created_at || null);
@@ -362,6 +406,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
     setCurrentExamId(null);
     setCurrentAccessCode(null);
     setCurrentCreatedAt(null);
+    setCurrentYearVariant(undefined);
     setIsDirty(false);
     setSuccessSaved(false);
     setSaveStatus(null);
@@ -434,6 +479,27 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
       setErrorMsg('Vui lòng nhập chủ đề hoặc yêu cầu trọng tâm trước khi tạo đề.');
       return;
     }
+    if (!Number.isFinite(durationMinutes) || durationMinutes < 5 || durationMinutes > 300) {
+      setErrorMsg('Thời gian làm bài phải từ 5 đến 300 phút.');
+      return;
+    }
+    const yearMode = examType !== 'topic_practice' ? yearVariant : null;
+    const extraTopics = [
+      ...EXTRA_TOPIC_OPTIONS.filter((t) => extraTopicIds.includes(t.id)),
+      ...customExtraTopic
+        .split(/[;\n]/)
+        .map((t) => t.trim())
+        .filter(Boolean)
+        .map((t) => ({ name_en: t, name_vi: t })),
+    ];
+    if (yearMode === 'extended' && extraTopics.length === 0) {
+      setErrorMsg('Hãy chọn hoặc nhập ít nhất một dạng toán cần bổ sung.');
+      return;
+    }
+    if (yearMode === 'extended' && extraTopics.length > 12) {
+      setErrorMsg('Chỉ nên bổ sung tối đa 12 dạng toán để đề vẫn giữ khung 22 câu.');
+      return;
+    }
     if (isDirty && generatedQuestions && !window.confirm('Đề đang mở còn chỉnh sửa chưa lưu. Tạo đề mới sẽ thay thế đề này trên màn hình. Tiếp tục?')) {
       return;
     }
@@ -455,6 +521,17 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
             count: topicQuestionCount,
             questionType: topicQuestionType,
             difficulty: 'mixed',
+          })
+        : yearMode
+        ? await generateExam({
+            topicPrompt,
+            mode,
+            examType: 'haiphong_matrix',
+            questionCount: 22,
+            customDocumentText: documentText,
+            blueprint: yearMode === 'extended' ? buildExtendedBlueprint(extraTopics) : CODE_901_BLUEPRINT,
+            yearVariant: yearMode,
+            schoolYear: YEAR_FOLDER_2026_2027.school_year,
           })
         : await generateExam({
             topicPrompt,
@@ -492,6 +569,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
 
     // Đề đã sinh xong: hiển thị ngay, lỗi lưu (nếu có) không được làm mất đề
     setGeneratedQuestions(questions);
+    setShownVi({});
     setEditingIndex(null);
     setIsDirty(false);
     storageService.incrementAiQuests(questions.length);
@@ -501,7 +579,9 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
       id: newExamId,
       access_code: accessCode,
       created_at: new Date().toISOString(),
+      year_variant: yearMode || undefined,
     });
+    setCurrentYearVariant(yearMode || undefined);
     setCurrentExamId(newExamId);
     setCurrentAccessCode(accessCode);
     setCurrentCreatedAt(autoSavedExam.created_at || null);
@@ -631,7 +711,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
           title: String(raw.title || file.name.replace(/\.json$/i, '')),
           mode: raw.mode === 'english_only' ? 'english_only' : 'bilingual',
           exam_type: raw.exam_type || 'haiphong_matrix',
-          duration_minutes: Number(raw.duration_minutes) || 90,
+          duration_minutes: Math.min(300, Math.max(5, Number(raw.duration_minutes) || 90)),
           is_published: raw.is_published !== false,
           is_ai_generated: true,
           access_code: raw.access_code && !accessExists ? String(raw.access_code) : newAccessCode(),
@@ -923,6 +1003,147 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Form Settings */}
         <div className="lg:col-span-1 space-y-5">
+          {/* THƯ MỤC ĐỀ THI 2026-2027 */}
+          <div
+            className={`rounded-2xl border shadow-xs overflow-hidden transition ${
+              yearVariant
+                ? 'border-amber-400 dark:border-amber-600 bg-amber-50/60 dark:bg-amber-950/20'
+                : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800'
+            }`}
+          >
+            <button
+              type="button"
+              onClick={() => setYearFolderOpen((v) => !v)}
+              aria-expanded={yearFolderOpen}
+              className="w-full flex items-center gap-3 p-4 text-left hover:bg-amber-50 dark:hover:bg-amber-950/30 transition"
+            >
+              <span className="w-10 h-10 shrink-0 rounded-xl bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-300 flex items-center justify-center">
+                {yearFolderOpen ? <FolderOpen className="w-5 h-5" /> : <Folder className="w-5 h-5" />}
+              </span>
+              <span className="flex-1 min-w-0">
+                <span className="block text-sm font-bold text-slate-900 dark:text-white">📁 {YEAR_FOLDER_2026_2027.title}</span>
+                <span className="block text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                  {yearVariant ? `Đang chọn: ${YEAR_VARIANT_INFO[yearVariant].title}` : 'Bấm để chọn cách tạo đề từ đề 2025 - 2026'}
+                </span>
+              </span>
+              <ChevronRight className={`w-4 h-4 text-slate-400 transition-transform ${yearFolderOpen ? 'rotate-90' : ''}`} />
+            </button>
+
+            {yearFolderOpen && (
+              <div className="px-4 pb-4 space-y-3">
+                <div className="text-[11px] text-slate-600 dark:text-slate-300 bg-white/80 dark:bg-slate-900/60 rounded-xl p-2.5 border border-slate-200 dark:border-slate-700">
+                  <div className="font-semibold text-slate-800 dark:text-slate-100 mb-0.5">
+                    Đề gốc: {YEAR_FOLDER_2026_2027.reference?.label}
+                  </div>
+                  <div>12 câu trắc nghiệm + 10 câu trả lời ngắn · 22 dạng toán · thang 10 điểm.</div>
+                  {YEAR_FOLDER_2026_2027.reference?.pdfUrl && (
+                    <a
+                      href={YEAR_FOLDER_2026_2027.reference.pdfUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 mt-1 text-teal-700 dark:text-teal-300 font-semibold hover:underline"
+                    >
+                      <FileText className="w-3 h-3" /> Xem đề gốc 2025 - 2026 (PDF)
+                    </a>
+                  )}
+                </div>
+
+                <div className="space-y-2" role="radiogroup" aria-label="Cách tạo đề 2026-2027">
+                  {(['similar', 'different', 'extended'] as YearVariant[]).map((v) => {
+                    const Icon = v === 'similar' ? Copy : v === 'different' ? Shuffle : ListPlus;
+                    const active = yearVariant === v;
+                    return (
+                      <button
+                        key={v}
+                        type="button"
+                        role="radio"
+                        aria-checked={active}
+                        onClick={() => {
+                          setYearVariant(v);
+                          setExamType('haiphong_matrix');
+                          setErrorMsg('');
+                          if (!examTitle.includes('2026')) {
+                            setExamTitle(
+                              `Đề ${isStudentMode ? 'Tự Luyện' : 'Thi'} HSG Toán Tiếng Anh 2026 - 2027 (${YEAR_VARIANT_INFO[v].title.replace('Tạo đề ', '')})`,
+                            );
+                          }
+                        }}
+                        className={`w-full flex items-start gap-2.5 p-3 rounded-xl border text-left transition ${
+                          active
+                            ? 'border-amber-500 bg-white dark:bg-slate-900 ring-2 ring-amber-300/60 dark:ring-amber-700/60'
+                            : 'border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/40 hover:border-amber-300'
+                        }`}
+                      >
+                        <Icon className={`w-4 h-4 mt-0.5 shrink-0 ${active ? 'text-amber-600' : 'text-slate-400'}`} />
+                        <span>
+                          <span className="block text-xs font-bold text-slate-900 dark:text-white">{YEAR_VARIANT_INFO[v].title}</span>
+                          <span className="block text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{YEAR_VARIANT_INFO[v].detail}</span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {yearVariant === 'extended' && (
+                  <div className="rounded-xl border border-amber-200 dark:border-amber-800 bg-white dark:bg-slate-900 p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-800 dark:text-slate-100">Dạng toán bổ sung</span>
+                      <span className="text-[10px] text-slate-500">
+                        Đã chọn {extraTopicIds.length + customExtraTopic.split(/[;\n]/).filter((t) => t.trim()).length}
+                      </span>
+                    </div>
+                    <div className="max-h-52 overflow-y-auto space-y-1 pr-1">
+                      {EXTRA_TOPIC_OPTIONS.map((t) => (
+                        <label key={t.id} className="flex items-start gap-2 text-[11px] text-slate-700 dark:text-slate-300 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={extraTopicIds.includes(t.id)}
+                            onChange={(e) =>
+                              setExtraTopicIds((prev) => (e.target.checked ? [...prev, t.id] : prev.filter((x) => x !== t.id)))
+                            }
+                            className="mt-0.5 text-amber-600 focus:ring-amber-500"
+                          />
+                          <span>{t.name_vi}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <textarea
+                      rows={2}
+                      value={customExtraTopic}
+                      onChange={(e) => setCustomExtraTopic(e.target.value)}
+                      placeholder="Tự nhập dạng toán khác (mỗi dòng hoặc dấu ; là một dạng)"
+                      className="w-full px-2.5 py-2 text-[11px] rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    />
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                      Mỗi dạng thay một câu cùng mạch kiến thức; đề vẫn giữ 22 câu.
+                    </p>
+                  </div>
+                )}
+
+                {yearVariant && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={isGenerating}
+                      onClick={handleGenerate}
+                      className="flex-1 py-2 rounded-xl text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 transition flex items-center justify-center gap-1.5 disabled:opacity-50"
+                    >
+                      {isGenerating ? <RotateCw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                      {isGenerating ? 'Đang sinh đề...' : 'Sinh đề 2026 - 2027'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setYearVariant(null)}
+                      className="px-3 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition"
+                    >
+                      Bỏ chọn
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-xs space-y-4">
             <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <Sliders className="w-4 h-4 text-teal-600 dark:text-teal-400" />
@@ -981,6 +1202,54 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
                   🇬🇧 Full Tiếng Anh
                 </button>
               </div>
+              {mode === 'bilingual' && (
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
+                  Đề hiển thị tiếng Anh; bấm nút <strong>Dịch</strong> ở từng câu để xem bản tiếng Việt.
+                </p>
+              )}
+            </div>
+
+            {/* Thời gian làm bài / nộp bài */}
+            <div>
+              <label htmlFor="exam-duration" className="flex items-center gap-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                <Timer className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                Thời gian làm bài (tự động nộp khi hết giờ):
+              </label>
+              <div className="flex flex-wrap gap-1.5 mb-1.5">
+                {DURATION_PRESETS.map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => {
+                      setDurationMinutes(m);
+                      if (generatedQuestions && m !== durationMinutes) markDirty();
+                    }}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition ${
+                      durationMinutes === m
+                        ? 'bg-teal-600 border-teal-600 text-white'
+                        : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-teal-400'
+                    }`}
+                  >
+                    {m}′
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  id="exam-duration"
+                  type="number"
+                  min={5}
+                  max={300}
+                  step={5}
+                  value={durationMinutes}
+                  onChange={(e) => {
+                    setDurationMinutes(Number(e.target.value));
+                    if (generatedQuestions) markDirty();
+                  }}
+                  className="w-24 px-3 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                />
+                <span className="text-[11px] text-slate-500 dark:text-slate-400">phút (5 – 300)</span>
+              </div>
             </div>
 
             {/* Exam Type */}
@@ -989,9 +1258,20 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
                 Loại đề thi:
               </label>
               <div className="space-y-2">
+                {yearVariant && (
+                  <div className="p-2.5 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30 text-[11px] text-amber-800 dark:text-amber-200 flex items-start gap-2">
+                    <Folder className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                    <span className="flex-1">
+                      Đang dùng thư mục <strong>{YEAR_FOLDER_2026_2027.title}</strong> — {YEAR_VARIANT_INFO[yearVariant].title}.
+                    </span>
+                    <button type="button" onClick={() => setYearVariant(null)} className="font-semibold hover:underline">
+                      Bỏ
+                    </button>
+                  </div>
+                )}
                 <label
                   className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer transition ${
-                    examType === 'haiphong_matrix'
+                    examType === 'haiphong_matrix' && !yearVariant
                       ? 'bg-teal-50/50 dark:bg-teal-950/30 border-teal-500'
                       : 'border-slate-200 dark:border-slate-700'
                   }`}
@@ -999,8 +1279,11 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
                   <input
                     type="radio"
                     name="examType"
-                    checked={examType === 'haiphong_matrix'}
-                    onChange={() => setExamType('haiphong_matrix')}
+                    checked={examType === 'haiphong_matrix' && !yearVariant}
+                    onChange={() => {
+                      setExamType('haiphong_matrix');
+                      setYearVariant(null);
+                    }}
                     className="mt-0.5 text-teal-600 focus:ring-teal-500"
                   />
                   <div>
@@ -1024,7 +1307,10 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
                     type="radio"
                     name="examType"
                     checked={examType === 'topic_practice'}
-                    onChange={() => setExamType('topic_practice')}
+                    onChange={() => {
+                      setExamType('topic_practice');
+                      setYearVariant(null);
+                    }}
                     className="mt-0.5 text-teal-600 focus:ring-teal-500"
                   />
                   <div>
@@ -1281,7 +1567,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
                         🎉 Tạo Đề Thi Thành Công!
                       </h4>
                       <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-teal-100 text-teal-800 dark:bg-teal-900/60 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
-                        {generatedQuestions.length} câu hỏi • 90 phút
+                        {generatedQuestions.length} câu hỏi • {durationMinutes} phút
                       </span>
                     </div>
                     <p className="text-xs text-slate-600 dark:text-slate-300">
@@ -1297,7 +1583,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
                         className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs shadow-md shadow-emerald-200 dark:shadow-none transition flex items-center gap-1.5"
                       >
                         <Play className="w-4 h-4 fill-current" />
-                        <span>Vào Làm Bài Ngay (90p)</span>
+                        <span>Vào Làm Bài Ngay ({durationMinutes}p)</span>
                       </button>
                     )}
                   </div>
@@ -1465,6 +1751,20 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
 
               {generatedQuestions && (
                 <div className="flex flex-wrap items-center gap-2">
+                  {mode === 'bilingual' && (
+                    <TranslateButton
+                      shown={generatedQuestions.length > 0 && generatedQuestions.every((q, i) => shownVi[q.id || String(i)])}
+                      label="Dịch cả đề"
+                      onClick={() => {
+                        const allShown = generatedQuestions.every((q, i) => shownVi[q.id || String(i)]);
+                        const next: Record<string, boolean> = {};
+                        generatedQuestions.forEach((q, i) => {
+                          next[q.id || String(i)] = !allShown;
+                        });
+                        setShownVi(next);
+                      }}
+                    />
+                  )}
                   <button
                     onClick={() => handleExportDocx(false)}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 hover:bg-blue-100 transition border border-blue-200 dark:border-blue-800"
@@ -1567,6 +1867,9 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
                       </div>
 
                       <div className="flex items-center gap-3">
+                        {mode === 'bilingual' && (q.question_vi || q.solution_vi) && (
+                          <TranslateButton shown={Boolean(shownVi[q.id || String(idx)])} onClick={() => toggleVi(q.id || String(idx))} />
+                        )}
                         <button
                           type="button"
                           onClick={() => handleSwapQuestion(idx)}
@@ -1597,7 +1900,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
                     </div>
 
                     {/* Vietnamese Translation Callout (Separated clearly, question only) */}
-                    {mode === 'bilingual' && q.question_vi && (
+                    {mode === 'bilingual' && q.question_vi && shownVi[q.id || String(idx)] && (
                       <div className="mb-3 p-3 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs font-sans">
                         <div className="flex items-center gap-1.5 font-bold text-[11px] text-teal-600 dark:text-teal-400 mb-1">
                           <Languages className="w-3.5 h-3.5" />
@@ -1666,7 +1969,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
                         Lời giải chi tiết (KaTeX Solution):
                       </div>
                       <MathRenderer content={q.solution_en} />
-                      {mode === 'bilingual' && q.solution_vi && (
+                      {mode === 'bilingual' && q.solution_vi && shownVi[q.id || String(idx)] && (
                         <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 italic">
                           <MathRenderer content={q.solution_vi} />
                         </div>
@@ -1911,6 +2214,17 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
               >
                 Chuyên đề
               </button>
+              <button
+                type="button"
+                onClick={() => setHistoryFilter('year_2026_2027')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1 ${
+                  historyFilter === 'year_2026_2027'
+                    ? 'bg-amber-600 text-white shadow-xs'
+                    : 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 hover:bg-amber-100'
+                }`}
+              >
+                <Folder className="w-3 h-3" /> 2026-2027
+              </button>
             </div>
           </div>
 
@@ -1963,6 +2277,11 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
                             {qCount} câu
                           </span>
+                          {exam.school_year && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 flex items-center gap-1">
+                              <Folder className="w-2.5 h-2.5" /> {exam.school_year}
+                            </span>
+                          )}
                         </div>
 
                         {/* Access code with copy button */}
@@ -2021,7 +2340,7 @@ export const ExamGenerator: React.FC<ExamGeneratorProps> = ({
                         className="w-full py-2.5 px-3 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 transition shadow-xs flex items-center justify-center gap-1.5"
                       >
                         <Play className="w-3.5 h-3.5 fill-current" />
-                        <span>Lấy Ra Làm Bài Ngay (90p)</span>
+                        <span>Lấy Ra Làm Bài Ngay ({exam.duration_minutes || 90}p)</span>
                       </button>
 
                       {/* Secondary Actions Row */}

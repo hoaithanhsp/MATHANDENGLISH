@@ -228,7 +228,7 @@ export const ExamManagement: React.FC<ExamManagementProps> = ({
                               onStartTestNow(exam);
                             }}
                             className="p-1 text-teal-600 hover:text-teal-700 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-950/60 rounded transition"
-                            title="Lấy đề này ra làm bài ngay (90 phút)"
+                            title={`Lấy đề này ra làm bài ngay (${exam.duration_minutes || 90} phút)`}
                           >
                             <Play className="w-3.5 h-3.5 fill-current" />
                           </button>
@@ -375,10 +375,10 @@ export const ExamManagement: React.FC<ExamManagementProps> = ({
                     <button
                       onClick={() => onStartTestNow(selectedExam)}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 shadow-xs transition"
-                      title="Lấy đề này trong kho ra làm thử nghiệm trực tiếp giao diện thi 90 phút"
+                      title={`Lấy đề này trong kho ra làm thử nghiệm trực tiếp giao diện thi ${selectedExam.duration_minutes || 90} phút`}
                     >
                       <Play className="w-3.5 h-3.5 fill-current" />
-                      Lấy Ra Làm Bài Ngay (90p)
+                      Lấy Ra Làm Bài Ngay ({selectedExam.duration_minutes || 90}p)
                     </button>
                   )}
                   <button

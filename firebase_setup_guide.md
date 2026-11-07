@@ -56,7 +56,29 @@ graph TB
 4. Security rules: chọn **"Start in test mode"** → **Enable**
 
 > [!IMPORTANT]
-> Test mode cho phép đọc/ghi 30 ngày. Sau khi app ổn, cần thêm Security Rules.
+> Test mode chỉ cho phép đọc/ghi **30 ngày**, hết hạn là app mất kết nối dữ liệu.
+> Thay ngay bằng rules **không hết hạn** trong file `database.rules.json` (mục bên dưới).
+
+### Bước 2b: Đặt Security Rules không hết hạn (bắt buộc)
+
+Rules trong `database.rules.json` không có ngày hết hạn; chỉ yêu cầu người dùng **đã đăng nhập** (mọi tài khoản GV/HS của app) mới đọc/ghi được. Chỉ tài khoản `giaovien@hpmath.edu.vn` được xóa toàn bộ bài nộp / phiên thi.
+
+**Cách 1 — Dán trên web (không cần cài gì):**
+1. Firebase Console → **Realtime Database** → tab **Rules**
+2. Xóa hết nội dung cũ (dạng `".read": "now < 17..."`)
+3. Trong app: bấm biểu tượng **Database** trên thanh đầu trang → **Sao chép Rules** (hoặc mở file `database.rules.json`, chép toàn bộ) → dán vào
+4. Bấm **Publish**
+
+**Cách 2 — Firebase CLI:**
+```bash
+npm install -g firebase-tools
+firebase login
+firebase deploy --only database
+```
+(`firebase.json` và `.firebaserc` đã trỏ sẵn tới dự án `hai-phong-math-olympiad`.)
+
+> [!NOTE]
+> Gói miễn phí Spark không giới hạn thời gian sử dụng — chỉ giới hạn dung lượng (1 GB lưu trữ, 10 GB tải/tháng, 100 kết nối đồng thời). Thứ "hết hạn sau 30 ngày" duy nhất là rules của test mode.
 
 ---
 

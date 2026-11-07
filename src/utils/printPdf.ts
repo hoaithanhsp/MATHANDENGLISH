@@ -80,7 +80,8 @@ export function printHaiPhongExam(exam: Exam, options: PrintExamOptions = {}): v
 
   const isSolution = sheetType === 'solution_sheet';
   const now = new Date();
-  const schoolYearStart = now.getMonth() >= 7 ? now.getFullYear() : now.getFullYear() - 1;
+  const yearFromExam = Number(String(exam.school_year || '').slice(0, 4));
+  const schoolYearStart = yearFromExam > 2000 ? yearFromExam : now.getMonth() >= 7 ? now.getFullYear() : now.getFullYear() - 1;
   const isStandard22 = part1.length === 12 && part2.length === 10;
   // Thang 10: Phần I 0,25 đ/câu, Phần II 0,7 đ/câu (chỉ ghi điểm khi đúng cấu trúc 22 câu)
   const part1Score = isStandard22 ? ' – 3.0 ĐIỂM' : '';
@@ -297,7 +298,7 @@ export function printHaiPhongExam(exam: Exam, options: PrintExamOptions = {}): v
         <div class="main-title">KỲ THI CHỌN HỌC SINH GIỎI CẤP THÀNH PHỐ</div>
         <div class="sub-title">NĂM HỌC ${schoolYearStart} - ${schoolYearStart + 1}</div>
         <div><strong>Môn thi: TOÁN HỌC (BẰNG TIẾNG ANH) - LỚP 11</strong></div>
-        <div><em>Thời gian: 90 phút (không kể thời gian phát đề)</em></div>
+        <div><em>Thời gian: ${exam.duration_minutes || 90} phút (không kể thời gian phát đề)</em></div>
         <div style="font-size: 10pt; margin-top: 2px;">Mã đề thi: <strong>${escapeHtml(exam.access_code || 'HP-MATH')}</strong> · ${questions.length} câu</div>
         <div style="font-size: 10pt; margin-top: 2px;"><em>${safeTitle}</em></div>
       </td>

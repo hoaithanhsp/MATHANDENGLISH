@@ -52,6 +52,10 @@ export interface Exam {
   questions?: Question[];
   is_ai_generated?: boolean;
   topic_focus?: string;
+  /** Năm học của thư mục đề, VD "2026-2027" */
+  school_year?: string;
+  /** Hướng sinh đề theo thư mục năm học: tương tự / dạng toán khác / bổ sung dạng toán */
+  year_variant?: 'similar' | 'different' | 'extended';
   created_at?: string;
   updated_at?: string;
 }

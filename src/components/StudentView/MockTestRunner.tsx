@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { Exam, Question, Assignment, ExamSession, MistakeEntry, MistakeReason } from '../../types';
 import MathRenderer from '../MathRenderer';
+import TranslateButton from '../TranslateButton';
 import { isMathAnswerCorrect } from '../../utils/mathAnswerEvaluator';
 import { storageService } from '../../services/storageService';
 import { printHaiPhongExam } from '../../utils/printPdf';
@@ -66,6 +67,10 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
   const [showVirtualKeypad, setShowVirtualKeypad] = useState(false);
   const [hintsRevealed, setHintsRevealed] = useState<Record<string, number>>({}); // qId -> hint level (1 or 2)
   const [savedMistakeReasons, setSavedMistakeReasons] = useState<Record<string, MistakeReason>>({});
+  // Đề song ngữ: bản dịch tiếng Việt chỉ hiện khi bấm "Dịch"
+  const [shownVi, setShownVi] = useState<Record<string, boolean>>({});
+  const toggleVi = (qid: string) => setShownVi((prev) => ({ ...prev, [qid]: !prev[qid] }));
+  const isBilingual = exam.mode === 'bilingual';
 
   const notified15m = useRef(false);
   const notified5m = useRef(false);
@@ -565,7 +570,10 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
                       <span className="text-[11px] text-slate-500">{q.part}</span>
                     </div>
 
-                    <div className="flex items-center gap-1 text-xs font-bold">
+                    <div className="flex items-center gap-2 text-xs font-bold">
+                      {isBilingual && (q.question_vi || q.solution_vi) && (
+                        <TranslateButton shown={Boolean(shownVi[q.id])} onClick={() => toggleVi(q.id)} />
+                      )}
                       {isCorrect ? (
                         <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
                           <Check className="w-4 h-4" /> Đúng
@@ -582,7 +590,7 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
                   <div className="text-xs sm:text-sm font-medium text-slate-900 dark:text-white mb-2 leading-relaxed">
                     <MathRenderer content={q.question_en} />
                   </div>
-                  {q.question_vi && exam.mode === 'bilingual' && (
+                  {q.question_vi && isBilingual && shownVi[q.id] && (
                     <div className="mb-3 p-3 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs">
                       <div className="flex items-center gap-1.5 font-bold text-[11px] text-teal-600 dark:text-teal-400 mb-1">
                         <Languages className="w-3.5 h-3.5" />
@@ -642,7 +650,7 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
                   <div className="pt-2 text-xs text-slate-600 dark:text-slate-300">
                     <span className="font-bold text-teal-600 dark:text-teal-400">Lời giải chi tiết: </span>
                     <MathRenderer content={q.solution_en} />
-                    {q.solution_vi && (
+                    {q.solution_vi && (!isBilingual || shownVi[q.id]) && (
                       <div className="mt-1 italic text-slate-500 text-[11px]">
                         <MathRenderer content={q.solution_vi} />
                       </div>
@@ -754,6 +762,9 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
                   </div>
 
                   <div className="flex items-center gap-2">
+                    {isBilingual && currentQ.question_vi && (
+                      <TranslateButton shown={Boolean(shownVi[currentQ.id])} onClick={() => toggleVi(currentQ.id)} />
+                    )}
                     {/* Step-by-step Hint Button */}
                     <button
                       onClick={() => handleRevealHint(currentQ.id)}
@@ -788,7 +799,7 @@ export const MockTestRunner: React.FC<MockTestRunnerProps> = ({
                   <MathRenderer content={currentQ.question_en} inline />
                 </div>
 
-                {currentQ.question_vi && exam.mode === 'bilingual' && (
+                {currentQ.question_vi && isBilingual && shownVi[currentQ.id] && (
                   <div className="mb-6 p-3.5 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-sans">
                     <div className="flex items-center gap-1.5 font-bold text-[11px] text-teal-600 dark:text-teal-400 mb-1.5">
                       <Languages className="w-4 h-4" />

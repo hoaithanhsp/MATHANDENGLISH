@@ -9,7 +9,7 @@
 
 - **Đơn vị công tác**: Trường THPT Khúc Thừa Dụ – Sở GD&ĐT Hải Phòng
 - **Tác giả giáo án & phụ trách chuyên môn**: Thầy Trần Hoài Thanh (Tổ Toán - Tin học)
-- **Cấu trúc đề thi chuẩn**: 22 câu / 90 phút (Phần 1: 12 câu trắc nghiệm 4 lựa chọn; Phần 2: 10 câu trả lời ngắn điền đáp số). Thang điểm 20.
+- **Cấu trúc đề thi chuẩn**: 22 câu / 90 phút (Phần 1: 12 câu trắc nghiệm 4 lựa chọn; Phần 2: 10 câu trả lời ngắn điền đáp số). Thang điểm 10 (Phần 1: 0,25 điểm/câu = 3,0 điểm; Phần 2: 0,7 điểm/câu = 7,0 điểm).
 
 ---
 
@@ -34,13 +34,13 @@ Toàn bộ 13 bài giảng chuyên sâu được số hóa trực tiếp và hi�
 *Mỗi bài học đều kèm Bảng từ vựng thuật ngữ toán chuyên ngành (IPA + dịch nghĩa), file Word `.docx` nguyên bản để tải về máy, và tính năng In / Xuất PDF.*
 
 ### 2. Trình Tạo Đề Thi AI Chuẩn Ma Trận Hải Phòng
-- Tự động sinh đề thi 22 câu phân bổ chuẩn: 6 Thông hiểu (TH), 9 Vận dụng (VD), 7 Vận dụng cao (VDC).
+- Tự động sinh đề thi 22 câu phân bổ chuẩn: 8 Thông hiểu (TH), 9 Vận dụng (VD), 5 Vận dụng cao (VDC).
 - Hỗ trợ chế độ Song ngữ (English + Bản dịch Tiếng Việt tách biệt rõ ràng) hoặc Tiếng Anh thuần túy.
 - Xuất đề thi và đáp án chi tiết sang định dạng **Microsoft Word (.docx)** và **PDF**.
 
 ### 3. Phòng Luyện Thi Trực Tuyến 90 Phút
 - Đồng hồ đếm ngược, lưu bài thi theo thời gian thực.
-- Bảng câu hỏi thông minh, chấm điểm tự động theo thang 20 điểm.
+- Bảng câu hỏi thông minh, chấm điểm tự động theo thang 10 điểm.
 - Báo cáo phân tích kết quả, xem lại từng câu hỏi kèm lời giải KaTeX sắc nét.
 
 ### 4. Công Nghệ Hiển Thị Công Thức Toán KaTeX Siêu Nét

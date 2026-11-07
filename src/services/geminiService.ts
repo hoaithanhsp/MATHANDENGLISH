@@ -947,6 +947,19 @@ async function generateJsonWithRetry(
 // HIGH-LEVEL API FUNCTIONS
 // ============================================================
 
+/** Một câu trong khung đề (xem src/data/examYearFolders.ts) */
+export interface ExamBlueprintSlot {
+  order: number;
+  label: string;
+  part: string;
+  strand: string;
+  topic_en: string;
+  difficulty: string;
+  pattern_en: string;
+  real_world?: boolean;
+  replacement?: { name_en: string; name_vi?: string };
+}
+
 /** Generate a full 22-question exam or custom topical test */
 export const generateExam = async (params: {
   topicPrompt?: string;
@@ -954,6 +967,11 @@ export const generateExam = async (params: {
   examType?: string;
   questionCount?: number;
   customDocumentText?: string;
+  /** Khung đề từng câu (thư mục đề theo năm học) — khi có, thay thế quy tắc 3–4 mặc định */
+  blueprint?: ExamBlueprintSlot[];
+  /** Hướng sinh đề theo khung: tương tự / dạng toán khác / bổ sung dạng toán */
+  yearVariant?: 'similar' | 'different' | 'extended';
+  schoolYear?: string;
   onModelSwitch?: (from: string, to: string, reason: string) => void;
 }): Promise<any[]> => {
   const {
@@ -962,8 +980,40 @@ export const generateExam = async (params: {
     examType = 'haiphong_matrix',
     questionCount = 22,
     customDocumentText = '',
+    blueprint,
+    yearVariant,
+    schoolYear,
     onModelSwitch,
   } = params;
+  const useBlueprint = Array.isArray(blueprint) && blueprint.length === questionCount;
+
+  const levelName = (d: string) =>
+    d === 'understanding' ? 'Understanding' : d === 'application' ? 'Application' : 'Advanced (high-order)';
+  const variantRule = (slot: ExamBlueprintSlot) => {
+    if (slot.replacement) {
+      return `NEW PROBLEM TYPE (supplement): write a problem on "${slot.replacement.name_en}" — keep the same part, strand and cognitive level; do NOT reuse the original pattern.`;
+    }
+    if (yearVariant === 'different') {
+      return 'DIFFERENT PROBLEM TYPE: same strand, part and cognitive level, but choose a clearly different problem type / technique from the original pattern (still within the Grade 10-11 GDPT 2018 syllabus).';
+    }
+    return 'SIMILAR: keep exactly the same problem type, technique and difficulty as the original pattern, but use new numbers, a new context and a new answer (never copy the original).';
+  };
+  const buildBlueprintBlock = (start: number, end: number) => {
+    if (!useBlueprint) return '';
+    const lines = blueprint!
+      .filter((slot) => slot.order >= start && slot.order <= end)
+      .map(
+        (slot) =>
+          `- Question ${slot.order} (original ${slot.label}) | ${slot.part} | strand: ${slot.strand} | level: ${levelName(slot.difficulty)} | topic: ${slot.topic_en}${slot.real_world ? ' | real-world context' : ''}\n    Original pattern: ${slot.pattern_en}\n    Requirement: ${variantRule(slot)}`,
+      )
+      .join('\n');
+    return `
+REFERENCE EXAM: Official Hai Phong DOET exam 2025-2026 (Code 901). You are writing the ${schoolYear || '2026-2027'} exam.
+QUESTION-BY-QUESTION BLUEPRINT FOR THIS BATCH (follow it exactly; it OVERRIDES rules 3 and 4 below):
+${lines}
+- Set "difficulty" and "strand" of every question exactly as given in the blueprint.
+- PART_2 short answers should have at most 4 characters when possible (integer, or decimal rounded as the problem states).`;
+  };
 
   const buildPrompt = (start: number, end: number) => {
     const batchCount = end - start + 1;
@@ -974,6 +1024,7 @@ Full exam size: ${questionCount} questions.
 THIS REQUEST: generate ONLY questions ${start} to ${end} (exactly ${batchCount} question objects, order_index ${start}..${end}). Other questions are generated separately — do NOT output them.
 ${topicPrompt ? `Focus Topic / Custom Instruction: ${topicPrompt}` : ''}
 ${customDocumentText ? `Reference Material / Document Context:\n${customDocumentText.slice(0, 4000)}` : ''}
+${buildBlueprintBlock(start, end)}
 
 CRITICAL RULES FOR HAI PHONG OLYMPIAD 2025 MATRIX:
 1. Question 1 to 12 MUST BE PART_1 (Multiple Choice with 4 options A, B, C, D in options_en).
